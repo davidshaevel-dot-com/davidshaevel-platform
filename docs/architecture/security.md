@@ -120,20 +120,43 @@ This document outlines the security architecture and practices for the DavidShae
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "ECRAuthorizationToken",
       "Effect": "Allow",
       "Action": [
-        "ecr:GetAuthorizationToken",
+        "ecr:GetAuthorizationToken"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ECRImageAccess",
+      "Effect": "Allow",
+      "Action": [
         "ecr:BatchCheckLayerAvailability",
         "ecr:GetDownloadUrlForLayer",
-        "ecr:BatchGetImage",
+        "ecr:BatchGetImage"
+      ],
+      "Resource": [
+        "arn:aws:ecr:us-east-1:123456789012:repository/davidshaevel-ecr-frontend",
+        "arn:aws:ecr:us-east-1:123456789012:repository/davidshaevel-ecr-backend"
+      ]
+    },
+    {
+      "Sid": "CloudWatchLogsAccess",
+      "Effect": "Allow",
+      "Action": [
         "logs:CreateLogStream",
         "logs:PutLogEvents"
       ],
-      "Resource": "*"
+      "Resource": "arn:aws:logs:us-east-1:123456789012:log-group:/aws/ecs/dev-davidshaevel-*:*"
     }
   ]
 }
 ```
+
+**Note:** 
+- `ecr:GetAuthorizationToken` requires `Resource: "*"` per AWS API requirements
+- ECR image pull actions are scoped to specific repositories
+- CloudWatch Logs actions are scoped to ECS log groups only
 
 #### ECS Task Role - Frontend
 
