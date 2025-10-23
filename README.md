@@ -14,8 +14,8 @@ This project serves as both a personal website and a demonstration of production
 
 ## 🏗️ Architecture
 
-**Frontend:** Next.js 14+ with TypeScript and Tailwind CSS  
-**Backend:** Nest.js with TypeScript and PostgreSQL  
+**Frontend:** Next.js 16 with TypeScript and Tailwind CSS  
+**Backend:** Nest.js 11.7 with TypeScript and PostgreSQL  
 **Infrastructure:** AWS (ECS, RDS, VPC, CloudFront, Route53)  
 **IaC:** Terraform with modular design  
 **CI/CD:** GitHub Actions  
@@ -49,7 +49,7 @@ davidshaevel-platform/
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 24+
 - Docker and Docker Compose
 - AWS CLI configured
 - Terraform 1.5+
@@ -137,8 +137,8 @@ This project demonstrates:
 - Docker (Containerization)
 
 **Application:**
-- Next.js 14+ (Frontend)
-- Nest.js (Backend API)
+- Next.js 16 (Frontend)
+- Nest.js 11.7 (Backend API)
 - PostgreSQL (Database)
 - TypeScript (Language)
 
@@ -157,7 +157,7 @@ Austin, Texas
 
 ---
 
-**Project Timeline:** 3 days intensive build (Oct 22-24, 2025)  
+**Project Timeline:** 3 days intensive build (Oct 23-25, 2025)  
 **Status:** Active Development  
 **AWS Account:** DavidShaevel.com Development Environment (108581769167)
 
