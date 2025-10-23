@@ -1,7 +1,7 @@
 # Architecture Overview
 
 **Project:** DavidShaevel.com Platform  
-**Date:** October 22, 2025  
+**Date:** October 23, 2025  
 **Author:** David Shaevel  
 **Version:** 1.0
 
@@ -32,7 +32,7 @@
 └────────────────────┬────────────────────────────────────────┘
                      │
 ┌────────────────────▼────────────────────────────────────────┐
-│                 Application Load Balancer                    │
+│                 Application Load Balancer                   │
 │                  (ALB - Multi-AZ)                           │
 └──────────┬──────────────────────────┬───────────────────────┘
            │                          │
@@ -49,11 +49,11 @@
                            └─────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
-│               Monitoring & Observability                     │
-│  ┌──────────────┐  ┌────────────┐  ┌──────────────┐       │
-│  │   Grafana    │  │ Prometheus │  │  CloudWatch  │       │
-│  │  Dashboards  │  │  Metrics   │  │     Logs     │       │
-│  └──────────────┘  └────────────┘  └──────────────┘       │
+│               Monitoring & Observability                    │
+│  ┌──────────────┐  ┌────────────┐  ┌──────────────┐         │
+│  │   Grafana    │  │ Prometheus │  │  CloudWatch  │         │
+│  │  Dashboards  │  │  Metrics   │  │     Logs     │         │
+│  └──────────────┘  └────────────┘  └──────────────┘         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -103,7 +103,7 @@
 ### Frontend (Next.js)
 
 **Technology:**
-- Next.js 14+ (App Router)
+- Next.js 16 (App Router)
 - TypeScript
 - Tailwind CSS
 - Server-Side Rendering (SSR)
@@ -116,14 +116,14 @@
 - Responsive design
 
 **Container:**
-- Base Image: `node:18-alpine`
+- Base Image: `node:24-alpine`
 - Port: 3000
 - Health Check: `/api/health`
 
 ### Backend (Nest.js)
 
 **Technology:**
-- Nest.js
+- Nest.js 11.7
 - TypeScript
 - PostgreSQL (TypeORM)
 - REST API
@@ -135,7 +135,7 @@
 - `GET /metrics` - Prometheus metrics
 
 **Container:**
-- Base Image: `node:18-alpine`
+- Base Image: `node:24-alpine`
 - Port: 3001
 - Health Check: `/health`
 
@@ -546,6 +546,6 @@ terraform/
 
 ---
 
-**Last Updated:** October 22, 2025  
+**Last Updated:** October 23, 2025  
 **Next Review:** After initial deployment
 
