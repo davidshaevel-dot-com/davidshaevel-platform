@@ -47,12 +47,12 @@ This document defines the naming conventions for all AWS resources in the DavidS
 
 | Resource | Abbreviation | Example |
 |----------|-------------|---------|
-| ECS Cluster | `ecs-cluster` | `dev-davidshaevel-ecs-cluster` |
-| ECS Service | `ecs-service` | `dev-davidshaevel-ecs-service-frontend` |
+| ECS Cluster (Fargate) | `ecs-cluster` | `dev-davidshaevel-ecs-cluster` |
+| ECS Service (Fargate) | `ecs-service` | `dev-davidshaevel-ecs-service-frontend` |
 | ECS Task Definition | `ecs-task` | `dev-davidshaevel-ecs-task-backend` |
 | EC2 Instance | `ec2` | `dev-davidshaevel-ec2-bastion` |
-| Launch Template | `lt` | `dev-davidshaevel-lt-ecs` |
-| Auto Scaling Group | `asg` | `dev-davidshaevel-asg-ecs` |
+
+**Note:** Using ECS Fargate (serverless). No Launch Templates or Auto Scaling Groups needed for ECS.
 
 ### Load Balancing
 
@@ -135,10 +135,9 @@ dev-davidshaevel-sg-alb
 dev-davidshaevel-sg-frontend
 dev-davidshaevel-sg-backend
 dev-davidshaevel-sg-db
-dev-davidshaevel-sg-ecs-instance
 ```
 
-### ECS Resources
+### ECS Resources (Fargate)
 
 ```
 dev-davidshaevel-ecs-cluster
@@ -146,9 +145,9 @@ dev-davidshaevel-ecs-service-frontend
 dev-davidshaevel-ecs-service-backend
 dev-davidshaevel-ecs-task-frontend
 dev-davidshaevel-ecs-task-backend
-dev-davidshaevel-asg-ecs
-dev-davidshaevel-lt-ecs
 ```
+
+**Note:** Using ECS Fargate (serverless), no Auto Scaling Groups or Launch Templates needed.
 
 ### Load Balancer Resources
 
@@ -195,10 +194,11 @@ davidshaevel-acm-wildcard
 dev-davidshaevel-iam-role-ecs-task-execution
 dev-davidshaevel-iam-role-ecs-task-frontend
 dev-davidshaevel-iam-role-ecs-task-backend
-dev-davidshaevel-iam-role-ecs-instance
 dev-davidshaevel-iam-policy-s3-static-read
 dev-davidshaevel-iam-policy-ecr-pull
 ```
+
+**Note:** No ECS instance role needed for Fargate launch type.
 
 ### Monitoring Resources
 

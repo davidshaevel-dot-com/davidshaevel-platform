@@ -215,22 +215,6 @@ This document describes the network architecture for the DavidShaevel.com platfo
 |------|----------|-------------|---------|
 | All | All | Deny | No outbound access needed |
 
-### ECS Instance Security Group
-
-**Name:** `ecs-instance-sg`  
-**Purpose:** Control traffic to ECS EC2 instances
-
-**Inbound Rules:**
-
-| Port | Protocol | Source | Purpose |
-|------|----------|--------|---------|
-| 32768-65535 | TCP | alb-sg | Dynamic port range for containers |
-
-**Outbound Rules:**
-
-| Port | Protocol | Destination | Purpose |
-|------|----------|-------------|---------|
-| All | All | 0.0.0.0/0 | Container image pulls, updates |
 
 ## Network ACLs
 
