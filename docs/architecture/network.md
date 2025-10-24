@@ -246,10 +246,12 @@ This document describes the network architecture for the DavidShaevel.com platfo
 
 **Configuration:**
 - **Destination:** CloudWatch Logs
-- **Log Group:** `/aws/vpc/davidshaevel-platform`
+- **Log Group:** `/aws/vpc/dev-davidshaevel-flow-logs`
 - **Traffic Type:** ALL (Accept and Reject)
 - **Format:** Default format
 - **Retention:** 7 days (development), 30 days (production)
+
+**Note:** Log group name follows the naming convention `/aws/{service}/{environment}-davidshaevel-{component}` as defined in naming-conventions.md.
 
 **Use Cases:**
 - Troubleshooting connectivity issues
