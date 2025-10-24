@@ -8,7 +8,7 @@
 # Project Configuration
 # -----------------------------------------------------------------------------
 
-project_name = "davidshaevel"
+project_name = "myproject"
 environment  = "prod"
 
 # -----------------------------------------------------------------------------
@@ -22,20 +22,20 @@ aws_account_id = "123456789012"  # Replace with your AWS account ID
 # Domain Configuration
 # -----------------------------------------------------------------------------
 
-domain_name = "davidshaevel.com"  # Replace with your domain
+domain_name = "example.com"  # Replace with your domain
 
 # -----------------------------------------------------------------------------
 # Repository Configuration
 # -----------------------------------------------------------------------------
 
-repository_name = "davidshaevel-platform"
+repository_name = "myproject-platform"
 
 # -----------------------------------------------------------------------------
 # Additional Tags (Optional)
 # -----------------------------------------------------------------------------
 
 tags = {
-  Owner       = "David Shaevel"
+  Owner       = "Your Name"
   CostCenter  = "Engineering"
   Terraform   = "true"
 }

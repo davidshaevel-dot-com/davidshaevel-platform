@@ -11,7 +11,7 @@
 
 # S3 bucket for state storage
 # Format: <account-id>-terraform-state-<project-name>
-bucket = "123456789012-terraform-state-davidshaevel"
+bucket = "123456789012-terraform-state-myproject"
 
 # State file path within the bucket
 # Separate state files by environment
@@ -22,7 +22,7 @@ region = "us-east-1"
 
 # DynamoDB table for state locking
 # Format: terraform-state-lock-<project-name>
-dynamodb_table = "terraform-state-lock-davidshaevel"
+dynamodb_table = "terraform-state-lock-myproject"
 
 # Enable encryption at rest
 encrypt = true
