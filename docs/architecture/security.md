@@ -311,15 +311,17 @@ This document outlines the security architecture and practices for the DavidShae
 
 **ALB HTTPS Listener Configuration:**
 ```hcl
-ssl_policy = "ELBSecurityPolicy-TLS-1-2-2017-01"
+ssl_policy = "ELBSecurityPolicy-TLS13-1-2-2021-06"
 certificate_arn = aws_acm_certificate.main.arn
 ```
 
 **Supported TLS Versions:**
+- TLS 1.3 ✅ (recommended)
 - TLS 1.2 ✅
-- TLS 1.3 ✅
 - TLS 1.1 ❌
 - TLS 1.0 ❌
+
+**Note:** `ELBSecurityPolicy-TLS13-1-2-2021-06` is a modern policy that supports both TLS 1.3 and TLS 1.2, providing the best security while maintaining compatibility.
 
 #### Database Connections
 
