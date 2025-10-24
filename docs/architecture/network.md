@@ -298,13 +298,13 @@ This document describes the network architecture for the DavidShaevel.com platfo
 
 ## Resource Naming Conventions
 
-**Format:** `{environment}-{resource-type}-{purpose}-{az}`
+**Format:** `{environment}-{project}-{resource-type}-{purpose}-{identifier}`
 
 **Examples:**
-- `dev-subnet-public-1a`
-- `prod-sg-backend`
-- `dev-nat-gw-1a`
-- `prod-rtb-private-app`
+- `dev-davidshaevel-subnet-public-1a`
+- `prod-davidshaevel-sg-backend`
+- `dev-davidshaevel-nat-1a`
+- `prod-davidshaevel-rt-private-app`
 
 **Environment Prefixes:**
 - `dev` - Development environment
