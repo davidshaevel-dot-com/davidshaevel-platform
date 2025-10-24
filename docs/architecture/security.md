@@ -468,7 +468,7 @@ module.exports = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline';",
+            value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self';",
           },
         ],
       },
@@ -476,6 +476,12 @@ module.exports = {
   },
 };
 ```
+
+**CSP Notes:**
+- **Removed `'unsafe-eval'` and `'unsafe-inline'` from script-src** to prevent XSS attacks
+- **Kept `'unsafe-inline'` for style-src** as it's commonly needed for CSS-in-JS libraries (consider using nonces in production)
+- **`img-src 'self' data:`** allows images from same origin and data URIs
+- **Production improvement:** Use nonces or hashes for inline scripts/styles instead of `'unsafe-inline'`
 
 ### Dependency Management
 
