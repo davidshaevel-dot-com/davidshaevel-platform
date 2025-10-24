@@ -364,7 +364,27 @@ postgresql://username:password@host:5432/database?sslmode=require
 
 **Container-to-Container:**
 - Current: HTTP (within VPC)
-- Future Enhancement: mTLS with service mesh (Istio/App Mesh)
+- **Security Gap:** Unencrypted HTTP traffic between containers can be intercepted by a compromised component within the VPC
+
+**Recommended Approach:**
+
+**Phase 1 (Initial Implementation):**
+- Implement basic TLS for service-to-service communication
+- Frontend → Backend: HTTPS with self-signed certificates or internal CA
+- Minimal overhead while providing encryption
+
+**Phase 2 (Production Enhancement):**
+- Implement mTLS (mutual TLS) with service mesh (Istio/App Mesh)
+- Provides both encryption and mutual authentication
+- Certificate rotation and management automated by service mesh
+
+**Why TLS for Internal Traffic:**
+- Defense in depth: Protects against compromised containers or insider threats
+- Prevents plaintext credential exposure in logs/network captures
+- Industry best practice for security-focused architectures
+- Relatively low performance overhead with modern TLS implementations
+
+**Note:** While traffic is within the VPC, encryption adds an important security layer. For this portfolio project, we recommend implementing at least basic TLS to demonstrate security awareness.
 
 ## Secrets Management
 
