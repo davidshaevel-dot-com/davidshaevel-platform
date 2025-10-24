@@ -136,8 +136,8 @@ This document outlines the security architecture and practices for the DavidShae
         "ecr:BatchGetImage"
       ],
       "Resource": [
-        "arn:aws:ecr:us-east-1:123456789012:repository/davidshaevel-ecr-frontend",
-        "arn:aws:ecr:us-east-1:123456789012:repository/davidshaevel-ecr-backend"
+        "arn:aws:ecr:us-east-1:123456789012:repository/dev-davidshaevel-ecr-frontend",
+        "arn:aws:ecr:us-east-1:123456789012:repository/dev-davidshaevel-ecr-backend"
       ]
     },
     {
