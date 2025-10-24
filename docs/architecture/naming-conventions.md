@@ -359,7 +359,7 @@ PROD_DATABASE_URL
 | VPC Resources | `{env}-davidshaevel-{type}-{purpose}` | `dev-davidshaevel-subnet-public-1a` |
 | Compute | `{env}-davidshaevel-{type}-{component}` | `dev-davidshaevel-ecs-service-frontend` |
 | Security Groups | `{env}-davidshaevel-sg-{tier}` | `dev-davidshaevel-sg-backend` |
-| S3 Buckets | `{account}-{env}-davidshaevel-{purpose}` | `123456789012-dev-davidshaevel-static` |
+| S3 Buckets | `{account}-{env}-davidshaevel-{purpose}` | `123456789012-dev-davidshaevel-static-assets` |
 | ECR Repos | `{env}-davidshaevel-ecr-{component}` | `dev-davidshaevel-ecr-frontend` |
 | Route53 Zone | `davidshaevel-r53-zone-{name}` | `davidshaevel-r53-zone-main` (shared) |
 | Route53 Records | `{env}-davidshaevel-r53-record-{name}` | `dev-davidshaevel-r53-record-www` |
