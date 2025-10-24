@@ -542,9 +542,10 @@ module.exports = {
 
 2. **IAM Policy Changes**
    - Metric: `IAMPolicyChanges` (custom metric filter)
-   - Filter Pattern: `{ ($.eventName = PutUserPolicy) || ($.eventName = PutRolePolicy) || ($.eventName = PutGroupPolicy) || ($.eventName = CreatePolicy) || ($.eventName = DeletePolicy) || ($.eventName = AttachUserPolicy) || ($.eventName = AttachRolePolicy) || ($.eventName = AttachGroupPolicy) }`
+   - Filter Pattern: `{ ($.eventName = Put*Policy) || ($.eventName = Delete*Policy) || ($.eventName = CreatePolicy) || ($.eventName = Attach*Policy) || ($.eventName = Detach*Policy) }`
    - Threshold: > 0
    - Action: SNS notification
+   - **Note:** This pattern captures all policy modifications including Detach events (DetachUserPolicy, DetachRolePolicy, DetachGroupPolicy) which are critical for detecting unauthorized permission removals
 
 3. **Security Group Changes**
    - Metric: `SecurityGroupChanges` (custom metric filter)
