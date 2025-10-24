@@ -42,8 +42,8 @@ variable "aws_region" {
   default     = "us-east-1"
 
   validation {
-    condition     = can(regex("^[a-z]{2}-[a-z]+-[0-9]{1}$", var.aws_region))
-    error_message = "AWS region must be a valid region identifier (e.g., us-east-1)."
+    condition     = can(regex("^[a-z]{2}(-[a-z]+)+-[0-9]{1}$", var.aws_region))
+    error_message = "AWS region must be a valid region identifier (e.g., us-east-1, us-gov-west-1, cn-north-1)."
   }
 }
 
@@ -70,6 +70,16 @@ variable "domain_name" {
     condition     = can(regex("^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]\\.[a-z]{2,}$", var.domain_name))
     error_message = "Domain name must be a valid domain (e.g., example.com)."
   }
+}
+
+# -----------------------------------------------------------------------------
+# Repository Configuration
+# -----------------------------------------------------------------------------
+
+variable "repository_name" {
+  description = "Name of the repository (used in resource tags)"
+  type        = string
+  default     = "davidshaevel-platform"
 }
 
 # -----------------------------------------------------------------------------

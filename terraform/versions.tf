@@ -3,9 +3,9 @@
 # to ensure compatibility and prevent unexpected behavior from version changes.
 
 terraform {
-  # Require Terraform version 1.13.4 or higher (latest stable as of Oct 2025)
-  # Using >= allows for future updates while maintaining compatibility
-  required_version = ">= 1.13.4"
+  # Require Terraform version 1.13.x (latest stable as of Oct 2025)
+  # Using ~> allows patch updates while preventing breaking changes from new minor/major versions
+  required_version = "~> 1.13.4"
 
   required_providers {
     # AWS Provider v6.18.0 (latest stable as of Oct 23, 2025)
