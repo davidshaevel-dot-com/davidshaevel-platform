@@ -107,7 +107,7 @@ This document describes the network architecture for the DavidShaevel.com platfo
 | Destination | Target | Purpose |
 |-------------|--------|---------|
 | 10.0.0.0/16 | local | Internal VPC routing |
-| 0.0.0.0/0 | igw-xxxx | Internet access |
+| 0.0.0.0/0 | dev-davidshaevel-igw | Internet access |
 
 ### Private Route Table - AZ 1
 
