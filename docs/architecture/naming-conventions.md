@@ -75,7 +75,7 @@ This document defines the naming conventions for all AWS resources in the DavidS
 
 | Resource | Abbreviation | Example |
 |----------|-------------|---------|
-| S3 Bucket | `s3` | `dev-davidshaevel-s3-static-assets` |
+| S3 Bucket | `s3` | `123456789012-dev-davidshaevel-s3-static-assets` |
 | ECR Repository | `ecr` | `dev-davidshaevel-ecr-frontend` |
 
 **Note:** ECR repositories should include environment prefix to separate dev/prod images.
@@ -178,9 +178,9 @@ dev-davidshaevel-secret-db-credentials
 ### Storage Resources
 
 ```
-dev-davidshaevel-s3-static-assets
-dev-davidshaevel-s3-terraform-state
-dev-davidshaevel-s3-logs
+123456789012-dev-davidshaevel-s3-static-assets
+123456789012-dev-davidshaevel-s3-terraform-state
+123456789012-dev-davidshaevel-s3-logs
 dev-davidshaevel-ecr-frontend
 dev-davidshaevel-ecr-backend
 prod-davidshaevel-ecr-frontend

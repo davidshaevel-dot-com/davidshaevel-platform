@@ -171,7 +171,7 @@ This document outlines the security architecture and practices for the DavidShae
       "Action": [
         "s3:GetObject"
       ],
-      "Resource": "arn:aws:s3:::static-assets-bucket/*"
+      "Resource": "arn:aws:s3:::123456789012-dev-davidshaevel-static-assets/*"
     }
   ]
 }
@@ -198,7 +198,7 @@ This document outlines the security architecture and practices for the DavidShae
         "s3:PutObject",
         "s3:GetObject"
       ],
-      "Resource": "arn:aws:s3:::user-uploads-bucket/*"
+      "Resource": "arn:aws:s3:::123456789012-dev-davidshaevel-user-uploads/*"
     }
   ]
 }
@@ -306,7 +306,7 @@ This document outlines the security architecture and practices for the DavidShae
       "Effect": "Deny",
       "Principal": "*",
       "Action": "s3:PutObject",
-      "Resource": "arn:aws:s3:::bucket-name/*",
+      "Resource": "arn:aws:s3:::123456789012-dev-davidshaevel-some-bucket/*",
       "Condition": {
         "StringNotEquals": {
           "s3:x-amz-server-side-encryption": "AES256"
