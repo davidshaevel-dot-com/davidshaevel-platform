@@ -95,7 +95,18 @@ This document describes the network architecture for the DavidShaevel.com platfo
 - External API calls
 - Software updates
 
-**Cost Optimization Note:** For development environment, could use single NAT Gateway to reduce costs (~$32/month savings). Production should use 2 for HA.
+**High Availability Configuration:** Using 2 NAT Gateways (one per AZ) for both development and production environments.
+
+**Why not use a single NAT Gateway?**
+
+While a single NAT Gateway could save ~$32/month, the trade-offs make it not worthwhile:
+
+1. **Single Point of Failure:** If the NAT Gateway or its AZ fails, all private subnets lose internet access
+2. **Cross-AZ Data Transfer Costs:** Resources in the other AZ must route traffic across AZs to reach the single NAT Gateway, incurring data transfer charges (~$0.01/GB)
+3. **Reduced Availability:** Defeats the purpose of multi-AZ architecture
+4. **Performance Impact:** Cross-AZ routing adds latency
+
+**Decision:** The cost savings of a single NAT Gateway are not worth the reduced availability and added complexity. Using 2 NAT Gateways provides proper HA and eliminates cross-AZ data transfer costs.
 
 ## Route Tables
 
