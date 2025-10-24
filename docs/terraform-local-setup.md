@@ -115,9 +115,9 @@ The Terraform state will be stored remotely in AWS S3 with DynamoDB locking.
 ### Create S3 Bucket for State
 
 ```bash
-# Set variables
-export AWS_ACCOUNT_ID="108581769167"
-export PROJECT_NAME="davidshaevel"
+# Set variables (these will come from .envrc in practice)
+export AWS_ACCOUNT_ID="123456789012"  # Example account ID
+export PROJECT_NAME="myproject"        # Example project name
 export AWS_REGION="us-east-1"
 
 # Create S3 bucket
@@ -167,12 +167,22 @@ aws dynamodb create-table \
 # Verify S3 bucket
 aws s3 ls | grep terraform-state
 
-# Verify DynamoDB table
+# Verify DynamoDB table (use your actual project name)
 aws dynamodb describe-table \
-  --table-name terraform-state-lock-${PROJECT_NAME} \
+  --table-name terraform-state-lock-myproject \
   --query 'Table.TableStatus' \
   --output text
 # Expected: ACTIVE
+```
+
+**Or use the automated script:**
+
+```bash
+# Source environment variables first
+source .envrc
+
+# Run the setup script
+./terraform/scripts/setup-backend.sh
 ```
 
 ---
@@ -181,12 +191,19 @@ aws dynamodb describe-table \
 
 ### Set Up Environment Variables
 
-Create a `.envrc` file in the project root (if using direnv) or add to your shell config:
+Create a `.envrc` file in the project root:
 
 ```bash
-# Add to ~/.zshrc or create .envrc
-export TF_VAR_aws_account_id="108581769167"
-export TF_VAR_project_name="davidshaevel"
+# Copy the example file
+cp .envrc.example .envrc
+
+# Edit .envrc with your actual values
+# IMPORTANT: Never commit .envrc to Git!
+# It contains your AWS account ID and project name
+
+# Example .envrc contents (use your actual values):
+export TF_VAR_aws_account_id="123456789012"  # Your 12-digit AWS account ID
+export TF_VAR_project_name="myproject"       # Your project name
 export TF_VAR_aws_region="us-east-1"
 export TF_VAR_environment="dev"
 ```
@@ -200,13 +217,8 @@ brew install direnv
 # Add to ~/.zshrc
 eval "$(direnv hook zsh)"
 
-# Create .envrc in project root
-cat > .envrc << 'EOF'
-export TF_VAR_aws_account_id="108581769167"
-export TF_VAR_project_name="davidshaevel"
-export TF_VAR_aws_region="us-east-1"
-export TF_VAR_environment="dev"
-EOF
+# .envrc should already exist from copying .envrc.example
+# Just allow direnv to load it
 
 # Allow direnv to load
 direnv allow
@@ -225,11 +237,11 @@ terraform version
 # 2. Check AWS credentials
 aws sts get-caller-identity
 
-# 3. Check S3 backend bucket exists
-aws s3 ls s3://108581769167-terraform-state-davidshaevel
+# 3. Check S3 backend bucket exists (use your bucket name)
+aws s3 ls s3://123456789012-terraform-state-myproject
 
-# 4. Check DynamoDB table exists
-aws dynamodb describe-table --table-name terraform-state-lock-davidshaevel
+# 4. Check DynamoDB table exists (use your table name)
+aws dynamodb describe-table --table-name terraform-state-lock-myproject
 
 # 5. Test Terraform formatting (should work even without files)
 terraform fmt -check

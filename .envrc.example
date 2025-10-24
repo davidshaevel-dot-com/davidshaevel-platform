@@ -1,0 +1,40 @@
+# AWS Configuration for Project
+# Copy this file to .envrc and update with your actual values
+#
+# IMPORTANT: Never commit .envrc to Git!
+# The .envrc file contains your actual AWS account ID and project name.
+#
+# Usage:
+#   1. cp .envrc.example .envrc
+#   2. Update the values below with your actual AWS account and project details
+#   3. source .envrc
+#
+# Optional: Install direnv for automatic loading
+#   brew install direnv
+#   echo 'eval "$(direnv hook zsh)"' >> ~/.zshrc
+#   direnv allow
+
+# AWS Profile (uses SSO or configured profile)
+export AWS_PROFILE=your-profile-name
+
+# AWS Region
+export AWS_DEFAULT_REGION=us-east-1
+export AWS_REGION=us-east-1
+
+# Project Variables
+# Replace with your actual 12-digit AWS account ID
+export TF_VAR_aws_account_id="123456789012"
+
+# Replace with your project name (lowercase, no spaces)
+export TF_VAR_project_name="myproject"
+
+export TF_VAR_aws_region="us-east-1"
+export TF_VAR_environment="dev"
+
+# Terraform Variables
+# Replace with your actual domain name
+export TF_VAR_domain_name="example.com"
+
+echo "✅ AWS Profile: ${AWS_PROFILE} loaded"
+echo "✅ AWS Account: ${TF_VAR_aws_account_id}"
+echo "✅ AWS Region: ${TF_VAR_aws_region}"
