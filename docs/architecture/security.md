@@ -499,25 +499,33 @@ module.exports = {
 
 **CloudWatch Alarms:**
 
+**Note:** These metrics must be created using CloudWatch Metric Filters on CloudTrail logs. They are not standard CloudWatch metrics.
+
 1. **Unauthorized API Calls**
-   - Metric: UnauthorizedAPICallsMetric
+   - Metric: `UnauthorizedAPICallsMetric` (custom metric filter)
+   - Filter Pattern: `{ ($.errorCode = "*UnauthorizedOperation") || ($.errorCode = "AccessDenied*") }`
    - Threshold: > 5 in 5 minutes
    - Action: SNS notification
 
 2. **IAM Policy Changes**
-   - Metric: IAMPolicyChanges
+   - Metric: `IAMPolicyChanges` (custom metric filter)
+   - Filter Pattern: `{ ($.eventName = PutUserPolicy) || ($.eventName = PutRolePolicy) || ($.eventName = PutGroupPolicy) || ($.eventName = CreatePolicy) || ($.eventName = DeletePolicy) || ($.eventName = AttachUserPolicy) || ($.eventName = AttachRolePolicy) || ($.eventName = AttachGroupPolicy) }`
    - Threshold: > 0
    - Action: SNS notification
 
 3. **Security Group Changes**
-   - Metric: SecurityGroupChanges
+   - Metric: `SecurityGroupChanges` (custom metric filter)
+   - Filter Pattern: `{ ($.eventName = AuthorizeSecurityGroupIngress) || ($.eventName = AuthorizeSecurityGroupEgress) || ($.eventName = RevokeSecurityGroupIngress) || ($.eventName = RevokeSecurityGroupEgress) || ($.eventName = CreateSecurityGroup) || ($.eventName = DeleteSecurityGroup) }`
    - Threshold: > 0
    - Action: SNS notification
 
 4. **Failed Login Attempts**
-   - Metric: FailedLoginAttempts
+   - Metric: `FailedLoginAttempts` (custom metric filter)
+   - Filter Pattern: `{ ($.eventName = ConsoleLogin) && ($.errorMessage = "Failed authentication") }`
    - Threshold: > 10 in 5 minutes
    - Action: SNS notification, potential IP block
+
+**Implementation:** These metric filters should be created in CloudWatch Logs using the CloudTrail log group as the source.
 
 ## Compliance and Auditing
 
