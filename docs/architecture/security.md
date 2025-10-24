@@ -239,8 +239,23 @@ This document outlines the security architecture and practices for the DavidShae
       "Principal": {
         "AWS": "arn:aws:iam::123456789012:root"
       },
-      "Action": "kms:*",
-      "Resource": "*"
+      "Action": [
+        "kms:Create*",
+        "kms:Describe*",
+        "kms:Enable*",
+        "kms:List*",
+        "kms:Put*",
+        "kms:Update*",
+        "kms:Revoke*",
+        "kms:Disable*",
+        "kms:Get*",
+        "kms:Delete*",
+        "kms:TagResource",
+        "kms:UntagResource",
+        "kms:ScheduleKeyDeletion",
+        "kms:CancelKeyDeletion"
+      ],
+      "Resource": "arn:aws:kms:us-east-1:123456789012:key/*"
     },
     {
       "Sid": "Allow RDS to use the key",
@@ -250,13 +265,23 @@ This document outlines the security architecture and practices for the DavidShae
       },
       "Action": [
         "kms:Decrypt",
+        "kms:Encrypt",
+        "kms:ReEncrypt*",
+        "kms:GenerateDataKey*",
+        "kms:DescribeKey",
         "kms:CreateGrant"
       ],
-      "Resource": "*"
+      "Resource": "arn:aws:kms:us-east-1:123456789012:key/*"
     }
   ]
 }
 ```
+
+**Note:** This policy follows the principle of least privilege by:
+- Limiting root principal to key management actions (no data plane operations)
+- Scoping resources to specific key ARNs instead of `*`
+- Granting RDS only the encryption/decryption actions it needs
+- Replace `key/*` with specific key ID in production (e.g., `key/12345678-1234-1234-1234-123456789012`)
 
 #### S3 Bucket Encryption
 
