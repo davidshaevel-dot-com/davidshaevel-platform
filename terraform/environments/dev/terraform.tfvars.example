@@ -1,0 +1,41 @@
+# Example Terraform Variables for Development Environment
+# Copy this file to terraform.tfvars and update with your actual values
+#
+# IMPORTANT: Never commit terraform.tfvars to Git (it's in .gitignore)
+# This file contains only example/placeholder values
+
+# -----------------------------------------------------------------------------
+# Project Configuration
+# -----------------------------------------------------------------------------
+
+project_name = "davidshaevel"
+environment  = "dev"
+
+# -----------------------------------------------------------------------------
+# AWS Configuration
+# -----------------------------------------------------------------------------
+
+aws_region     = "us-east-1"
+aws_account_id = "123456789012"  # Replace with your AWS account ID
+
+# -----------------------------------------------------------------------------
+# Domain Configuration
+# -----------------------------------------------------------------------------
+
+domain_name = "davidshaevel.com"  # Replace with your domain
+
+# -----------------------------------------------------------------------------
+# Repository Configuration
+# -----------------------------------------------------------------------------
+
+repository_name = "davidshaevel-platform"
+
+# -----------------------------------------------------------------------------
+# Additional Tags (Optional)
+# -----------------------------------------------------------------------------
+
+tags = {
+  Owner       = "David Shaevel"
+  CostCenter  = "Engineering"
+  Terraform   = "true"
+}
