@@ -1,0 +1,28 @@
+# Example Backend Configuration for Production Environment
+# This file contains example values for S3 backend configuration
+#
+# Usage:
+#   terraform init -backend-config=backend-config.tfvars
+#
+# IMPORTANT:
+# - Copy this file to backend-config.tfvars and update with your actual values
+# - Never commit backend-config.tfvars to Git (it's in .gitignore)
+# - Replace placeholder values below with your actual AWS account ID and project name
+
+# S3 bucket for state storage
+# Format: <account-id>-terraform-state-<project-name>
+bucket = "123456789012-terraform-state-davidshaevel"
+
+# State file path within the bucket
+# Separate state files by environment
+key = "prod/terraform.tfstate"
+
+# AWS region where the S3 bucket is located
+region = "us-east-1"
+
+# DynamoDB table for state locking
+# Format: terraform-state-lock-<project-name>
+dynamodb_table = "terraform-state-lock-davidshaevel"
+
+# Enable encryption at rest
+encrypt = true
