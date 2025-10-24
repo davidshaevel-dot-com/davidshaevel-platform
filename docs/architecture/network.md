@@ -213,7 +213,9 @@ This document describes the network architecture for the DavidShaevel.com platfo
 
 | Port | Protocol | Destination | Purpose |
 |------|----------|-------------|---------|
-| - | - | - | No outbound access needed (implicitly denied) |
+| - | - | - | No outbound access needed. The default outbound rule allowing all traffic must be removed. |
+
+**Note:** AWS security groups allow all outbound traffic by default. To fully isolate the database tier, the default "allow all" outbound rule must be explicitly removed, leaving no outbound rules configured.
 
 
 ## Network ACLs
