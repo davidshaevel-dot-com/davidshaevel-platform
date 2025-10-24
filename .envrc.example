@@ -17,8 +17,7 @@
 # AWS Profile (uses SSO or configured profile)
 export AWS_PROFILE=your-profile-name
 
-# AWS Region
-export AWS_DEFAULT_REGION=us-east-1
+# AWS Region (used by AWS CLI and Terraform AWS provider)
 export AWS_REGION=us-east-1
 
 # Project Variables
@@ -28,13 +27,8 @@ export TF_VAR_aws_account_id="123456789012"
 # Replace with your project name (lowercase, no spaces)
 export TF_VAR_project_name="myproject"
 
-export TF_VAR_aws_region="us-east-1"
+# Environment
 export TF_VAR_environment="dev"
 
-# Terraform Variables
-# Replace with your actual domain name
+# Domain name - Replace with your actual domain name
 export TF_VAR_domain_name="example.com"
-
-echo "✅ AWS Profile: ${AWS_PROFILE} loaded"
-echo "✅ AWS Account: ${TF_VAR_aws_account_id}"
-echo "✅ AWS Region: ${TF_VAR_aws_region}"

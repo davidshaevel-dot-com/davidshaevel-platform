@@ -69,8 +69,8 @@ fi
 echo -e "${GREEN}✓ AWS credentials verified${NC}"
 echo ""
 
-# Check if S3 bucket already exists
-if aws s3 ls "s3://${BUCKET_NAME}" 2>&1 | grep -q 'NoSuchBucket'; then
+# Check if S3 bucket already exists using head-bucket (more reliable)
+if ! aws s3api head-bucket --bucket "${BUCKET_NAME}" 2>/dev/null; then
     echo "Creating S3 bucket: ${BUCKET_NAME}"
 
     # Create S3 bucket

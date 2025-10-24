@@ -65,7 +65,33 @@ If using VS Code:
 
 ## Step 2: Configure AWS Credentials
 
-### Option A: Using AWS CLI Configuration (Recommended)
+### Option A: Using AWS SSO (Recommended - Most Secure)
+
+AWS SSO provides temporary credentials and is the recommended approach for production use.
+
+```bash
+# Configure AWS SSO
+aws configure sso
+
+# You'll be prompted for:
+# SSO session name: [e.g., myproject-session]
+# SSO start URL: [your AWS SSO portal URL]
+# SSO Region: us-east-1
+# SSO registration scopes: [press Enter for default]
+#
+# Your browser will open for authentication
+# Select your AWS account and role
+# CLI registration: Approve the access request
+# Default region: us-east-1
+# Default output format: json
+# Profile name: [e.g., myproject-dev]
+```
+
+**Note:** You'll need to refresh SSO credentials periodically with `aws sso login --profile your-profile-name`
+
+### Option B: Using AWS CLI with Access Keys
+
+For development/testing only. SSO is preferred for security.
 
 ```bash
 # Configure AWS credentials interactively
@@ -78,13 +104,15 @@ aws configure
 # Default output format: json
 ```
 
-### Option B: Using Environment Variables
+### Option C: Using Environment Variables
+
+Least recommended - credentials in plain text.
 
 ```bash
 # Add to your ~/.zshrc or ~/.bashrc
 export AWS_ACCESS_KEY_ID="your-access-key"
 export AWS_SECRET_ACCESS_KEY="your-secret-key"
-export AWS_DEFAULT_REGION="us-east-1"
+export AWS_REGION="us-east-1"
 
 # Reload shell configuration
 source ~/.zshrc  # or source ~/.bashrc
@@ -312,25 +340,25 @@ cd /path/to/your/project
 # Check current branch
 git branch --show-current
 
-# Configure git to ignore Terraform files we don't want to commit
-cat >> .gitignore << 'EOF'
-
-# Terraform
-**/.terraform/*
-*.tfstate
-*.tfstate.*
-*.tfvars
-!*.tfvars.example
-.terraform.lock.hcl
-crash.log
-crash.*.log
-override.tf
-override.tf.json
-*_override.tf
-*_override.tf.json
-.terraformrc
-terraform.rc
-EOF
+# Verify Terraform ignore patterns are in .gitignore
+# The following patterns should already be present in .gitignore:
+#
+# **/.terraform/*
+# *.tfstate
+# *.tfstate.*
+# *.tfvars
+# !*.tfvars.example
+# .terraform.lock.hcl
+# crash.log
+# crash.*.log
+# override.tf
+# override.tf.json
+# *_override.tf
+# *_override.tf.json
+# .terraformrc
+# terraform.rc
+#
+# Check with: grep "terraform" .gitignore
 ```
 
 ---
