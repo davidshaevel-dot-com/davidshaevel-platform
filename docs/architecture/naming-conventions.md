@@ -251,7 +251,7 @@ All AWS resources should include the following tags:
 
 | Tag Key | Description | Example |
 |---------|-------------|---------|
-| `Environment` | Environment name | `development`, `production` |
+| `Environment` | Environment name | `dev`, `prod` |
 | `Project` | Project name | `DavidShaevel.com Platform` |
 | `ManagedBy` | Management method | `Terraform` |
 | `Owner` | Technical owner | `David Shaevel` |
