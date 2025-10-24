@@ -213,7 +213,7 @@ This document describes the network architecture for the DavidShaevel.com platfo
 
 | Port | Protocol | Destination | Purpose |
 |------|----------|-------------|---------|
-| All | All | Deny | No outbound access needed |
+| - | - | - | No outbound access needed (implicitly denied) |
 
 
 ## Network ACLs
