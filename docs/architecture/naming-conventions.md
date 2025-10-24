@@ -76,15 +76,19 @@ This document defines the naming conventions for all AWS resources in the DavidS
 | Resource | Abbreviation | Example |
 |----------|-------------|---------|
 | S3 Bucket | `s3` | `dev-davidshaevel-s3-static-assets` |
-| ECR Repository | `ecr` | `davidshaevel-ecr-frontend` |
+| ECR Repository | `ecr` | `dev-davidshaevel-ecr-frontend` |
+
+**Note:** ECR repositories should include environment prefix to separate dev/prod images.
 
 ### CDN & DNS
 
 | Resource | Abbreviation | Example |
 |----------|-------------|---------|
 | CloudFront Distribution | `cf` | `dev-davidshaevel-cf` |
-| Route53 Hosted Zone | `r53-zone` | `davidshaevel-r53-zone` |
-| Route53 Record | `r53-record` | `davidshaevel-r53-record-www` |
+| Route53 Hosted Zone | `r53-zone` | `davidshaevel-r53-zone-main` |
+| Route53 Record | `r53-record` | `dev-davidshaevel-r53-record-www` |
+
+**Note:** Route53 hosted zones are typically shared across environments (one zone per domain). Route53 records should include environment prefix for environment-specific endpoints.
 
 ### Security & Secrets
 
@@ -95,6 +99,8 @@ This document defines the naming conventions for all AWS resources in the DavidS
 | Secrets Manager Secret | `secret` | `dev-davidshaevel-secret-db-password` |
 | KMS Key | `kms` | `dev-davidshaevel-kms-rds` |
 | ACM Certificate | `acm` | `davidshaevel-acm-wildcard` |
+
+**Note:** ACM certificates are typically shared across environments (wildcard cert for the entire domain).
 
 ### Monitoring & Logging
 
@@ -175,8 +181,10 @@ dev-davidshaevel-secret-db-credentials
 dev-davidshaevel-s3-static-assets
 dev-davidshaevel-s3-terraform-state
 dev-davidshaevel-s3-logs
-davidshaevel-ecr-frontend
-davidshaevel-ecr-backend
+dev-davidshaevel-ecr-frontend
+dev-davidshaevel-ecr-backend
+prod-davidshaevel-ecr-frontend
+prod-davidshaevel-ecr-backend
 ```
 
 ### CloudFront & DNS
@@ -184,8 +192,10 @@ davidshaevel-ecr-backend
 ```
 dev-davidshaevel-cf-main
 prod-davidshaevel-cf-main
-davidshaevel-r53-zone-main
-davidshaevel-acm-wildcard
+davidshaevel-r53-zone-main (shared across environments)
+dev-davidshaevel-r53-record-www
+prod-davidshaevel-r53-record-www
+davidshaevel-acm-wildcard (shared across environments)
 ```
 
 ### IAM Resources
@@ -220,11 +230,11 @@ dev-davidshaevel-sns-alerts
 
 **Examples:**
 ```
-123456789012.dkr.ecr.us-east-1.amazonaws.com/davidshaevel-ecr-frontend:latest
-123456789012.dkr.ecr.us-east-1.amazonaws.com/davidshaevel-ecr-frontend:v1.0.0
-123456789012.dkr.ecr.us-east-1.amazonaws.com/davidshaevel-ecr-frontend:dev-abc123
-123456789012.dkr.ecr.us-east-1.amazonaws.com/davidshaevel-ecr-backend:latest
-123456789012.dkr.ecr.us-east-1.amazonaws.com/davidshaevel-ecr-backend:prod-v1.2.3
+123456789012.dkr.ecr.us-east-1.amazonaws.com/dev-davidshaevel-ecr-frontend:latest
+123456789012.dkr.ecr.us-east-1.amazonaws.com/dev-davidshaevel-ecr-frontend:v1.0.0
+123456789012.dkr.ecr.us-east-1.amazonaws.com/dev-davidshaevel-ecr-frontend:abc123
+123456789012.dkr.ecr.us-east-1.amazonaws.com/prod-davidshaevel-ecr-frontend:v1.2.3
+123456789012.dkr.ecr.us-east-1.amazonaws.com/prod-davidshaevel-ecr-backend:latest
 ```
 
 **Tagging Strategy:**
@@ -350,7 +360,10 @@ PROD_DATABASE_URL
 | Compute | `{env}-davidshaevel-{type}-{component}` | `dev-davidshaevel-ecs-service-frontend` |
 | Security Groups | `{env}-davidshaevel-sg-{tier}` | `dev-davidshaevel-sg-backend` |
 | S3 Buckets | `{account}-{env}-davidshaevel-{purpose}` | `123456789012-dev-davidshaevel-static` |
-| ECR Repos | `davidshaevel-ecr-{component}` | `davidshaevel-ecr-frontend` |
+| ECR Repos | `{env}-davidshaevel-ecr-{component}` | `dev-davidshaevel-ecr-frontend` |
+| Route53 Zone | `davidshaevel-r53-zone-{name}` | `davidshaevel-r53-zone-main` (shared) |
+| Route53 Records | `{env}-davidshaevel-r53-record-{name}` | `dev-davidshaevel-r53-record-www` |
+| ACM Cert | `davidshaevel-acm-{type}` | `davidshaevel-acm-wildcard` (shared) |
 | Secrets | `{env}/davidshaevel/{component}/{name}` | `dev/davidshaevel/database/password` |
 | Log Groups | `/aws/{service}/{env}-davidshaevel-{component}` | `/aws/ecs/dev-davidshaevel-frontend` |
 
