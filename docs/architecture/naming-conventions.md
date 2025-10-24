@@ -342,15 +342,18 @@ prod/davidshaevel/database/master-password
 
 **Format:** `{ENVIRONMENT}_{SERVICE}_{PURPOSE}`
 
+**Security Best Practice:** Use OIDC (OpenID Connect) to assume IAM roles instead of storing long-lived AWS credentials. This provides temporary credentials and is more secure.
+
 **Examples:**
 ```
-DEV_AWS_ACCESS_KEY_ID
-DEV_AWS_SECRET_ACCESS_KEY
+DEV_AWS_ROLE_TO_ASSUME
+PROD_AWS_ROLE_TO_ASSUME
 DEV_ECR_REPOSITORY_FRONTEND
 DEV_ECR_REPOSITORY_BACKEND
-PROD_AWS_ACCESS_KEY_ID
 PROD_DATABASE_URL
 ```
+
+**Note:** Avoid storing `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` as they are long-lived credentials that pose a security risk if leaked. Instead, configure GitHub Actions to use OIDC to assume an IAM role.
 
 ## Naming Conventions Summary Table
 
