@@ -99,12 +99,12 @@ aws sts get-caller-identity
 # Expected output:
 # {
 #     "UserId": "...",
-#     "Account": "108581769167",
-#     "Arn": "arn:aws:iam::108581769167:user/your-username"
+#     "Account": "123456789012",
+#     "Arn": "arn:aws:iam::123456789012:user/your-username"
 # }
 ```
 
-**Important:** Ensure the Account ID matches: `108581769167`
+**Important:** Ensure the Account ID matches your AWS account
 
 ---
 
@@ -235,13 +235,13 @@ Run these commands to ensure everything is configured correctly:
 terraform version
 
 # 2. Check AWS credentials
-aws sts get-caller-identity
+source .envrc && aws sts get-caller-identity
 
 # 3. Check S3 backend bucket exists (use your bucket name)
-aws s3 ls s3://123456789012-terraform-state-myproject
+aws s3 ls s3://${TF_VAR_aws_account_id}-terraform-state-${TF_VAR_project_name}
 
 # 4. Check DynamoDB table exists (use your table name)
-aws dynamodb describe-table --table-name terraform-state-lock-myproject
+aws dynamodb describe-table --table-name terraform-state-lock-${TF_VAR_project_name}
 
 # 5. Test Terraform formatting (should work even without files)
 terraform fmt -check
@@ -307,11 +307,10 @@ terraform destroy -target=module.vpc.aws_vpc.main
 
 ```bash
 # Ensure you're in the project root
-cd /Users/dshaevel/workspace-ds/davidshaevel-platform
+cd /path/to/your/project
 
 # Check current branch
 git branch --show-current
-# Should be: claude/tt-16-terraform-project-structure
 
 # Configure git to ignore Terraform files we don't want to commit
 cat >> .gitignore << 'EOF'
@@ -342,11 +341,11 @@ Set up billing alerts to avoid surprise charges:
 
 ```bash
 # Create SNS topic for billing alerts
-aws sns create-topic --name billing-alerts-davidshaevel
+aws sns create-topic --name billing-alerts-${TF_VAR_project_name}
 
 # Subscribe your email
 aws sns subscribe \
-  --topic-arn arn:aws:sns:us-east-1:108581769167:billing-alerts-davidshaevel \
+  --topic-arn arn:aws:sns:us-east-1:${TF_VAR_aws_account_id}:billing-alerts-${TF_VAR_project_name} \
   --protocol email \
   --notification-endpoint your-email@example.com
 
@@ -387,7 +386,7 @@ terraform init -reconfigure
 **Solution:**
 ```bash
 # Check for stuck locks
-aws dynamodb scan --table-name terraform-state-lock-davidshaevel
+aws dynamodb scan --table-name terraform-state-lock-${TF_VAR_project_name}
 
 # Force unlock (use carefully!)
 terraform force-unlock <lock-id>

@@ -37,13 +37,13 @@ Set up AWS resources required for Terraform remote state management:
 aws configure sso
 
 # Configuration details:
-# - SSO session name: davidshaevel
+# - SSO session name: [your-session-name]
 # - SSO start URL: [your SSO URL]
 # - SSO Region: us-east-1
-# - Account: 108581769167
+# - Account: [your 12-digit AWS account ID]
 # - Role: AdministratorAccess
 # - Default region: us-east-1
-# - Profile name: davidshaevel-dev
+# - Profile name: [your-profile-name] (e.g., myproject-dev)
 ```
 
 ### 2. Verified AWS Credentials
