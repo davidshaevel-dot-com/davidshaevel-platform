@@ -667,5 +667,5 @@ module.exports = {
 
 **Last Updated:** October 23, 2025  
 **Next Review:** After initial deployment  
-**Security Contact:** david@davidshaevel.com
+**Security Contact:** security@davidshaevel.com
 
