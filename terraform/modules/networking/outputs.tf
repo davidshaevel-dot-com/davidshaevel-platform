@@ -36,50 +36,78 @@ output "internet_gateway_arn" {
 }
 
 # ------------------------------------------------------------------------------
-# Subnet Outputs (for Step 5 implementation)
+# Subnet Outputs (Step 5)
 # ------------------------------------------------------------------------------
-# These outputs will be populated when subnets are implemented in Step 5
 
 output "public_subnet_ids" {
   description = "List of public subnet IDs"
-  value       = []
+  value       = aws_subnet.public[*].id
+}
+
+output "public_subnet_cidrs" {
+  description = "List of public subnet CIDR blocks"
+  value       = aws_subnet.public[*].cidr_block
 }
 
 output "private_app_subnet_ids" {
   description = "List of private application subnet IDs"
-  value       = []
+  value       = aws_subnet.private_app[*].id
+}
+
+output "private_app_subnet_cidrs" {
+  description = "List of private application subnet CIDR blocks"
+  value       = aws_subnet.private_app[*].cidr_block
 }
 
 output "private_db_subnet_ids" {
   description = "List of private database subnet IDs"
-  value       = []
+  value       = aws_subnet.private_db[*].id
+}
+
+output "private_db_subnet_cidrs" {
+  description = "List of private database subnet CIDR blocks"
+  value       = aws_subnet.private_db[*].cidr_block
 }
 
 # ------------------------------------------------------------------------------
-# NAT Gateway Outputs (for Step 5 implementation)
+# NAT Gateway Outputs (Step 5)
 # ------------------------------------------------------------------------------
 
 output "nat_gateway_ids" {
   description = "List of NAT Gateway IDs"
-  value       = []
+  value       = var.enable_nat_gateway ? aws_nat_gateway.main[*].id : []
 }
 
 output "nat_gateway_public_ips" {
   description = "List of NAT Gateway public IP addresses"
-  value       = []
+  value       = var.enable_nat_gateway ? aws_eip.nat[*].public_ip : []
 }
 
 # ------------------------------------------------------------------------------
-# Route Table Outputs (for Step 5 implementation)
+# Route Table Outputs (Step 5)
 # ------------------------------------------------------------------------------
 
 output "public_route_table_id" {
   description = "ID of the public route table"
-  value       = null
+  value       = aws_route_table.public.id
 }
 
 output "private_route_table_ids" {
   description = "List of private route table IDs"
-  value       = []
+  value       = var.enable_nat_gateway ? aws_route_table.private[*].id : []
+}
+
+# ------------------------------------------------------------------------------
+# VPC Flow Logs Outputs (Step 5)
+# ------------------------------------------------------------------------------
+
+output "flow_logs_log_group_name" {
+  description = "CloudWatch Log Group name for VPC Flow Logs"
+  value       = var.enable_flow_logs ? aws_cloudwatch_log_group.flow_logs[0].name : null
+}
+
+output "flow_logs_log_group_arn" {
+  description = "CloudWatch Log Group ARN for VPC Flow Logs"
+  value       = var.enable_flow_logs ? aws_cloudwatch_log_group.flow_logs[0].arn : null
 }
 

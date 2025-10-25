@@ -1,28 +1,34 @@
 # Networking Module
 
-**Version:** 1.0 (Step 4 - VPC Foundation)  
-**Status:** Foundational VPC and Internet Gateway implemented  
-**Next:** Step 5 will add subnets, NAT Gateways, and routing
+**Version:** 2.0 (Steps 4-5 - Complete VPC Infrastructure)
+**Status:** Full VPC networking with subnets, NAT Gateways, and routing implemented
+**Next:** Step 6 will add Security Groups
 
 ## Overview
 
-This module creates the networking infrastructure for the DavidShaevel.com platform. It follows an incremental development approach, starting with foundational components and expanding over time.
+This module creates the complete networking infrastructure for the DavidShaevel.com platform. It implements a production-ready, highly available VPC with multi-AZ architecture.
 
-### Current Implementation (Step 4)
+### Current Implementation (Steps 4-5)
 
+**Step 4 - VPC Foundation:**
 - ✅ VPC with DNS support (10.0.0.0/16)
 - ✅ Internet Gateway for public internet access
 - ✅ Resource naming following conventions
 - ✅ Comprehensive tagging
 
-### Planned Implementation (Step 5)
+**Step 5 - Subnets and Routing:**
+- ✅ Public subnets (2 AZs: us-east-1a, us-east-1b)
+- ✅ Private application subnets (2 AZs)
+- ✅ Private database subnets (2 AZs)
+- ✅ NAT Gateways with full HA configuration (2 NAT GWs)
+- ✅ Route tables and associations
+- ✅ VPC Flow Logs to CloudWatch
 
-- ⏳ Public subnets (2 AZs)
-- ⏳ Private application subnets (2 AZs)
-- ⏳ Private database subnets (2 AZs)
-- ⏳ NAT Gateways (HA configuration)
-- ⏳ Route tables and associations
-- ⏳ VPC Flow Logs
+### Future Enhancements
+
+- ⏳ Security Groups (Step 6)
+- ⏳ VPC Endpoints for S3 and ECR
+- ⏳ Network ACLs (NACLs)
 
 ## Architecture
 
@@ -147,49 +153,65 @@ module "networking" {
 | `internet_gateway_id` | ID of the Internet Gateway |
 | `internet_gateway_arn` | ARN of the Internet Gateway |
 
-### Subnet Outputs (Step 5)
+### Subnet Outputs
 
 | Name | Description |
 |------|-------------|
 | `public_subnet_ids` | List of public subnet IDs |
+| `public_subnet_cidrs` | List of public subnet CIDR blocks |
 | `private_app_subnet_ids` | List of private application subnet IDs |
+| `private_app_subnet_cidrs` | List of private application subnet CIDR blocks |
 | `private_db_subnet_ids` | List of private database subnet IDs |
+| `private_db_subnet_cidrs` | List of private database subnet CIDR blocks |
 
-### NAT Gateway Outputs (Step 5)
+### NAT Gateway Outputs
 
 | Name | Description |
 |------|-------------|
 | `nat_gateway_ids` | List of NAT Gateway IDs |
 | `nat_gateway_public_ips` | List of NAT Gateway public IP addresses |
 
-### Route Table Outputs (Step 5)
+### Route Table Outputs
 
 | Name | Description |
 |------|-------------|
 | `public_route_table_id` | ID of the public route table |
 | `private_route_table_ids` | List of private route table IDs |
 
+### VPC Flow Logs Outputs
+
+| Name | Description |
+|------|-------------|
+| `flow_logs_log_group_name` | CloudWatch Log Group name for VPC Flow Logs |
+| `flow_logs_log_group_arn` | CloudWatch Log Group ARN for VPC Flow Logs |
+
 ## Resources Created
 
-### Step 4 (Current)
+### Complete Implementation (Steps 4-5)
 
+**Core Networking:**
 - 1 x VPC
 - 1 x Internet Gateway
-
-**Total:** 2 resources  
-**Monthly Cost:** $0 (VPC and IGW are free)
-
-### Step 5 (Planned)
-
 - 6 x Subnets (2 public, 2 private app, 2 private DB)
-- 2 x NAT Gateways (HA configuration)
 - 2 x Elastic IPs (for NAT Gateways)
-- 4 x Route Tables
-- 6 x Route Table Associations
-- 1 x CloudWatch Log Group (Flow Logs)
-- 1 x IAM Role (Flow Logs)
+- 2 x NAT Gateways (HA configuration)
 
-**Total:** ~25-30 resources  
+**Routing:**
+- 1 x Public Route Table
+- 2 x Private Route Tables (one per AZ)
+- 1 x Public Internet Route
+- 2 x Private NAT Gateway Routes
+- 2 x Public Subnet Associations
+- 2 x Private App Subnet Associations
+- 2 x Private DB Subnet Associations
+
+**Monitoring:**
+- 1 x CloudWatch Log Group (VPC Flow Logs)
+- 1 x IAM Role (VPC Flow Logs)
+- 1 x IAM Role Policy (VPC Flow Logs)
+- 1 x VPC Flow Log
+
+**Total:** ~26 resources
 **Monthly Cost:** ~$68.50 (primarily NAT Gateways)
 
 ## Cost Considerations
@@ -236,16 +258,17 @@ See `docs/architecture/naming-conventions.md` for complete details.
 This module implements multi-AZ high availability:
 
 - ✅ VPC spans multiple availability zones
-- ⏳ Subnets distributed across 2 AZs (Step 5)
-- ⏳ NAT Gateway in each AZ (Step 5)
-- ⏳ Independent routing per AZ (Step 5)
+- ✅ Subnets distributed across 2 AZs (us-east-1a, us-east-1b)
+- ✅ NAT Gateway in each AZ for redundancy
+- ✅ Independent routing per AZ (AZ-specific route tables)
 
 ## Security
 
 - ✅ DNS resolution enabled for internal service discovery
 - ✅ DNS hostnames enabled for EC2/ECS instances
-- ⏳ Network isolation with public/private subnet segregation (Step 5)
-- ⏳ VPC Flow Logs for network monitoring (Step 5)
+- ✅ Network isolation with public/private subnet segregation
+- ✅ VPC Flow Logs to CloudWatch for network monitoring
+- ✅ IAM role with least privilege for Flow Logs
 
 ## Validation
 
@@ -297,12 +320,11 @@ After applying, verify resources in AWS Console:
 
 ## Next Steps
 
-**Step 5 Implementation:**
-1. Add subnet resources (public, private app, private DB)
-2. Add NAT Gateway resources with Elastic IPs
-3. Configure route tables and associations
-4. Add VPC Flow Logs with CloudWatch
-5. Update outputs to export new resource IDs
+**Step 6 - Security Groups:**
+1. Create security group for load balancers
+2. Create security group for application tier
+3. Create security group for database tier
+4. Implement least-privilege ingress/egress rules
 
 ## References
 
@@ -313,7 +335,7 @@ After applying, verify resources in AWS Console:
 
 ---
 
-**Last Updated:** October 25, 2025  
-**Implementation Status:** Step 4 Complete  
-**Next Phase:** Step 5 - Subnets and Routing
+**Last Updated:** October 25, 2025
+**Implementation Status:** Steps 4-5 Complete
+**Next Phase:** Step 6 - Security Groups
 
