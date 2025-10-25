@@ -122,6 +122,53 @@ terraform init \
   -backend-config="encrypt=true"
 ```
 
+## Helper Scripts
+
+The `terraform/scripts/` directory contains automation scripts for common tasks:
+
+### Validate All Environments
+
+Validates Terraform configurations across all environments:
+
+```bash
+./terraform/scripts/validate-all.sh
+```
+
+Features:
+- Validates dev and prod environments
+- Auto-initializes if needed
+- Color-coded output
+- Exit code 0 on success, 1 on failure
+
+### Cost Estimation
+
+Runs terraform plan and provides cost estimation guidance:
+
+```bash
+# Estimate all environments
+./terraform/scripts/cost-estimate.sh
+
+# Estimate specific environment
+./terraform/scripts/cost-estimate.sh dev
+./terraform/scripts/cost-estimate.sh prod
+```
+
+Features:
+- Generates plan for specified environment(s)
+- Shows resource changes
+- Provides links to cost estimation tools
+- Handles missing environment variables
+
+### Backend Setup
+
+Creates S3 bucket and DynamoDB table for Terraform state:
+
+```bash
+./terraform/scripts/setup-backend.sh
+```
+
+**Note:** This script was already run during initial setup. Only run again if setting up a new backend.
+
 ## Common Commands
 
 ```bash
