@@ -67,3 +67,6 @@ secrets/
 temp/
 tmp/
 
+# AI Agent Handoff
+.claude/
+
