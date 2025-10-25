@@ -73,18 +73,33 @@ variable "public_subnet_cidrs" {
   description = "CIDR blocks for public subnets (one per AZ)"
   type        = list(string)
   default     = ["10.0.1.0/24", "10.0.2.0/24"]
+
+  validation {
+    condition     = length(var.public_subnet_cidrs) == length(var.availability_zones)
+    error_message = "Number of public subnet CIDRs must match the number of availability zones."
+  }
 }
 
 variable "private_app_subnet_cidrs" {
   description = "CIDR blocks for private application subnets (one per AZ)"
   type        = list(string)
   default     = ["10.0.11.0/24", "10.0.12.0/24"]
+
+  validation {
+    condition     = length(var.private_app_subnet_cidrs) == length(var.availability_zones)
+    error_message = "Number of private app subnet CIDRs must match the number of availability zones."
+  }
 }
 
 variable "private_db_subnet_cidrs" {
   description = "CIDR blocks for private database subnets (one per AZ)"
   type        = list(string)
   default     = ["10.0.21.0/24", "10.0.22.0/24"]
+
+  validation {
+    condition     = length(var.private_db_subnet_cidrs) == length(var.availability_zones)
+    error_message = "Number of private DB subnet CIDRs must match the number of availability zones."
+  }
 }
 
 # ------------------------------------------------------------------------------

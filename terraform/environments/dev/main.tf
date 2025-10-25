@@ -67,6 +67,14 @@ module "networking" {
   aws_region         = var.aws_region
   availability_zones = var.availability_zones
 
+  # Enable NAT Gateway with full HA (2 NAT Gateways)
+  enable_nat_gateway = true
+  single_nat_gateway = false
+
+  # Enable VPC Flow Logs for network monitoring
+  enable_flow_logs         = true
+  flow_logs_retention_days = 7
+
   common_tags = {
     Environment = var.environment
     Project     = var.project_name
