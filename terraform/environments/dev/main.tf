@@ -9,14 +9,21 @@
 
 terraform {
   # Backend configuration for remote state
-  # Configuration is provided via backend-config.tfvars during terraform init
+  #
+  # IMPORTANT: This backend block is intentionally empty.
+  # All configuration values are provided via backend-config.tfvars
+  # during 'terraform init -backend-config=backend-config.tfvars'
+  #
+  # This pattern keeps main.tf environment-agnostic while allowing
+  # environment-specific backend configuration in separate files.
+  # Each environment (dev, prod) has its own backend-config.tfvars.
   backend "s3" {
-    # Configuration will be loaded from backend-config.tfvars:
+    # Values loaded from backend-config.tfvars:
     # - bucket: S3 bucket name for state storage
-    # - key: dev/terraform.tfstate
+    # - key: State file path (e.g., dev/terraform.tfstate)
     # - region: AWS region for S3 bucket
     # - dynamodb_table: DynamoDB table for state locking
-    # - encrypt: Enable encryption at rest
+    # - encrypt: Enable encryption at rest (should be true)
   }
 
   required_version = "~> 1.13.4"

@@ -119,7 +119,13 @@ variable "flow_logs_retention_days" {
   default     = 7
 
   validation {
-    condition     = contains([1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653], var.flow_logs_retention_days)
+    # Valid retention periods per AWS CloudWatch Logs documentation:
+    # https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/Working-with-log-groups-and-streams.html
+    # AWS only supports specific retention periods (not arbitrary values)
+    condition = contains([
+      1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180,
+      365, 400, 545, 731, 1827, 3653
+    ], var.flow_logs_retention_days)
     error_message = "Flow logs retention must be a valid CloudWatch Logs retention period."
   }
 }
