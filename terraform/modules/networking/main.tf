@@ -247,22 +247,25 @@ resource "aws_iam_role_policy" "flow_logs" {
   name = "${var.environment}-${var.project_name}-vpc-flow-logs-policy"
   role = aws_iam_role.flow_logs[0].id
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents",
-          "logs:DescribeLogGroups",
-          "logs:DescribeLogStreams"
-        ]
-        Resource = "*"
-      }
-    ]
-  })
+  policy = format(<<-EOT
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "logs:CreateLogGroup",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents",
+            "logs:DescribeLogGroups",
+            "logs:DescribeLogStreams"
+          ],
+          "Resource": "%s:*"
+        }
+      ]
+    }
+    EOT
+  , aws_cloudwatch_log_group.flow_logs[0].arn)
 }
 
 # VPC Flow Logs
