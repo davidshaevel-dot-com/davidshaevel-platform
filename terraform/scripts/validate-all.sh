@@ -58,12 +58,13 @@ validate_environment() {
         fi
     fi
 
-    # Run terraform validate
-    if terraform validate > /dev/null 2>&1; then
+    # Run terraform validate (capture output to avoid running twice)
+    local validate_output
+    if validate_output=$(terraform validate 2>&1); then
         echo -e "${GREEN}  ✓ ${env_name} configuration is valid${NC}"
     else
         echo -e "${RED}  ✗ ${env_name} validation failed${NC}"
-        terraform validate
+        echo "${validate_output}"
         ALL_VALID=false
         return 1
     fi
@@ -71,11 +72,20 @@ validate_environment() {
     echo ""
 }
 
-# Validate each environment
-ENVIRONMENTS=("dev" "prod")
+# Discover environments dynamically from directory
+ENVIRONMENTS=()
+if [ -d "${TERRAFORM_DIR}/environments" ]; then
+    for env_dir in "${TERRAFORM_DIR}/environments"/*; do
+        if [ -d "$env_dir" ]; then
+            ENVIRONMENTS+=("$(basename "$env_dir")")
+        fi
+    done
+fi
 
+# Validate each environment
+# Using `|| true` ensures the loop continues even if validation fails
 for env in "${ENVIRONMENTS[@]}"; do
-    validate_environment "$env"
+    validate_environment "$env" || true
 done
 
 # Summary

@@ -39,6 +39,11 @@ estimate_environment() {
     local env_name=$1
     local env_path="${TERRAFORM_DIR}/environments/${env_name}"
 
+    # Create secure temporary file and ensure cleanup
+    local plan_file
+    plan_file=$(mktemp)
+    trap 'rm -f -- "$plan_file"' RETURN
+
     echo -e "${YELLOW}Estimating costs for ${env_name} environment...${NC}"
     echo ""
 
@@ -69,13 +74,13 @@ estimate_environment() {
         export TF_VAR_aws_account_id="123456789012"
     fi
 
-    if terraform plan -input=false -no-color > /tmp/terraform-plan-${env_name}.txt 2>&1; then
+    if terraform plan -input=false -no-color > "$plan_file" 2>&1; then
         echo -e "${GREEN}  ✓ Plan generated successfully${NC}"
         echo ""
 
         # Display resource changes
         echo -e "${BLUE}Resource Changes:${NC}"
-        grep -E "Plan:|No changes" /tmp/terraform-plan-${env_name}.txt || echo "  No resources to create (configuration only)"
+        grep -E "Plan:|No changes" "$plan_file" || echo "  No resources to create (configuration only)"
         echo ""
 
         # Cost estimation notes
@@ -86,13 +91,9 @@ estimate_environment() {
         echo -e "  - Infracost (open source): https://www.infracost.io"
         echo -e "  - terraform-cost-estimation tools"
         echo ""
-
-        # Clean up
-        rm -f /tmp/terraform-plan-${env_name}.txt
     else
         echo -e "${RED}  ✗ Plan generation failed${NC}"
-        cat /tmp/terraform-plan-${env_name}.txt
-        rm -f /tmp/terraform-plan-${env_name}.txt
+        cat "$plan_file"
         return 1
     fi
 
@@ -102,21 +103,25 @@ estimate_environment() {
 
 # Determine which environments to estimate
 if [ $# -eq 0 ]; then
-    # No arguments - estimate all environments
-    ENVIRONMENTS=("dev" "prod")
+    # No arguments - discover and estimate all environments dynamically
+    ENVIRONMENTS=()
+    if [ -d "${TERRAFORM_DIR}/environments" ]; then
+        for env_dir in "${TERRAFORM_DIR}/environments"/*; do
+            if [ -d "$env_dir" ]; then
+                ENVIRONMENTS+=("$(basename "$env_dir")")
+            fi
+        done
+    fi
 else
     # Specific environment provided
     ENVIRONMENTS=("$1")
 fi
 
-# Validate environment argument
-for env in "${ENVIRONMENTS[@]}"; do
-    if [[ ! "$env" =~ ^(dev|prod)$ ]]; then
-        echo -e "${RED}Error: Invalid environment '${env}'${NC}"
-        echo -e "Valid environments: dev, prod"
-        exit 1
-    fi
-done
+# Validate that environments were found
+if [ ${#ENVIRONMENTS[@]} -eq 0 ]; then
+    echo -e "${RED}Error: No environments found in ${TERRAFORM_DIR}/environments/${NC}"
+    exit 1
+fi
 
 # Estimate costs for each environment
 ALL_SUCCESS=true
