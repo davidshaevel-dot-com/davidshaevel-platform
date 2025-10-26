@@ -110,6 +110,53 @@ variable "availability_zones" {
 }
 
 # -----------------------------------------------------------------------------
+# Database Configuration
+# -----------------------------------------------------------------------------
+
+variable "db_instance_class" {
+  description = "RDS instance class"
+  type        = string
+  default     = "db.t3.micro"
+}
+
+variable "db_allocated_storage" {
+  description = "Allocated storage in GB"
+  type        = number
+  default     = 20
+}
+
+variable "db_max_allocated_storage" {
+  description = "Maximum allocated storage in GB (for autoscaling)"
+  type        = number
+  default     = 100
+}
+
+variable "db_name" {
+  description = "Name of the database to create"
+  type        = string
+  default     = "davidshaevel"
+}
+
+variable "db_master_username" {
+  description = "Master username for the database"
+  type        = string
+  default     = "dbadmin"
+  sensitive   = true
+}
+
+variable "db_multi_az" {
+  description = "Enable Multi-AZ deployment for high availability"
+  type        = bool
+  default     = false
+}
+
+variable "db_deletion_protection" {
+  description = "Enable deletion protection"
+  type        = bool
+  default     = false
+}
+
+# -----------------------------------------------------------------------------
 # Common Tags
 # -----------------------------------------------------------------------------
 
