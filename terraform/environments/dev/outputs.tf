@@ -66,8 +66,3 @@ output "database_secret_arn" {
   description = "ARN of the database credentials secret in Secrets Manager"
   value       = module.database.secret_arn
 }
-
-output "database_secret_name" {
-  description = "Name of the database credentials secret"
-  value       = module.database.secret_name
-}

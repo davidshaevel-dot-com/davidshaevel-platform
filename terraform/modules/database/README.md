@@ -40,13 +40,6 @@ module "database" {
   # High availability
   multi_az            = false  # Set to true for production
   deletion_protection = false  # Set to true for production
-
-  # Tags
-  tags = {
-    Environment = "dev"
-    Project     = "davidshaevel"
-    ManagedBy   = "Terraform"
-  }
 }
 ```
 
@@ -92,11 +85,11 @@ module "database" {
 | performance_insights_retention_period | Performance Insights retention period in days | number | 7 |
 | create_parameter_group | Whether to create a custom parameter group | bool | false |
 | parameter_group_family | Parameter group family | string | "postgres15" |
-| max_connections_threshold | Threshold for max connections alarm | number | 80 |
+| high_cpu_threshold | Threshold for high CPU alarm (percent) | number | 80 |
+| max_connections_count_threshold | Threshold for maximum connections alarm (count) | number | 80 |
 | low_free_storage_threshold_bytes | Threshold for low free storage alarm (bytes) | number | 10737418240 (10 GB) |
 | low_freeable_memory_threshold_bytes | Threshold for low freeable memory alarm (bytes) | number | 536870912 (512 MB) |
 | alarm_actions | List of ARNs to notify when alarm triggers | list(string) | [] |
-| tags | Common tags to apply to all resources | map(string) | {} |
 
 ## Outputs
 

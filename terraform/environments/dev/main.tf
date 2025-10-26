@@ -110,7 +110,4 @@ module "database" {
   # High availability (from variables)
   multi_az            = var.db_multi_az
   deletion_protection = var.db_deletion_protection
-
-  # Tags passed from provider default_tags
-  tags = var.tags
 }

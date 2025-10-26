@@ -65,11 +65,6 @@ output "secret_arn" {
   value       = length(aws_db_instance.main.master_user_secret) > 0 ? aws_db_instance.main.master_user_secret[0].secret_arn : null
 }
 
-output "secret_name" {
-  description = "Name of the database credentials secret managed by RDS"
-  value       = null
-}
-
 # ------------------------------------------------------------------------------
 # Connection String Outputs
 # ------------------------------------------------------------------------------
@@ -108,13 +103,4 @@ output "alarm_low_free_storage_arn" {
 output "alarm_low_freeable_memory_arn" {
   description = "ARN of the low freeable memory alarm"
   value       = aws_cloudwatch_metric_alarm.low_freeable_memory.arn
-}
-
-# ------------------------------------------------------------------------------
-# Resource Tags
-# ------------------------------------------------------------------------------
-
-output "tags" {
-  description = "Tags applied to the database resources"
-  value       = var.tags
 }

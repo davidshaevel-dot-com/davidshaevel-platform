@@ -16,12 +16,6 @@ variable "project_name" {
   type        = string
 }
 
-variable "tags" {
-  description = "Common tags to apply to all resources"
-  type        = map(string)
-  default     = {}
-}
-
 # ------------------------------------------------------------------------------
 # Networking Inputs
 # ------------------------------------------------------------------------------
@@ -194,10 +188,16 @@ variable "alarm_actions" {
   default     = [] # No SNS topics configured yet
 }
 
-variable "max_connections_threshold" {
-  description = "Threshold for max connections alarm"
+variable "high_cpu_threshold" {
+  description = "Threshold for high CPU utilization alarm (in percent)"
   type        = number
-  default     = 80 # 80% of default for db.t3.micro (87 connections)
+  default     = 80
+}
+
+variable "max_connections_count_threshold" {
+  description = "Threshold for the maximum number of database connections. The alarm will trigger if this count is exceeded."
+  type        = number
+  default     = 80
 }
 
 variable "low_free_storage_threshold_bytes" {

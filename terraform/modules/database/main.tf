@@ -34,12 +34,9 @@ resource "aws_iam_role" "rds_enhanced_monitoring" {
     ]
   })
 
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-${var.environment}-rds-monitoring-role"
-    }
-  )
+  tags = {
+    Name = "${var.project_name}-${var.environment}-rds-monitoring-role"
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "rds_enhanced_monitoring" {
@@ -55,12 +52,9 @@ resource "aws_db_subnet_group" "main" {
   name       = "${var.project_name}-${var.environment}-db-subnet-group"
   subnet_ids = var.private_db_subnet_ids
 
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-${var.environment}-db-subnet-group"
-    }
-  )
+  tags = {
+    Name = "${var.project_name}-${var.environment}-db-subnet-group"
+  }
 }
 
 # ------------------------------------------------------------------------------
@@ -72,12 +66,9 @@ resource "aws_db_parameter_group" "main" {
   name   = "${var.project_name}-${var.environment}-db-parameters"
   family = var.parameter_group_family
 
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-${var.environment}-db-parameters"
-    }
-  )
+  tags = {
+    Name = "${var.project_name}-${var.environment}-db-parameters"
+  }
 }
 
 # ------------------------------------------------------------------------------
@@ -139,12 +130,9 @@ resource "aws_db_instance" "main" {
   # Parameter Group
   parameter_group_name = var.create_parameter_group ? aws_db_parameter_group.main[0].name : null
 
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-${var.environment}-db"
-    }
-  )
+  tags = {
+    Name = "${var.project_name}-${var.environment}-db"
+  }
 
   # Lifecycle to prevent accidental recreation
   lifecycle {
@@ -167,7 +155,7 @@ resource "aws_cloudwatch_metric_alarm" "high_cpu" {
   namespace           = "AWS/RDS"
   period              = 300
   statistic           = "Average"
-  threshold           = 80
+  threshold           = var.high_cpu_threshold
   alarm_description   = "This metric monitors RDS CPU utilization"
   treat_missing_data  = "notBreaching"
 
@@ -177,12 +165,9 @@ resource "aws_cloudwatch_metric_alarm" "high_cpu" {
 
   alarm_actions = var.alarm_actions
 
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-${var.environment}-db-high-cpu"
-    }
-  )
+  tags = {
+    Name = "${var.project_name}-${var.environment}-db-high-cpu"
+  }
 }
 
 # Database Connections Alarm
@@ -194,7 +179,7 @@ resource "aws_cloudwatch_metric_alarm" "high_connections" {
   namespace           = "AWS/RDS"
   period              = 300
   statistic           = "Average"
-  threshold           = var.max_connections_threshold
+  threshold           = var.max_connections_count_threshold
   alarm_description   = "This metric monitors RDS database connections"
   treat_missing_data  = "notBreaching"
 
@@ -204,12 +189,9 @@ resource "aws_cloudwatch_metric_alarm" "high_connections" {
 
   alarm_actions = var.alarm_actions
 
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-${var.environment}-db-high-connections"
-    }
-  )
+  tags = {
+    Name = "${var.project_name}-${var.environment}-db-high-connections"
+  }
 }
 
 # Free Storage Space Alarm
@@ -231,12 +213,9 @@ resource "aws_cloudwatch_metric_alarm" "low_free_storage" {
 
   alarm_actions = var.alarm_actions
 
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-${var.environment}-db-low-free-storage"
-    }
-  )
+  tags = {
+    Name = "${var.project_name}-${var.environment}-db-low-free-storage"
+  }
 }
 
 # Freeable Memory Alarm
@@ -258,10 +237,7 @@ resource "aws_cloudwatch_metric_alarm" "low_freeable_memory" {
 
   alarm_actions = var.alarm_actions
 
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-${var.environment}-db-low-freeable-memory"
-    }
-  )
+  tags = {
+    Name = "${var.project_name}-${var.environment}-db-low-freeable-memory"
+  }
 }
