@@ -282,3 +282,288 @@ resource "aws_flow_log" "main" {
   })
 }
 
+# ==============================================================================
+# Security Groups (Step 6)
+# ==============================================================================
+# Security groups implement a three-tier security architecture with least
+# privilege access control:
+# - ALB tier: Public internet access (HTTP/HTTPS)
+# - Application tier: Access from ALB only
+# - Database tier: Access from application tier only
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# ALB Security Group
+# ------------------------------------------------------------------------------
+# Load balancer security group - accepts HTTPS/HTTP from internet
+
+resource "aws_security_group" "alb" {
+  name_prefix = "${var.environment}-${var.project_name}-alb-sg-"
+  description = "Security group for Application Load Balancer - allows HTTP/HTTPS from internet"
+  vpc_id      = aws_vpc.main.id
+
+  # Explicitly remove default "allow all" egress rule for least privilege
+  egress = []
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-${var.project_name}-alb-sg"
+    Tier = "public"
+  })
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# Allow inbound HTTP from internet (redirect to HTTPS)
+resource "aws_vpc_security_group_ingress_rule" "alb_http" {
+  security_group_id = aws_security_group.alb.id
+
+  description = "Allow HTTP from internet (redirect to HTTPS)"
+  from_port   = 80
+  to_port     = 80
+  ip_protocol = "tcp"
+  cidr_ipv4   = "0.0.0.0/0"
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-${var.project_name}-alb-http-ingress"
+  })
+}
+
+# Allow inbound HTTPS from internet
+resource "aws_vpc_security_group_ingress_rule" "alb_https" {
+  security_group_id = aws_security_group.alb.id
+
+  description = "Allow HTTPS from internet"
+  from_port   = 443
+  to_port     = 443
+  ip_protocol = "tcp"
+  cidr_ipv4   = "0.0.0.0/0"
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-${var.project_name}-alb-https-ingress"
+  })
+}
+
+# Allow outbound to frontend containers
+resource "aws_vpc_security_group_egress_rule" "alb_to_frontend" {
+  security_group_id = aws_security_group.alb.id
+
+  description                  = "Allow traffic to frontend containers"
+  from_port                    = 3000
+  to_port                      = 3000
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.app_frontend.id
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-${var.project_name}-alb-to-frontend-egress"
+  })
+}
+
+# Allow outbound to backend containers
+resource "aws_vpc_security_group_egress_rule" "alb_to_backend" {
+  security_group_id = aws_security_group.alb.id
+
+  description                  = "Allow traffic to backend containers"
+  from_port                    = 3001
+  to_port                      = 3001
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.app_backend.id
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-${var.project_name}-alb-to-backend-egress"
+  })
+}
+
+# ------------------------------------------------------------------------------
+# Application Tier - Frontend Security Group
+# ------------------------------------------------------------------------------
+# Frontend container security group - accepts traffic from ALB only
+
+resource "aws_security_group" "app_frontend" {
+  name_prefix = "${var.environment}-${var.project_name}-app-frontend-sg-"
+  description = "Security group for frontend containers - allows traffic from ALB only"
+  vpc_id      = aws_vpc.main.id
+
+  # Explicitly remove default "allow all" egress rule for least privilege
+  egress = []
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-${var.project_name}-app-frontend-sg"
+    Tier = "private-app"
+  })
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# Allow inbound from ALB on port 3000
+resource "aws_vpc_security_group_ingress_rule" "frontend_from_alb" {
+  security_group_id = aws_security_group.app_frontend.id
+
+  description                  = "Allow traffic from ALB"
+  from_port                    = 3000
+  to_port                      = 3000
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.alb.id
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-${var.project_name}-frontend-from-alb-ingress"
+  })
+}
+
+# Allow outbound to backend containers
+resource "aws_vpc_security_group_egress_rule" "frontend_to_backend" {
+  security_group_id = aws_security_group.app_frontend.id
+
+  description                  = "Allow traffic to backend containers"
+  from_port                    = 3001
+  to_port                      = 3001
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.app_backend.id
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-${var.project_name}-frontend-to-backend-egress"
+  })
+}
+
+# Allow outbound HTTPS to internet (for external APIs, CDNs)
+resource "aws_vpc_security_group_egress_rule" "frontend_to_internet" {
+  security_group_id = aws_security_group.app_frontend.id
+
+  description = "Allow HTTPS to internet for external APIs and CDNs"
+  from_port   = 443
+  to_port     = 443
+  ip_protocol = "tcp"
+  cidr_ipv4   = "0.0.0.0/0"
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-${var.project_name}-frontend-to-internet-egress"
+  })
+}
+
+# ------------------------------------------------------------------------------
+# Application Tier - Backend Security Group
+# ------------------------------------------------------------------------------
+# Backend container security group - accepts traffic from ALB and frontend
+
+resource "aws_security_group" "app_backend" {
+  name_prefix = "${var.environment}-${var.project_name}-app-backend-sg-"
+  description = "Security group for backend containers - allows traffic from ALB and frontend"
+  vpc_id      = aws_vpc.main.id
+
+  # Explicitly remove default "allow all" egress rule for least privilege
+  egress = []
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-${var.project_name}-app-backend-sg"
+    Tier = "private-app"
+  })
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# Allow inbound from ALB on port 3001
+resource "aws_vpc_security_group_ingress_rule" "backend_from_alb" {
+  security_group_id = aws_security_group.app_backend.id
+
+  description                  = "Allow traffic from ALB"
+  from_port                    = 3001
+  to_port                      = 3001
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.alb.id
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-${var.project_name}-backend-from-alb-ingress"
+  })
+}
+
+# Allow inbound from frontend on port 3001
+resource "aws_vpc_security_group_ingress_rule" "backend_from_frontend" {
+  security_group_id = aws_security_group.app_backend.id
+
+  description                  = "Allow traffic from frontend containers"
+  from_port                    = 3001
+  to_port                      = 3001
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.app_frontend.id
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-${var.project_name}-backend-from-frontend-ingress"
+  })
+}
+
+# Allow outbound to database on PostgreSQL port
+resource "aws_vpc_security_group_egress_rule" "backend_to_database" {
+  security_group_id = aws_security_group.app_backend.id
+
+  description                  = "Allow traffic to PostgreSQL database"
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.database.id
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-${var.project_name}-backend-to-database-egress"
+  })
+}
+
+# Allow outbound HTTPS to internet (for external APIs)
+resource "aws_vpc_security_group_egress_rule" "backend_to_internet" {
+  security_group_id = aws_security_group.app_backend.id
+
+  description = "Allow HTTPS to internet for external APIs"
+  from_port   = 443
+  to_port     = 443
+  ip_protocol = "tcp"
+  cidr_ipv4   = "0.0.0.0/0"
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-${var.project_name}-backend-to-internet-egress"
+  })
+}
+
+# ------------------------------------------------------------------------------
+# Database Tier Security Group
+# ------------------------------------------------------------------------------
+# Database security group - accepts traffic from backend only
+
+resource "aws_security_group" "database" {
+  name_prefix = "${var.environment}-${var.project_name}-database-sg-"
+  description = "Security group for RDS PostgreSQL database - allows traffic from backend only"
+  vpc_id      = aws_vpc.main.id
+
+  # Explicitly remove default "allow all" egress rule for least privilege
+  egress = []
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-${var.project_name}-database-sg"
+    Tier = "private-db"
+  })
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# Allow inbound from backend on PostgreSQL port
+resource "aws_vpc_security_group_ingress_rule" "database_from_backend" {
+  security_group_id = aws_security_group.database.id
+
+  description                  = "Allow PostgreSQL traffic from backend containers"
+  from_port                    = 5432
+  to_port                      = 5432
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.app_backend.id
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-${var.project_name}-database-from-backend-ingress"
+  })
+}
+
+# No egress rules for database - databases should not initiate outbound connections
+# AWS default implicit deny will apply
+

@@ -111,3 +111,47 @@ output "flow_logs_log_group_arn" {
   value       = var.enable_flow_logs ? aws_cloudwatch_log_group.flow_logs[0].arn : null
 }
 
+# ------------------------------------------------------------------------------
+# Security Group Outputs (Step 6)
+# ------------------------------------------------------------------------------
+
+output "alb_security_group_id" {
+  description = "ID of the ALB security group"
+  value       = aws_security_group.alb.id
+}
+
+output "alb_security_group_arn" {
+  description = "ARN of the ALB security group"
+  value       = aws_security_group.alb.arn
+}
+
+output "app_frontend_security_group_id" {
+  description = "ID of the frontend application security group"
+  value       = aws_security_group.app_frontend.id
+}
+
+output "app_frontend_security_group_arn" {
+  description = "ARN of the frontend application security group"
+  value       = aws_security_group.app_frontend.arn
+}
+
+output "app_backend_security_group_id" {
+  description = "ID of the backend application security group"
+  value       = aws_security_group.app_backend.id
+}
+
+output "app_backend_security_group_arn" {
+  description = "ARN of the backend application security group"
+  value       = aws_security_group.app_backend.arn
+}
+
+output "database_security_group_id" {
+  description = "ID of the database security group"
+  value       = aws_security_group.database.id
+}
+
+output "database_security_group_arn" {
+  description = "ARN of the database security group"
+  value       = aws_security_group.database.arn
+}
+

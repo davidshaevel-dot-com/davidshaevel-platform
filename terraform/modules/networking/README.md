@@ -1,14 +1,14 @@
 # Networking Module
 
-**Version:** 2.0 (Steps 4-5 - Complete VPC Infrastructure)
-**Status:** Full VPC networking with subnets, NAT Gateways, and routing implemented
-**Next:** Step 6 will add Security Groups
+**Version:** 2.1 (Steps 4-6 - Complete VPC Infrastructure with Security Groups)
+**Status:** Full VPC networking with subnets, NAT Gateways, routing, and security groups
+**Next:** Future VPC Endpoints and Network ACLs
 
 ## Overview
 
-This module creates the complete networking infrastructure for the DavidShaevel.com platform. It implements a production-ready, highly available VPC with multi-AZ architecture.
+This module creates the complete networking infrastructure for the DavidShaevel.com platform. It implements a production-ready, highly available VPC with multi-AZ architecture and comprehensive security group configuration.
 
-### Current Implementation (Steps 4-5)
+### Current Implementation (Steps 4-6)
 
 **Step 4 - VPC Foundation:**
 - ✅ VPC with DNS support (10.0.0.0/16)
@@ -24,11 +24,18 @@ This module creates the complete networking infrastructure for the DavidShaevel.
 - ✅ Route tables and associations
 - ✅ VPC Flow Logs to CloudWatch
 
+**Step 6 - Security Groups:**
+- ✅ ALB security group (HTTP/HTTPS from internet)
+- ✅ Frontend application security group (traffic from ALB only)
+- ✅ Backend application security group (traffic from ALB and frontend)
+- ✅ Database security group (traffic from backend only)
+- ✅ Least-privilege security rules
+- ✅ Comprehensive tagging for all security groups
+
 ### Future Enhancements
 
-- ⏳ Security Groups (Step 6)
-- ⏳ VPC Endpoints for S3 and ECR
-- ⏳ Network ACLs (NACLs)
+- ⏳ VPC Endpoints for S3 and ECR (cost optimization)
+- ⏳ Network ACLs (NACLs) for additional security layer
 
 ## Architecture
 
@@ -185,9 +192,22 @@ module "networking" {
 | `flow_logs_log_group_name` | CloudWatch Log Group name for VPC Flow Logs |
 | `flow_logs_log_group_arn` | CloudWatch Log Group ARN for VPC Flow Logs |
 
+### Security Group Outputs (Step 6)
+
+| Name | Description |
+|------|-------------|
+| `alb_security_group_id` | ID of the ALB security group |
+| `alb_security_group_arn` | ARN of the ALB security group |
+| `app_frontend_security_group_id` | ID of the frontend application security group |
+| `app_frontend_security_group_arn` | ARN of the frontend application security group |
+| `app_backend_security_group_id` | ID of the backend application security group |
+| `app_backend_security_group_arn` | ARN of the backend application security group |
+| `database_security_group_id` | ID of the database security group |
+| `database_security_group_arn` | ARN of the database security group |
+
 ## Resources Created
 
-### Complete Implementation (Steps 4-5)
+### Complete Implementation (Steps 4-6)
 
 **Core Networking:**
 - 1 x VPC
@@ -211,8 +231,12 @@ module "networking" {
 - 1 x IAM Role Policy (VPC Flow Logs)
 - 1 x VPC Flow Log
 
-**Total:** ~26 resources
-**Monthly Cost:** ~$68.50 (primarily NAT Gateways)
+**Security Groups (Step 6):**
+- 4 x Security Groups (ALB, Frontend, Backend, Database)
+- 13 x Security Group Rules (ingress and egress)
+
+**Total:** ~43 resources
+**Monthly Cost:** ~$68.50 (security groups are free)
 
 ## Cost Considerations
 
@@ -224,9 +248,11 @@ module "networking" {
 | Internet Gateway | 1 | $0 |
 | NAT Gateways | 2 | ~$64 |
 | NAT Data Transfer | ~100GB | ~$4.50 |
+| Security Groups | 4 | $0 |
 
-**Step 4 Total:** $0/month  
+**Step 4 Total:** $0/month
 **Step 5 Total:** ~$68.50/month
+**Step 6 Total:** ~$68.50/month (no additional cost)
 
 ### Cost Optimization Options
 
@@ -318,13 +344,52 @@ After applying, verify resources in AWS Console:
 - Internet Gateway is attached to VPC
 - Tags are applied correctly
 
+## Security Groups Architecture (Step 6)
+
+### Three-Tier Security Model
+
+The module implements a layered security approach with least-privilege access:
+
+**1. ALB Security Group:**
+- **Ingress:** HTTP (80) and HTTPS (443) from internet (0.0.0.0/0)
+- **Egress:** To frontend containers on port 3000, backend containers on port 3001
+- **Purpose:** Public-facing load balancer accepting web traffic
+
+**2. Frontend Application Security Group:**
+- **Ingress:** Port 3000 from ALB security group only
+- **Egress:** To backend containers (port 3001), HTTPS to internet (443)
+- **Purpose:** Next.js containers in private subnets
+
+**3. Backend Application Security Group:**
+- **Ingress:** Port 3001 from ALB and frontend security groups
+- **Egress:** To database (port 5432), HTTPS to internet (443)
+- **Purpose:** Nest.js API containers in private subnets
+
+**4. Database Security Group:**
+- **Ingress:** PostgreSQL port 5432 from backend security group only
+- **Egress:** None (implicit deny)
+- **Purpose:** RDS PostgreSQL in private database subnets
+
+### Security Features
+
+- ✅ Deny-by-default with explicit allow rules
+- ✅ Security group references (not CIDR blocks) for internal traffic
+- ✅ No direct database access from internet
+- ✅ Comprehensive tagging for all security groups
+- ✅ Lifecycle management for safe updates (create_before_destroy)
+
 ## Next Steps
 
-**Step 6 - Security Groups:**
-1. Create security group for load balancers
-2. Create security group for application tier
-3. Create security group for database tier
-4. Implement least-privilege ingress/egress rules
+**Step 7 - Database Module:**
+1. Implement RDS PostgreSQL module
+2. Use database security group from networking module
+3. Configure backups and encryption
+4. Set up CloudWatch monitoring
+
+**Future Enhancements:**
+1. VPC Endpoints for S3 and ECR (reduce NAT costs)
+2. Network ACLs for additional security layer
+3. VPC Peering for multi-account architectures
 
 ## References
 
@@ -336,6 +401,6 @@ After applying, verify resources in AWS Console:
 ---
 
 **Last Updated:** October 25, 2025
-**Implementation Status:** Steps 4-5 Complete
-**Next Phase:** Step 6 - Security Groups
+**Implementation Status:** Steps 4-6 Complete (VPC + Security Groups)
+**Next Phase:** Step 7 - Database Module (RDS PostgreSQL)
 
