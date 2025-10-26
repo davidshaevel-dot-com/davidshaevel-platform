@@ -6,14 +6,15 @@ This module provisions an RDS PostgreSQL database with enterprise-grade security
 
 ## Features
 
-- **RDS PostgreSQL 15** - Latest stable PostgreSQL version
+- **RDS PostgreSQL 15** - PostgreSQL 15.12 with RDS-managed password
 - **Automated Backups** - 7-day retention with configurable backup window
 - **Encryption at Rest** - AWS KMS encryption enabled by default
-- **AWS Secrets Manager** - Secure credential storage and rotation
+- **AWS Secrets Manager** - RDS-managed secret with automatic rotation support
 - **CloudWatch Monitoring** - Comprehensive alarms for CPU, connections, memory, and storage
 - **Performance Insights** - Free 7-day performance metrics
 - **Private Subnets Only** - Database in isolated network tier
 - **Security Group Integration** - Uses existing database security group
+- **No Credentials in State** - Passwords never stored in Terraform state
 
 ## Usage
 
@@ -51,9 +52,9 @@ module "database" {
 
 ## Resources Created
 
-- 1 RDS PostgreSQL instance
+- 1 RDS PostgreSQL instance (with RDS-managed secret)
 - 1 RDS DB subnet group
-- 1 Secrets Manager secret (credentials)
+- 1 IAM role for enhanced monitoring
 - 4 CloudWatch alarms (CPU, connections, storage, memory)
 - 1 optional parameter group (if enabled)
 
@@ -74,7 +75,7 @@ module "database" {
 | Name | Description | Type | Default |
 |------|-------------|------|---------|
 | engine | Database engine | string | "postgres" |
-| engine_version | Database engine version | string | "15.7" |
+| engine_version | Database engine version | string | "15.12" |
 | instance_class | RDS instance class | string | "db.t3.micro" |
 | db_name | Name of the database to create | string | "davidshaevel" |
 | db_master_username | Master username | string | "dbadmin" |
@@ -92,6 +93,8 @@ module "database" {
 | create_parameter_group | Whether to create a custom parameter group | bool | false |
 | parameter_group_family | Parameter group family | string | "postgres15" |
 | max_connections_threshold | Threshold for max connections alarm | number | 80 |
+| low_free_storage_threshold_bytes | Threshold for low free storage alarm (bytes) | number | 10737418240 (10 GB) |
+| low_freeable_memory_threshold_bytes | Threshold for low freeable memory alarm (bytes) | number | 536870912 (512 MB) |
 | alarm_actions | List of ARNs to notify when alarm triggers | list(string) | [] |
 | tags | Common tags to apply to all resources | map(string) | {} |
 
@@ -106,8 +109,7 @@ module "database" {
 | db_instance_port | RDS instance port |
 | db_name | Database name |
 | db_username | Master username (sensitive) |
-| secret_arn | ARN of the database credentials secret |
-| secret_name | Name of the database credentials secret |
+| secret_arn | ARN of the RDS-managed database credentials secret |
 | connection_string | Database connection string (without credentials) |
 | jdbc_connection_string | JDBC connection string (without credentials) |
 | alarm_high_cpu_arn | ARN of the high CPU alarm |
@@ -128,9 +130,11 @@ module "database" {
 - Logs encrypted in CloudWatch
 
 ### Secrets Management
-- Credentials stored in AWS Secrets Manager
-- Automatic rotation support (configured separately)
-- No credentials in Terraform state or code
+- Credentials managed by RDS using `manage_master_user_password = true`
+- Automatic secret creation in AWS Secrets Manager
+- Secret rotation support (configured separately)
+- **Critical**: No credentials stored in Terraform state or code
+- Secret ARN format: `arn:aws:secretsmanager:region:account:secret:rds!db-instance-id`
 
 ## Monitoring
 
@@ -201,9 +205,13 @@ The module creates the following alarms:
 
 ### From Backend Application (Node.js/Nest.js)
 ```javascript
-// Retrieve credentials from Secrets Manager
+// Retrieve credentials from RDS-managed secret in Secrets Manager
+// Use the secret_arn output from the Terraform module
+// Example: module.database.secret_arn
+const secretArn = process.env.DATABASE_SECRET_ARN;
+
 const secret = await secretsManager.getSecretValue({
-  SecretId: 'davidshaevel-dev-db-credentials'
+  SecretId: secretArn
 }).promise();
 
 const credentials = JSON.parse(secret.SecretString);
@@ -221,9 +229,10 @@ const connection = createConnection({
 
 ### From AWS CLI
 ```bash
-# Get credentials from Secrets Manager
+# Get credentials from RDS-managed secret in Secrets Manager
+# Use the secret_arn output from the Terraform module
 aws secretsmanager get-secret-value \
-  --secret-id davidshaevel-dev-db-credentials
+  --secret-id <secret-arn-from-terraform-output>
 
 # Connect via psql (from EC2 in same VPC)
 psql -h <endpoint> -U <username> -d davidshaevel
@@ -255,6 +264,11 @@ psql -h <endpoint> -U <username> -d davidshaevel
 
 ## Version History
 
+- **v1.1.0** - Updated to use RDS-managed passwords, fixed CloudWatch alarm metrics
+  - Use `manage_master_user_password = true` for secure password management
+  - Fixed low free storage alarm to use `FreeStorageSpace` metric
+  - Updated PostgreSQL engine version to 15.12
+  - Removed redundant tags covered by provider default_tags
 - **v1.0.0** - Initial release with RDS PostgreSQL support
 
 ## License

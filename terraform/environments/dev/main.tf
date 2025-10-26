@@ -33,10 +33,6 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.18"
     }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.6"
-    }
   }
 }
 
@@ -115,9 +111,6 @@ module "database" {
   multi_az            = var.db_multi_az
   deletion_protection = var.db_deletion_protection
 
-  # Tags
-  tags = {
-    Owner       = "David Shaevel"
-    CostCenter  = "Platform Engineering"
-  }
+  # Tags passed from provider default_tags
+  tags = var.tags
 }

@@ -11,10 +11,6 @@
 
 terraform {
   required_providers {
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.6"
-    }
   }
 }
 
@@ -173,7 +169,7 @@ resource "aws_cloudwatch_metric_alarm" "high_cpu" {
   statistic           = "Average"
   threshold           = 80
   alarm_description   = "This metric monitors RDS CPU utilization"
-  treat_missing_data  = "breaching"
+  treat_missing_data  = "notBreaching"
 
   dimensions = {
     DBInstanceIdentifier = aws_db_instance.main.id
@@ -225,7 +221,7 @@ resource "aws_cloudwatch_metric_alarm" "low_free_storage" {
   namespace           = "AWS/RDS"
   period              = 300
   statistic           = "Average"
-  threshold           = 10737418240 # 10 GB in bytes
+  threshold           = var.low_free_storage_threshold_bytes
   alarm_description   = "This metric monitors RDS free storage space"
   treat_missing_data  = "notBreaching"
 
@@ -252,7 +248,7 @@ resource "aws_cloudwatch_metric_alarm" "low_freeable_memory" {
   namespace           = "AWS/RDS"
   period              = 300
   statistic           = "Average"
-  threshold           = 536870912 # 512 MB in bytes
+  threshold           = var.low_freeable_memory_threshold_bytes
   alarm_description   = "This metric monitors RDS freeable memory"
   treat_missing_data  = "notBreaching"
 

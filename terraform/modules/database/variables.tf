@@ -199,3 +199,15 @@ variable "max_connections_threshold" {
   type        = number
   default     = 80 # 80% of default for db.t3.micro (87 connections)
 }
+
+variable "low_free_storage_threshold_bytes" {
+  description = "Threshold for low free storage alarm (in bytes)"
+  type        = number
+  default     = 10737418240 # 10 GB in bytes
+}
+
+variable "low_freeable_memory_threshold_bytes" {
+  description = "Threshold for low freeable memory alarm (in bytes)"
+  type        = number
+  default     = 536870912 # 512 MB in bytes
+}
