@@ -36,20 +36,35 @@ terraform {
   }
 }
 
+locals {
+  common_tags = merge(
+    {
+      Project     = var.project_name
+      Environment = var.environment
+      ManagedBy   = "Terraform"
+      Repository  = var.repository_name
+    },
+    var.tags
+  )
+}
+
 # AWS Provider Configuration
 provider "aws" {
   region = var.aws_region
 
   default_tags {
-    tags = merge(
-      {
-        Project     = var.project_name
-        Environment = var.environment
-        ManagedBy   = "Terraform"
-        Repository  = var.repository_name
-      },
-      var.tags
-    )
+    tags = local.common_tags
+  }
+}
+
+# AWS Provider for us-east-1 (CloudFront ACM certificates)
+# CloudFront requires ACM certificates to be in us-east-1 region
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+
+  default_tags {
+    tags = local.common_tags
   }
 }
 
@@ -171,4 +186,37 @@ module "compute" {
     Owner       = "David Shaevel"
     CostCenter  = "Platform Engineering"
   }
+}
+
+# ==============================================================================
+# CDN Module
+# ==============================================================================
+
+module "cdn" {
+  source = "../../modules/cdn"
+
+  # Required provider configuration for us-east-1 ACM certificate
+  providers = {
+    aws.us_east_1 = aws.us_east_1
+  }
+
+  # Environment configuration
+  environment  = var.environment
+  project_name = var.project_name
+
+  # Domain configuration
+  domain_name            = var.domain_name
+  alternate_domain_names = var.cdn_alternate_domain_names
+
+  # ALB origin (from compute module)
+  alb_dns_name = module.compute.alb_dns_name
+
+  # CloudFront configuration
+  enable_ipv6         = var.cdn_enable_ipv6
+  price_class         = var.cdn_price_class
+  default_root_object = var.cdn_default_root_object
+
+  # Logging (optional)
+  logging_bucket = var.cdn_logging_bucket
+  logging_prefix = var.cdn_logging_prefix
 }
