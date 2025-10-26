@@ -54,7 +54,7 @@ variable "engine" {
 variable "engine_version" {
   description = "Database engine version"
   type        = string
-  default     = "15.7" # Latest stable PostgreSQL 15
+  default     = "15.12" # Latest stable PostgreSQL 15
 }
 
 variable "instance_class" {
