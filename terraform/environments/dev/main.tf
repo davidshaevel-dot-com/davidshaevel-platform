@@ -117,9 +117,6 @@ module "database" {
 
   # Tags
   tags = {
-    Environment = var.environment
-    Project     = var.project_name
-    ManagedBy   = "Terraform"
     Owner       = "David Shaevel"
     CostCenter  = "Platform Engineering"
   }

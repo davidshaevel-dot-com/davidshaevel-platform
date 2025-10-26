@@ -61,13 +61,13 @@ output "db_subnet_group_arn" {
 # ------------------------------------------------------------------------------
 
 output "secret_arn" {
-  description = "ARN of the database credentials secret"
-  value       = aws_secretsmanager_secret.db_credentials.arn
+  description = "ARN of the database credentials secret managed by RDS"
+  value       = aws_db_instance.main.master_user_secret[0].secret_arn
 }
 
 output "secret_name" {
-  description = "Name of the database credentials secret"
-  value       = aws_secretsmanager_secret.db_credentials.name
+  description = "Name of the database credentials secret managed by RDS"
+  value       = aws_db_instance.main.master_user_secret[0].secret_name
 }
 
 # ------------------------------------------------------------------------------

@@ -138,7 +138,7 @@ module "database" {
 The module creates the following alarms:
 
 1. **High CPU** - Triggers when CPU > 80% for 2 consecutive periods
-2. **High Connections** - Triggers when connections > 80% of max
+2. **High Connections** - Triggers when connections > configured threshold (default: 80)
 3. **Low Free Storage** - Triggers when free storage < 10 GB
 4. **Low Freeable Memory** - Triggers when freeable memory < 512 MB
 

@@ -19,17 +19,6 @@ terraform {
 }
 
 # ------------------------------------------------------------------------------
-# Random Password Generation
-# ------------------------------------------------------------------------------
-
-resource "random_password" "db_master_password" {
-  length  = 32
-  special = true
-
-  override_special = "!#$%&*()-_=+[]{}<>:?"
-}
-
-# ------------------------------------------------------------------------------
 # IAM Role for Enhanced Monitoring
 # ------------------------------------------------------------------------------
 
@@ -60,35 +49,6 @@ resource "aws_iam_role" "rds_enhanced_monitoring" {
 resource "aws_iam_role_policy_attachment" "rds_enhanced_monitoring" {
   role       = aws_iam_role.rds_enhanced_monitoring.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
-}
-
-# ------------------------------------------------------------------------------
-# AWS Secrets Manager - Database Credentials
-# ------------------------------------------------------------------------------
-
-resource "aws_secretsmanager_secret" "db_credentials" {
-  name                    = "${var.project_name}-${var.environment}-db-credentials"
-  description             = "Database credentials for ${var.project_name} ${var.environment}"
-  recovery_window_in_days = 7
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-${var.environment}-db-credentials"
-    }
-  )
-}
-
-resource "aws_secretsmanager_secret_version" "db_credentials" {
-  secret_id = aws_secretsmanager_secret.db_credentials.id
-  secret_string = jsonencode({
-    username = var.db_master_username
-    password = random_password.db_master_password.result
-    engine   = "postgres"
-    host     = aws_db_instance.main.endpoint
-    port     = 5432
-    dbname   = var.db_name
-  })
 }
 
 # ------------------------------------------------------------------------------
@@ -143,9 +103,9 @@ resource "aws_db_instance" "main" {
   instance_class = var.instance_class
 
   # Database Configuration
-  db_name  = var.db_name
-  username = var.db_master_username
-  password = random_password.db_master_password.result
+  db_name                     = var.db_name
+  username                    = var.db_master_username
+  manage_master_user_password = true
 
   # Storage Configuration
   allocated_storage     = var.allocated_storage
@@ -193,7 +153,6 @@ resource "aws_db_instance" "main" {
   # Lifecycle to prevent accidental recreation
   lifecycle {
     ignore_changes = [
-      password,
       final_snapshot_identifier,
     ]
   }
@@ -262,7 +221,7 @@ resource "aws_cloudwatch_metric_alarm" "low_free_storage" {
   alarm_name          = "${var.project_name}-${var.environment}-db-low-free-storage"
   comparison_operator = "LessThanThreshold"
   evaluation_periods  = 1
-  metric_name         = "FreeableMemory"
+  metric_name         = "FreeStorageSpace"
   namespace           = "AWS/RDS"
   period              = 300
   statistic           = "Average"
