@@ -62,12 +62,12 @@ output "db_subnet_group_arn" {
 
 output "secret_arn" {
   description = "ARN of the database credentials secret managed by RDS"
-  value       = aws_db_instance.main.master_user_secret[0].secret_arn
+  value       = length(aws_db_instance.main.master_user_secret) > 0 ? aws_db_instance.main.master_user_secret[0].secret_arn : null
 }
 
 output "secret_name" {
   description = "Name of the database credentials secret managed by RDS"
-  value       = aws_db_instance.main.master_user_secret[0].secret_name
+  value       = null
 }
 
 # ------------------------------------------------------------------------------
