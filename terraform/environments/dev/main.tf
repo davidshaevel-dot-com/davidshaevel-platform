@@ -83,3 +83,31 @@ module "networking" {
     CostCenter  = "Platform Engineering"
   }
 }
+
+# ==============================================================================
+# Database Module
+# ==============================================================================
+
+module "database" {
+  source = "../../modules/database"
+
+  # Environment configuration
+  environment  = var.environment
+  project_name = var.project_name
+
+  # Networking inputs (from networking module)
+  vpc_id                     = module.networking.vpc_id
+  private_db_subnet_ids      = module.networking.private_db_subnet_ids
+  database_security_group_id = module.networking.database_security_group_id
+
+  # Database configuration (from variables)
+  instance_class        = var.db_instance_class
+  allocated_storage     = var.db_allocated_storage
+  max_allocated_storage = var.db_max_allocated_storage
+  db_name               = var.db_name
+  db_master_username    = var.db_master_username
+
+  # High availability (from variables)
+  multi_az            = var.db_multi_az
+  deletion_protection = var.db_deletion_protection
+}
