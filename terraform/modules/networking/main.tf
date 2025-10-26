@@ -302,6 +302,9 @@ resource "aws_security_group" "alb" {
   description = "Security group for Application Load Balancer - allows HTTP/HTTPS from internet"
   vpc_id      = aws_vpc.main.id
 
+  # Explicitly remove default "allow all" egress rule for least privilege
+  egress = []
+
   tags = merge(var.common_tags, {
     Name = "${var.environment}-${var.project_name}-alb-sg"
     Tier = "public"
@@ -382,6 +385,9 @@ resource "aws_security_group" "app_frontend" {
   description = "Security group for frontend containers - allows traffic from ALB only"
   vpc_id      = aws_vpc.main.id
 
+  # Explicitly remove default "allow all" egress rule for least privilege
+  egress = []
+
   tags = merge(var.common_tags, {
     Name = "${var.environment}-${var.project_name}-app-frontend-sg"
     Tier = "private-app"
@@ -446,6 +452,9 @@ resource "aws_security_group" "app_backend" {
   name_prefix = "${var.environment}-${var.project_name}-app-backend-sg-"
   description = "Security group for backend containers - allows traffic from ALB and frontend"
   vpc_id      = aws_vpc.main.id
+
+  # Explicitly remove default "allow all" egress rule for least privilege
+  egress = []
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-${var.project_name}-app-backend-sg"
@@ -526,6 +535,9 @@ resource "aws_security_group" "database" {
   name_prefix = "${var.environment}-${var.project_name}-database-sg-"
   description = "Security group for RDS PostgreSQL database - allows traffic from backend only"
   vpc_id      = aws_vpc.main.id
+
+  # Explicitly remove default "allow all" egress rule for least privilege
+  egress = []
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-${var.project_name}-database-sg"
