@@ -245,6 +245,46 @@ variable "enable_container_insights" {
 }
 
 # -----------------------------------------------------------------------------
+# CDN Configuration (CloudFront)
+# -----------------------------------------------------------------------------
+
+variable "cdn_alternate_domain_names" {
+  description = "List of alternate domain names (CNAMEs) for CloudFront distribution"
+  type        = list(string)
+  default     = ["www.davidshaevel.com"]
+}
+
+variable "cdn_enable_ipv6" {
+  description = "Enable IPv6 support for CloudFront distribution"
+  type        = bool
+  default     = true
+}
+
+variable "cdn_price_class" {
+  description = "CloudFront distribution price class (PriceClass_All, PriceClass_200, PriceClass_100)"
+  type        = string
+  default     = "PriceClass_100" # US, Canada, Europe - most cost effective
+}
+
+variable "cdn_default_root_object" {
+  description = "Object that CloudFront returns when requesting the root URL"
+  type        = string
+  default     = "index.html"
+}
+
+variable "cdn_logging_bucket" {
+  description = "S3 bucket for CloudFront access logs (e.g., bucket-name.s3.amazonaws.com). Leave empty to disable."
+  type        = string
+  default     = ""
+}
+
+variable "cdn_logging_prefix" {
+  description = "Prefix for CloudFront access log files in S3 bucket"
+  type        = string
+  default     = "cloudfront/"
+}
+
+# -----------------------------------------------------------------------------
 # Common Tags
 # -----------------------------------------------------------------------------
 

@@ -21,3 +21,20 @@ provider "aws" {
     }
   }
 }
+
+# AWS Provider for us-east-1 (CloudFront ACM certificates)
+# CloudFront requires ACM certificates to be in us-east-1 region
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+
+  # Default tags applied to all resources created by this provider
+  default_tags {
+    tags = {
+      Project     = var.project_name
+      Environment = var.environment
+      ManagedBy   = "Terraform"
+      Repository  = var.repository_name
+    }
+  }
+}
