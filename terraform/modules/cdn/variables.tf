@@ -42,8 +42,8 @@ variable "alb_dns_name" {
   type        = string
 
   validation {
-    condition     = can(regex("^[a-z0-9-]+\\.us-east-1\\.elb\\.amazonaws\\.com$", var.alb_dns_name))
-    error_message = "ALB DNS name must be a valid ELB DNS format."
+    condition     = can(regex("^[a-z0-9-]+\\.[a-z]{2}(-[a-z]+)+-[0-9]{1}\\.elb\\.amazonaws\\.com$", var.alb_dns_name))
+    error_message = "ALB DNS name must be a valid ELB DNS format (e.g., my-alb.us-east-1.elb.amazonaws.com)."
   }
 }
 
@@ -103,7 +103,7 @@ variable "cache_policy_id_api" {
 }
 
 variable "origin_request_policy_id_default" {
-  description = "CloudFront origin request policy ID for default behavior. Defaults to AWS managed AllViewer."
+  description = "CloudFront origin request policy ID for default behavior. Leave empty for no origin request policy (recommended for static content)."
   type        = string
   default     = ""
 }

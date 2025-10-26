@@ -69,8 +69,9 @@ resource "aws_cloudfront_distribution" "main" {
     # Use AWS managed caching policy for optimized static content
     cache_policy_id = var.cache_policy_id_default != "" ? var.cache_policy_id_default : data.aws_cloudfront_cache_policy.caching_optimized.id
 
-    # Use AWS managed origin request policy
-    origin_request_policy_id = var.origin_request_policy_id_default != "" ? var.origin_request_policy_id_default : data.aws_cloudfront_origin_request_policy.all_viewer.id
+    # Origin request policy: null by default for better cache hit ratio on static content
+    # Override with var.origin_request_policy_id_default if headers/cookies needed
+    origin_request_policy_id = var.origin_request_policy_id_default != "" ? var.origin_request_policy_id_default : null
 
     viewer_protocol_policy = "redirect-to-https"
   }
@@ -141,9 +142,6 @@ resource "aws_cloudfront_distribution" "main" {
   tags = {
     Name = "${var.environment}-${var.project_name}-cloudfront"
   }
-
-  # Wait for certificate validation before creating distribution
-  depends_on = [aws_acm_certificate.main]
 }
 
 # ------------------------------------------------------------------------------
