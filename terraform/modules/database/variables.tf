@@ -67,7 +67,6 @@ variable "db_master_username" {
   description = "Master username for the database"
   type        = string
   default     = "dbadmin"
-  sensitive   = true
 }
 
 # ------------------------------------------------------------------------------
@@ -194,16 +193,16 @@ variable "high_cpu_threshold" {
   default     = 80
 }
 
-variable "max_connections_count_threshold" {
-  description = "Threshold for the maximum number of database connections. The alarm will trigger if this count is exceeded."
+variable "high_connections_threshold_percent" {
+  description = "Threshold for high connections alarm as a percentage of max_connections for the instance class"
   type        = number
   default     = 80
 }
 
-variable "low_free_storage_threshold_bytes" {
-  description = "Threshold for low free storage alarm (in bytes)"
+variable "low_free_storage_threshold_percent" {
+  description = "Threshold for low free storage alarm as a percentage of allocated storage"
   type        = number
-  default     = 10737418240 # 10 GB in bytes
+  default     = 10
 }
 
 variable "low_freeable_memory_threshold_bytes" {

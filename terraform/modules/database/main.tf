@@ -11,7 +11,41 @@
 
 terraform {
   required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.18"
+    }
   }
+}
+
+# ------------------------------------------------------------------------------
+# Local Values
+# ------------------------------------------------------------------------------
+
+locals {
+  # Map of instance class to max_connections
+  # Reference: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_Limits.html
+  max_connections_map = {
+    "db.t3.micro"  = 112
+    "db.t3.small"  = 225
+    "db.t3.medium" = 450
+    "db.t3.large"  = 900
+    "db.t4g.micro" = 112
+    "db.t4g.small" = 225
+    "db.m5.large"  = 900
+    "db.m5.xlarge" = 1800
+    "db.r5.large"  = 1600
+    "db.r5.xlarge" = 3200
+  }
+
+  # Calculate dynamic thresholds
+  max_connections_threshold = floor(
+    lookup(local.max_connections_map, var.instance_class, 80) * (var.high_connections_threshold_percent / 100)
+  )
+
+  low_free_storage_threshold = floor(
+    var.allocated_storage * 1073741824 * (var.low_free_storage_threshold_percent / 100)
+  )
 }
 
 # ------------------------------------------------------------------------------
@@ -179,7 +213,7 @@ resource "aws_cloudwatch_metric_alarm" "high_connections" {
   namespace           = "AWS/RDS"
   period              = 300
   statistic           = "Average"
-  threshold           = var.max_connections_count_threshold
+  threshold           = local.max_connections_threshold
   alarm_description   = "This metric monitors RDS database connections"
   treat_missing_data  = "notBreaching"
 
@@ -203,7 +237,7 @@ resource "aws_cloudwatch_metric_alarm" "low_free_storage" {
   namespace           = "AWS/RDS"
   period              = 300
   statistic           = "Average"
-  threshold           = var.low_free_storage_threshold_bytes
+  threshold           = local.low_free_storage_threshold
   alarm_description   = "This metric monitors RDS free storage space"
   treat_missing_data  = "notBreaching"
 

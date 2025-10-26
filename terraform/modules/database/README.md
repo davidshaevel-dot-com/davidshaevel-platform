@@ -86,10 +86,12 @@ module "database" {
 | create_parameter_group | Whether to create a custom parameter group | bool | false |
 | parameter_group_family | Parameter group family | string | "postgres15" |
 | high_cpu_threshold | Threshold for high CPU alarm (percent) | number | 80 |
-| max_connections_count_threshold | Threshold for maximum connections alarm (count) | number | 80 |
-| low_free_storage_threshold_bytes | Threshold for low free storage alarm (bytes) | number | 10737418240 (10 GB) |
+| high_connections_threshold_percent | Threshold for high connections alarm (percent of max_connections) | number | 80 |
+| low_free_storage_threshold_percent | Threshold for low free storage alarm (percent of allocated storage) | number | 10 |
 | low_freeable_memory_threshold_bytes | Threshold for low freeable memory alarm (bytes) | number | 536870912 (512 MB) |
 | alarm_actions | List of ARNs to notify when alarm triggers | list(string) | [] |
+
+**Note on Instance Classes**: The module includes a `max_connections_map` for common instance classes (db.t3.*, db.t4g.*, db.m5.*, db.r5.*). If you use an instance class not in the map, the high connections alarm will use a fallback threshold of 80 connections. You can extend the map in `main.tf` to support additional instance classes.
 
 ## Outputs
 
@@ -132,11 +134,11 @@ module "database" {
 ## Monitoring
 
 ### CloudWatch Alarms
-The module creates the following alarms:
+The module creates the following alarms with dynamic, scalable thresholds:
 
 1. **High CPU** - Triggers when CPU > 80% for 2 consecutive periods
-2. **High Connections** - Triggers when connections > configured threshold (default: 80)
-3. **Low Free Storage** - Triggers when free storage < 10 GB
+2. **High Connections** - Triggers when connections exceed 80% of max_connections for the instance class (automatically scales with instance type)
+3. **Low Free Storage** - Triggers when free storage < 10% of allocated storage (automatically scales with storage size)
 4. **Low Freeable Memory** - Triggers when freeable memory < 512 MB
 
 ### Performance Insights
