@@ -302,8 +302,8 @@ resource "aws_security_group" "alb" {
   description = "Security group for Application Load Balancer - allows HTTP/HTTPS from internet"
   vpc_id      = aws_vpc.main.id
 
-  # Explicitly remove default "allow all" egress rule for least privilege
-  egress = []
+  # NOTE: All rules are managed by separate aws_vpc_security_group_*_rule resources
+  # We use lifecycle ignore_changes to prevent drift when using separate rule resources
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-${var.project_name}-alb-sg"
@@ -312,6 +312,7 @@ resource "aws_security_group" "alb" {
 
   lifecycle {
     create_before_destroy = true
+    ignore_changes        = [egress, ingress]
   }
 }
 
@@ -385,8 +386,8 @@ resource "aws_security_group" "app_frontend" {
   description = "Security group for frontend containers - allows traffic from ALB only"
   vpc_id      = aws_vpc.main.id
 
-  # Explicitly remove default "allow all" egress rule for least privilege
-  egress = []
+  # NOTE: All rules are managed by separate aws_vpc_security_group_*_rule resources
+  # We use lifecycle ignore_changes to prevent drift when using separate rule resources
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-${var.project_name}-app-frontend-sg"
@@ -395,6 +396,7 @@ resource "aws_security_group" "app_frontend" {
 
   lifecycle {
     create_before_destroy = true
+    ignore_changes        = [egress, ingress]
   }
 }
 
@@ -453,8 +455,8 @@ resource "aws_security_group" "app_backend" {
   description = "Security group for backend containers - allows traffic from ALB and frontend"
   vpc_id      = aws_vpc.main.id
 
-  # Explicitly remove default "allow all" egress rule for least privilege
-  egress = []
+  # NOTE: All rules are managed by separate aws_vpc_security_group_*_rule resources
+  # We use lifecycle ignore_changes to prevent drift when using separate rule resources
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-${var.project_name}-app-backend-sg"
@@ -463,6 +465,7 @@ resource "aws_security_group" "app_backend" {
 
   lifecycle {
     create_before_destroy = true
+    ignore_changes        = [egress, ingress]
   }
 }
 
@@ -536,8 +539,9 @@ resource "aws_security_group" "database" {
   description = "Security group for RDS PostgreSQL database - allows traffic from backend only"
   vpc_id      = aws_vpc.main.id
 
-  # Explicitly remove default "allow all" egress rule for least privilege
-  egress = []
+  # NOTE: All rules are managed by separate aws_vpc_security_group_*_rule resources
+  # We use lifecycle ignore_changes to prevent drift when using separate rule resources
+  # Database has no egress rules (fully isolated)
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-${var.project_name}-database-sg"
@@ -546,6 +550,7 @@ resource "aws_security_group" "database" {
 
   lifecycle {
     create_before_destroy = true
+    ignore_changes        = [egress, ingress]
   }
 }
 
