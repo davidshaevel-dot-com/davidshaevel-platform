@@ -111,3 +111,64 @@ module "database" {
   multi_az            = var.db_multi_az
   deletion_protection = var.db_deletion_protection
 }
+
+# ==============================================================================
+# Compute Module
+# ==============================================================================
+
+module "compute" {
+  source = "../../modules/compute"
+
+  # Environment configuration
+  environment  = var.environment
+  project_name = var.project_name
+
+  # Networking inputs (from networking module)
+  vpc_id                     = module.networking.vpc_id
+  public_subnet_ids          = module.networking.public_subnet_ids
+  private_app_subnet_ids     = module.networking.private_app_subnet_ids
+  alb_security_group_id      = module.networking.alb_security_group_id
+  frontend_security_group_id = module.networking.app_frontend_security_group_id
+  backend_security_group_id  = module.networking.app_backend_security_group_id
+
+  # Database inputs (from database module)
+  database_endpoint   = module.database.db_instance_endpoint
+  database_port       = module.database.db_instance_port
+  database_name       = module.database.db_name
+  database_secret_arn = module.database.secret_arn
+
+  # Container images (placeholder for now, will be replaced with ECR images)
+  frontend_image = var.frontend_container_image
+  backend_image  = var.backend_container_image
+
+  # Task sizing
+  frontend_task_cpu    = var.frontend_task_cpu
+  frontend_task_memory = var.frontend_task_memory
+  backend_task_cpu     = var.backend_task_cpu
+  backend_task_memory  = var.backend_task_memory
+
+  # Service configuration
+  desired_count_frontend = var.desired_count_frontend
+  desired_count_backend  = var.desired_count_backend
+
+  # Health checks
+  frontend_health_check_path = var.frontend_health_check_path
+  backend_health_check_path  = var.backend_health_check_path
+  health_check_grace_period  = var.health_check_grace_period
+
+  # ALB configuration
+  enable_deletion_protection = var.alb_enable_deletion_protection
+
+  # CloudWatch Logs
+  log_retention_days        = var.ecs_log_retention_days
+  enable_container_insights = var.enable_container_insights
+
+  # Tags
+  common_tags = {
+    Environment = var.environment
+    Project     = var.project_name
+    ManagedBy   = "Terraform"
+    Owner       = "David Shaevel"
+    CostCenter  = "Platform Engineering"
+  }
+}

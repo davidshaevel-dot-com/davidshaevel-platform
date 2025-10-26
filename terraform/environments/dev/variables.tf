@@ -157,6 +157,94 @@ variable "db_deletion_protection" {
 }
 
 # -----------------------------------------------------------------------------
+# Compute Configuration (ECS + ALB)
+# -----------------------------------------------------------------------------
+
+variable "frontend_container_image" {
+  description = "Docker image for frontend container"
+  type        = string
+  default     = "nginx:latest"
+}
+
+variable "backend_container_image" {
+  description = "Docker image for backend container"
+  type        = string
+  default     = "nginx:latest"
+}
+
+variable "frontend_task_cpu" {
+  description = "CPU units for frontend task (256 = 0.25 vCPU)"
+  type        = number
+  default     = 256
+}
+
+variable "frontend_task_memory" {
+  description = "Memory (MiB) for frontend task"
+  type        = number
+  default     = 512
+}
+
+variable "backend_task_cpu" {
+  description = "CPU units for backend task (256 = 0.25 vCPU)"
+  type        = number
+  default     = 256
+}
+
+variable "backend_task_memory" {
+  description = "Memory (MiB) for backend task"
+  type        = number
+  default     = 512
+}
+
+variable "desired_count_frontend" {
+  description = "Desired number of frontend tasks"
+  type        = number
+  default     = 2
+}
+
+variable "desired_count_backend" {
+  description = "Desired number of backend tasks"
+  type        = number
+  default     = 2
+}
+
+variable "frontend_health_check_path" {
+  description = "Health check path for frontend service"
+  type        = string
+  default     = "/"
+}
+
+variable "backend_health_check_path" {
+  description = "Health check path for backend service"
+  type        = string
+  default     = "/health"
+}
+
+variable "health_check_grace_period" {
+  description = "Seconds to wait before starting health checks on newly started tasks"
+  type        = number
+  default     = 60
+}
+
+variable "alb_enable_deletion_protection" {
+  description = "Enable deletion protection for ALB (recommended for production)"
+  type        = bool
+  default     = false
+}
+
+variable "ecs_log_retention_days" {
+  description = "CloudWatch Logs retention period in days for ECS containers"
+  type        = number
+  default     = 7
+}
+
+variable "enable_container_insights" {
+  description = "Enable CloudWatch Container Insights for ECS cluster"
+  type        = bool
+  default     = true
+}
+
+# -----------------------------------------------------------------------------
 # Common Tags
 # -----------------------------------------------------------------------------
 
