@@ -66,3 +66,52 @@ output "database_secret_arn" {
   description = "ARN of the database credentials secret in Secrets Manager"
   value       = module.database.secret_arn
 }
+
+# -----------------------------------------------------------------------------
+# Compute Outputs (ECS + ALB)
+# -----------------------------------------------------------------------------
+
+output "ecs_cluster_name" {
+  description = "Name of the ECS cluster"
+  value       = module.compute.ecs_cluster_name
+}
+
+output "ecs_cluster_arn" {
+  description = "ARN of the ECS cluster"
+  value       = module.compute.ecs_cluster_arn
+}
+
+output "alb_dns_name" {
+  description = "DNS name of the Application Load Balancer (use this to access the application)"
+  value       = module.compute.alb_dns_name
+}
+
+output "alb_arn" {
+  description = "ARN of the Application Load Balancer"
+  value       = module.compute.alb_arn
+}
+
+output "frontend_service_name" {
+  description = "Name of the frontend ECS service"
+  value       = module.compute.frontend_service_name
+}
+
+output "backend_service_name" {
+  description = "Name of the backend ECS service"
+  value       = module.compute.backend_service_name
+}
+
+output "application_url" {
+  description = "URL to access the application"
+  value       = module.compute.application_url
+}
+
+output "frontend_url" {
+  description = "URL to access the frontend"
+  value       = module.compute.frontend_url
+}
+
+output "backend_url" {
+  description = "URL to access the backend API"
+  value       = module.compute.backend_url
+}
