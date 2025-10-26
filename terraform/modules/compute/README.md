@@ -181,7 +181,9 @@ module "compute" {
 | `enable_deletion_protection` | Enable ALB deletion protection | `bool` | `false` |
 | `alb_idle_timeout` | ALB idle timeout (seconds) | `number` | `60` |
 | `enable_alb_access_logs` | Enable ALB access logs | `bool` | `false` |
-| `alb_access_logs_bucket` | S3 bucket for ALB logs | `string` | `""` |
+| `alb_access_logs_bucket` | S3 bucket for ALB logs (required if access logs enabled) | `string` | `""` |
+| `alb_certificate_arn` | ACM certificate ARN for HTTPS (enables HTTPS if provided) | `string` | `null` |
+| `alb_ssl_policy` | SSL policy for HTTPS listener | `string` | `"ELBSecurityPolicy-TLS13-1-2-2021-06"` |
 | `frontend_health_check_path` | Frontend health check path | `string` | `"/"` |
 | `backend_health_check_path` | Backend health check path | `string` | `"/health"` |
 | `health_check_interval` | Health check interval (seconds) | `number` | `30` |
@@ -330,19 +332,39 @@ Your backend application can use these variables to connect to PostgreSQL.
 
 ## Routing
 
-### HTTP Listener (Port 80)
+### HTTP and HTTPS Listeners
 
-**Default action:** Forward to frontend target group
+The ALB can be configured with optional HTTPS support:
 
-**Path-based routing:**
-- `/` → Frontend service
-- `/api/*` → Backend service
+**Without Certificate (HTTP Only):**
+- HTTP Listener (Port 80): Forwards traffic to frontend/backend target groups
+- Path-based routing: `/api/*` → Backend, `/` → Frontend
+
+**With Certificate (HTTPS Enabled):**
+- HTTPS Listener (Port 443): Forwards traffic to frontend/backend target groups
+- HTTP Listener (Port 80): Redirects all traffic to HTTPS (301 redirect)
+- Path-based routing: `/api/*` → Backend, `/` → Frontend
+
+To enable HTTPS, provide an ACM certificate ARN:
+```hcl
+alb_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/abc123..."
+```
+
+### Path-Based Routing
+
+- `/` → Frontend service (port 3000)
+- `/api/*` → Backend service (port 3001)
 
 ### Example URLs
 
-After deployment, access via ALB DNS name:
+**Without HTTPS (Development):**
 - `http://dev-myproject-alb-123456789.us-east-1.elb.amazonaws.com/` → Frontend
 - `http://dev-myproject-alb-123456789.us-east-1.elb.amazonaws.com/api/health` → Backend
+
+**With HTTPS (Production):**
+- `https://dev-myproject-alb-123456789.us-east-1.elb.amazonaws.com/` → Frontend
+- `https://dev-myproject-alb-123456789.us-east-1.elb.amazonaws.com/api/health` → Backend
+- `http://...` → Automatically redirects to `https://...`
 
 ---
 
@@ -386,13 +408,16 @@ After deployment, access via ALB DNS name:
 - **Frontend path:** `/` (returns 200-299)
 - **Backend path:** `/health` (returns 200-299)
 
-### Container Health Checks
+### Container Health Checks (Optional - Not Currently Configured)
 
-- **Frontend:** `curl http://localhost:3000/`
-- **Backend:** `curl http://localhost:3001/health`
-- **Interval:** 30 seconds
-- **Retries:** 3
-- **Start period:** 60 seconds
+Container-level health checks can be added to task definitions for additional monitoring. This module does not configure container health checks by default, relying instead on ALB target group health checks.
+
+If you want to add container health checks to your application images, implement these commands in your Dockerfile:
+
+- **Frontend:** `curl -f http://localhost:3000/ || exit 1`
+- **Backend:** `curl -f http://localhost:3001/health || exit 1`
+
+**Note:** The `-f` flag makes curl fail on HTTP errors, and `|| exit 1` ensures the health check exits with error code on failure.
 
 ---
 

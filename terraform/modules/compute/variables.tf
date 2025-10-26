@@ -228,6 +228,34 @@ variable "alb_access_logs_bucket" {
   description = "S3 bucket name for ALB access logs (required if enable_alb_access_logs is true)"
   type        = string
   default     = ""
+
+  validation {
+    condition     = !var.enable_alb_access_logs || (var.enable_alb_access_logs && var.alb_access_logs_bucket != "")
+    error_message = "alb_access_logs_bucket must be provided when enable_alb_access_logs is true."
+  }
+}
+
+variable "alb_certificate_arn" {
+  description = "ARN of the ACM certificate for HTTPS listener (optional, enables HTTPS if provided)"
+  type        = string
+  default     = null
+}
+
+variable "alb_ssl_policy" {
+  description = "SSL policy for HTTPS listener (only used if alb_certificate_arn is provided)"
+  type        = string
+  default     = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+
+  validation {
+    condition = contains([
+      "ELBSecurityPolicy-TLS13-1-2-2021-06",
+      "ELBSecurityPolicy-TLS13-1-3-2021-06",
+      "ELBSecurityPolicy-2016-08",
+      "ELBSecurityPolicy-TLS-1-2-2017-01",
+      "ELBSecurityPolicy-FS-1-2-Res-2020-10"
+    ], var.alb_ssl_policy)
+    error_message = "Invalid SSL policy. Must be a valid ELB security policy."
+  }
 }
 
 # ------------------------------------------------------------------------------

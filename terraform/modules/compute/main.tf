@@ -191,25 +191,9 @@ resource "aws_iam_role" "backend_task" {
   })
 }
 
-# Backend task policy for database access via Secrets Manager
-resource "aws_iam_role_policy" "backend_task_secrets" {
-  name = "${local.resource_prefix}-backend-task-secrets"
-  role = aws_iam_role.backend_task.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "secretsmanager:GetSecretValue",
-          "secretsmanager:DescribeSecret"
-        ]
-        Resource = var.database_secret_arn
-      }
-    ]
-  })
-}
+# Note: Backend task role has no additional policies by default.
+# Database credentials are injected as environment variables by the task execution role.
+# Add application-specific permissions here as needed (e.g., S3, DynamoDB, etc.)
 
 # ------------------------------------------------------------------------------
 # Application Load Balancer (Step 8)
@@ -301,15 +285,47 @@ resource "aws_lb_target_group" "backend" {
 # ALB Listeners (Step 8)
 # ------------------------------------------------------------------------------
 
-# HTTP listener - default action forwards to frontend
+# HTTPS listener (optional - only created if certificate ARN is provided)
+resource "aws_lb_listener" "https" {
+  count = var.alb_certificate_arn != null ? 1 : 0
+
+  load_balancer_arn = aws_lb.main.arn
+  port              = 443
+  protocol          = "HTTPS"
+  ssl_policy        = var.alb_ssl_policy
+  certificate_arn   = var.alb_certificate_arn
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.frontend.arn
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.resource_prefix}-alb-https-listener"
+  })
+}
+
+# HTTP listener - redirects to HTTPS if certificate is provided, otherwise forwards
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
   port              = 80
   protocol          = "HTTP"
 
   default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.frontend.arn
+    type = var.alb_certificate_arn != null ? "redirect" : "forward"
+
+    # Forward to frontend if no certificate
+    target_group_arn = var.alb_certificate_arn != null ? null : aws_lb_target_group.frontend.arn
+
+    # Redirect to HTTPS if certificate is provided
+    dynamic "redirect" {
+      for_each = var.alb_certificate_arn != null ? [1] : []
+      content {
+        port        = "443"
+        protocol    = "HTTPS"
+        status_code = "HTTP_301"
+      }
+    }
   }
 
   tags = merge(local.common_tags, {
@@ -318,8 +334,9 @@ resource "aws_lb_listener" "http" {
 }
 
 # Listener rule for backend API (/api/* -> backend)
+# Attaches to HTTPS listener if available, otherwise HTTP
 resource "aws_lb_listener_rule" "backend_api" {
-  listener_arn = aws_lb_listener.http.arn
+  listener_arn = var.alb_certificate_arn != null ? aws_lb_listener.https[0].arn : aws_lb_listener.http.arn
   priority     = 100
 
   action {
