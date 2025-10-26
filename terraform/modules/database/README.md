@@ -129,7 +129,11 @@ module "database" {
 - Automatic secret creation in AWS Secrets Manager
 - Secret rotation support (configured separately)
 - **Critical**: No credentials stored in Terraform state or code
-- Secret ARN format: `arn:aws:secretsmanager:region:account:secret:rds!db-instance-id`
+- Secret ARN format: `arn:aws:secretsmanager:region:account-id:secret:rds!db-RESOURCE_ID-RANDOM_SUFFIX`
+  - `RESOURCE_ID`: AWS-generated RDS resource identifier (not the instance name you set)
+  - `RANDOM_SUFFIX`: 6-character random string added by AWS
+  - Example: `arn:aws:secretsmanager:us-east-1:123456789012:secret:rds!db-9e45b71a-20b7-4077-aed7-ea382509de9c-4LmuVk`
+  - **Note**: The exact secret name is unpredictable; use the `secret_arn` output to reference it
 
 ## Monitoring
 
