@@ -30,6 +30,39 @@ resource "random_password" "db_master_password" {
 }
 
 # ------------------------------------------------------------------------------
+# IAM Role for Enhanced Monitoring
+# ------------------------------------------------------------------------------
+
+resource "aws_iam_role" "rds_enhanced_monitoring" {
+  name = "${var.project_name}-${var.environment}-rds-monitoring-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "monitoring.rds.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.project_name}-${var.environment}-rds-monitoring-role"
+    }
+  )
+}
+
+resource "aws_iam_role_policy_attachment" "rds_enhanced_monitoring" {
+  role       = aws_iam_role.rds_enhanced_monitoring.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
+}
+
+# ------------------------------------------------------------------------------
 # AWS Secrets Manager - Database Credentials
 # ------------------------------------------------------------------------------
 
@@ -136,6 +169,7 @@ resource "aws_db_instance" "main" {
 
   # Monitoring Configuration
   monitoring_interval                   = 60 # Enhanced monitoring every 60 seconds
+  monitoring_role_arn                   = aws_iam_role.rds_enhanced_monitoring.arn
   enabled_cloudwatch_logs_exports       = var.cloudwatch_logs_exports
   performance_insights_enabled          = var.performance_insights_enabled
   performance_insights_retention_period = var.performance_insights_retention_period
