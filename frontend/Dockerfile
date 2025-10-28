@@ -8,7 +8,7 @@ WORKDIR /app
 # Copy package files
 COPY package.json package-lock.json ./
 
-# Install dependencies
+# Install production dependencies only
 RUN npm ci --only=production && \
     npm cache clean --force
 
@@ -16,8 +16,12 @@ RUN npm ci --only=production && \
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Install ALL dependencies (including devDependencies for build)
+RUN npm ci && \
+    npm cache clean --force
 
 # Copy source code
 COPY . .
