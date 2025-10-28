@@ -176,12 +176,12 @@ export default function Contact() {
                 <div>
                   <h3 className="font-semibold text-zinc-900 dark:text-zinc-50">LinkedIn</h3>
                   <a
-                    href="https://www.linkedin.com/in/davidshaevel"
+                    href="https://www.linkedin.com/in/dshaevel"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-1 text-blue-600 hover:underline dark:text-blue-400"
                   >
-                    linkedin.com/in/davidshaevel
+                    linkedin.com/in/dshaevel
                   </a>
                 </div>
               </div>

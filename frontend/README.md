@@ -234,7 +234,7 @@ This is a personal portfolio project, but feedback and suggestions are welcome.
 
 For questions or issues:
 - **GitHub:** https://github.com/davidshaevel-dot-com/davidshaevel-platform
-- **LinkedIn:** https://www.linkedin.com/in/davidshaevel
+- **LinkedIn:** https://www.linkedin.com/in/dshaevel
 - **Location:** Austin, Texas
 
 ---

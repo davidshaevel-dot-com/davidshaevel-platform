@@ -80,7 +80,7 @@ export default function Footer() {
                 </svg>
               </a>
               <a
-                href="https://www.linkedin.com/in/davidshaevel"
+                href="https://www.linkedin.com/in/dshaevel"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
