@@ -133,14 +133,18 @@ docker run -p 3000:3000 davidshaevel-frontend:latest
 
 ### Environment Variables
 
-Create a `.env.local` file for local development (not committed):
+The application uses the following environment variables:
+
+- `NODE_ENV` - Set automatically by Next.js (`development` or `production`)
+- `PORT` - Server port (default: 3000)
+- `HOSTNAME` - Server hostname (default: 0.0.0.0 in Docker)
+
+For local development, you can create a `.env.local` file (not committed):
 
 ```env
-NODE_ENV=development
+# Optional: Override defaults
 PORT=3000
 ```
-
-See `.env.example` for all available configuration options.
 
 ## Production Deployment
 
