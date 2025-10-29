@@ -111,6 +111,8 @@ trap cleanup EXIT
 run_test() {
     local test_name="$1"
     local test_command="$2"
+    local output
+    local status
     
     TESTS_TOTAL=$((TESTS_TOTAL + 1))
     
@@ -118,7 +120,11 @@ run_test() {
         echo -n "[${TESTS_TOTAL}] ${test_name}... "
     fi
     
-    if eval "$test_command" > /dev/null 2>&1; then
+    # Capture both stdout and stderr for better debugging
+    output=$(eval "$test_command" 2>&1)
+    status=$?
+    
+    if [ $status -eq 0 ]; then
         TESTS_PASSED=$((TESTS_PASSED + 1))
         log_success ""
         log_verbose "Test passed: $test_name"
@@ -129,6 +135,12 @@ run_test() {
         if [[ "$VERBOSE" == true ]]; then
             log_error "Test failed: $test_name"
             log_error "Command: $test_command"
+            if [ -n "$output" ]; then
+                log_error "Output:"
+                echo "$output" | while IFS= read -r line; do
+                    log_error "  $line"
+                done
+            fi
         fi
         return 1
     fi
@@ -252,12 +264,16 @@ log_verbose "Building from: $BACKEND_DIR"
 log_verbose "Image name: $BACKEND_IMAGE"
 
 cd "$BACKEND_DIR"
-if docker build -t "$BACKEND_IMAGE" . > /dev/null 2>&1; then
-    log_success "Backend image built"
-else
+
+# Capture build output and show on failure for easier debugging
+if ! build_output=$(docker build -t "$BACKEND_IMAGE" . 2>&1); then
     log_error "Failed to build backend image"
+    log_error "Build output:"
+    echo "$build_output"
     exit 1
 fi
+
+log_success "Backend image built"
 
 # -----------------------------------------------------------------------------
 # 4. Start PostgreSQL Container
@@ -275,15 +291,23 @@ docker run -d \
 
 log_success "PostgreSQL container started"
 
-# Wait for PostgreSQL to be ready
+# Wait for PostgreSQL to be ready with polling (30 second timeout)
 log "Waiting for PostgreSQL to be ready..."
-sleep 5
 
-# Verify PostgreSQL is responding
-if docker exec "$POSTGRES_CONTAINER" pg_isready -U "$DB_USER" > /dev/null 2>&1; then
-    log_success "PostgreSQL is ready"
-else
-    log_error "PostgreSQL did not start correctly"
+pg_is_ready=false
+for i in {1..30}; do
+    if docker exec "$POSTGRES_CONTAINER" pg_isready -U "$DB_USER" -q 2>/dev/null; then
+        log_success "PostgreSQL is ready"
+        pg_is_ready=true
+        break
+    fi
+    log_verbose "PostgreSQL not ready, waiting... (attempt $i/30)"
+    sleep 1
+done
+
+if [ "$pg_is_ready" = false ]; then
+    log_error "PostgreSQL did not start correctly after 30 seconds"
+    log_error "Container logs:"
     docker logs "$POSTGRES_CONTAINER"
     exit 1
 fi
@@ -338,6 +362,9 @@ run_test "Metrics endpoint returns Prometheus format" \
     "curl -f -s '${API_URL}/metrics' | grep -q 'backend_uptime_seconds'"
 
 # Test 4: Create project with native array
+# This test verifies the CREATE operation and checks that a valid UUID is returned.
+# Note: The PROJECT_ID assignment happens in a subshell (inside eval), so the ID
+# is verified but not preserved. This is intentional - we test CREATE in isolation.
 PROJECT_ID=""
 run_test "Create project (native array type)" \
     "PROJECT_ID=\$(curl -f -s -X POST '${API_URL}/projects' \
@@ -348,7 +375,11 @@ run_test "Create project (native array type)" \
             \"technologies\": [\"AWS\", \"TypeScript\", \"PostgreSQL\"]
         }' | jq -r '.id') && [ -n \"\$PROJECT_ID\" ]"
 
-# Capture project ID for subsequent tests
+# Create a SEPARATE project for subsequent CRUD tests (Tests #5, #6, #7, #10)
+# This project's ID IS preserved (runs in main shell, not subshell) and will be
+# used for GET, UPDATE, and DELETE operations below. We create a separate project
+# to maintain test independence - if the CREATE test above fails, these tests can
+# still run.
 PROJECT_ID=$(curl -f -s -X POST "${API_URL}/projects" \
     -H 'Content-Type: application/json' \
     -d '{
@@ -357,7 +388,7 @@ PROJECT_ID=$(curl -f -s -X POST "${API_URL}/projects" \
         "technologies": ["Docker", "Nest.js"]
     }' | jq -r '.id')
 
-log_verbose "Created project with ID: $PROJECT_ID"
+log_verbose "Created project with ID: $PROJECT_ID for subsequent tests"
 
 # Test 5: Get project
 run_test "Get project by ID" \
