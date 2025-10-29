@@ -138,6 +138,130 @@ npm run migration:run
 npm run migration:revert
 ```
 
+## 🧪 Testing
+
+### Automated Integration Tests
+
+We provide a comprehensive automated test script that verifies all backend functionality with 14 tests covering API endpoints, database integration, security, and error handling.
+
+**Run all tests:**
+```bash
+./backend/scripts/test-local.sh
+```
+
+**What it tests:**
+- ✅ Health check endpoints (with/without database)
+- ✅ Metrics endpoint (Prometheus format)
+- ✅ Projects CRUD operations
+- ✅ UUID validation
+- ✅ Request validation (missing/invalid fields)
+- ✅ Database integration (native PostgreSQL text[] arrays)
+- ✅ Query optimization (TypeORM preload method)
+- ✅ Error handling (503 status codes when DB is down)
+- ✅ Security (error message hiding in production mode)
+- ✅ Development vs production mode differences
+
+**Test Coverage:** 14 automated integration tests
+- 7 API endpoint tests
+- 3 validation tests
+- 2 security tests
+- 2 database integration tests
+
+**Script Options:**
+```bash
+./backend/scripts/test-local.sh           # Run all tests with color output
+./backend/scripts/test-local.sh -v        # Verbose mode (detailed output)
+./backend/scripts/test-local.sh --no-cleanup  # Keep containers running (for debugging)
+./backend/scripts/test-local.sh -q        # Quiet mode (minimal output, for CI/CD)
+./backend/scripts/test-local.sh -h        # Show help
+```
+
+**Requirements:**
+- Docker Desktop running
+- `curl` installed
+- `jq` installed (for JSON parsing)
+- Bash 4.0+
+
+**Expected Output:**
+```
+=== Backend API Integration Tests ===
+
+Checking dependencies... ✓
+Building backend Docker image... ✓
+Starting PostgreSQL container... ✓
+Starting backend container (development mode)... ✓
+
+=== Development Mode Tests ===
+[1] Health check (DB connected)... ✓
+[2] Health check shows error details in dev mode... ✓
+[3] Metrics endpoint returns Prometheus format... ✓
+[4] Create project (native array type)... ✓
+[5] Get project by ID... ✓
+[6] Update project (optimized query)... ✓
+[7] Get all projects... ✓
+[8] Invalid UUID returns 400... ✓
+[9] Missing required fields returns 400... ✓
+[10] Delete project returns 204... ✓
+
+=== Database Verification ===
+[11] Native text[] array type in database... ✓
+[12] Data persists in database... ✓
+
+=== Error Handling Tests ===
+[13] Health check returns 503 when DB down... ✓
+
+=== Production Mode Tests ===
+[14] Error details hidden in production... ✓
+
+=== Results ===
+Total Tests: 14
+Passed: 14
+Failed: 0
+Success Rate: 100%
+
+All tests passed! ✓
+```
+
+**CI/CD Integration:**
+This script is designed to work in GitHub Actions for automated testing on pull requests. Use quiet mode (`-q`) in CI/CD pipelines.
+
+### Manual Testing
+
+You can also test endpoints manually using `curl`:
+
+```bash
+# Health check (should return 200)
+curl -i http://localhost:3001/api/health
+
+# Metrics (should return Prometheus format)
+curl http://localhost:3001/api/metrics
+
+# List projects
+curl http://localhost:3001/api/projects
+
+# Create project
+curl -X POST http://localhost:3001/api/projects \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Test Project",
+    "description": "A test project",
+    "technologies": ["Node.js", "TypeScript", "PostgreSQL"]
+  }'
+
+# Get specific project (replace UUID)
+curl http://localhost:3001/api/projects/550e8400-e29b-41d4-a716-446655440000
+
+# Update project (replace UUID)
+curl -X PUT http://localhost:3001/api/projects/550e8400-e29b-41d4-a716-446655440000 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Updated Title"
+  }'
+
+# Delete project (replace UUID)
+curl -X DELETE http://localhost:3001/api/projects/550e8400-e29b-41d4-a716-446655440000
+```
+
 ## 🐳 Docker
 
 ### Build Image
