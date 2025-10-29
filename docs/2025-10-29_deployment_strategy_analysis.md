@@ -286,15 +286,15 @@ TT-28 (Tests) → TT-20+27 (Integration) → TT-23 (Full Deploy)
 
 5. **Testing & Validation (1 hour)**
    - Deploy backend via GitHub Actions
-   - Test health endpoint: `https://api.davidshaevel.com/api/health`
-   - Test projects endpoint: `https://api.davidshaevel.com/api/projects`
+   - Test health endpoint: `https://davidshaevel.com/api/health`
+   - Test projects endpoint: `https://davidshaevel.com/api/projects`
    - Verify RDS connectivity
    - Check CloudWatch logs
    - Test CRUD operations
 
 **Deliverables:**
 - Backend running in ECS Fargate
-- Accessible at `https://api.davidshaevel.com/api/*`
+- Accessible at `https://davidshaevel.com/api/*`
 - GitHub Actions workflow for backend
 - Documentation in deployment guide
 
@@ -451,7 +451,7 @@ TT-28 (Tests) → TT-20+27 (Integration) → TT-23 (Full Deploy)
 3. **Remote Backend Testing**
    ```bash
    # Test frontend locally against deployed AWS backend
-   NEXT_PUBLIC_API_URL=https://api.davidshaevel.com npm run dev
+   NEXT_PUBLIC_API_URL=https://davidshaevel.com npm run dev
    # Verify API calls work
    # Test CRUD operations
    ```
@@ -624,7 +624,7 @@ TT-28 (Tests) → TT-20+27 (Integration) → TT-23 (Full Deploy)
 
 **After Phase 2 (TT-23a):**
 - ✅ Backend deployed to ECS
-- ✅ Accessible at https://api.davidshaevel.com/api/*
+- ✅ Accessible at https://davidshaevel.com/api/*
 - ✅ RDS connection verified in production
 - ✅ GitHub Actions working for backend
 
@@ -650,4 +650,75 @@ TT-28 (Tests) → TT-20+27 (Integration) → TT-23 (Full Deploy)
 - **Start with TT-28** immediately to establish quality baseline
 
 This approach balances risk, speed, and portfolio impact while following industry best practices.
+
+---
+
+## Final Decision (Updated Post-Session)
+
+After completing TT-28 (automated testing), we have **revised the deployment strategy** for simplicity and clarity:
+
+### Selected Approach: Simplified Linear Progression
+
+**Sequence:**
+```
+TT-20 (Local Dev) → TT-23 (Backend Deploy) → TT-27 (Frontend Integration)
+```
+
+### Rationale for Simplification
+
+**Why we changed from the complex 4-phase approach:**
+
+1. **TT-28 Already Complete**
+   - The analysis document was written during the session
+   - TT-28 was completed in the same session
+   - No longer part of "next steps"
+
+2. **Simpler Mental Model**
+   - Linear progression easier to understand and execute
+   - Reduces cognitive overhead
+   - Clearer documentation across all files
+
+3. **Local Testing First**
+   - Validates full-stack integration before AWS deployment
+   - Cheaper to debug (no AWS costs during troubleshooting)
+   - Docker Compose provides production-like environment
+
+4. **Consistency with Existing Documentation**
+   - AGENT_HANDOFF.md recommends this sequence
+   - README.md uses this sequence
+   - Linear project update uses this sequence
+
+5. **Lower Risk**
+   - We know the stack works locally before deploying
+   - Can catch integration issues early
+   - Reduces AWS troubleshooting complexity
+
+### Implementation Plan
+
+**TT-20: Local Development Environment (4-6 hours)**
+- Create Docker Compose configuration
+- PostgreSQL + Frontend + Backend containers
+- Verify frontend makes API calls to backend
+- Test full-stack locally
+
+**TT-23: Deploy Backend to ECS (6-8 hours)**
+- Create ECR repository for backend
+- Build and push backend Docker image to ECR
+- Update ECS task definition with ECR image URI
+- Deploy backend to ECS Fargate
+- Verify health checks passing on ALB
+- Test API via https://davidshaevel.com/api/
+
+**TT-27: Frontend Integration (Future)**
+- Frontend makes API calls to deployed backend
+- Deploy frontend to ECS
+- Full-stack application live
+
+### Note on This Document
+
+This document captures the **strategic analysis** performed during the October 29, 2025 session. The complex 4-phase approach (Option A) was thoroughly analyzed and remains a valid alternative for future projects or if requirements change.
+
+However, for this specific project, the **simpler linear approach** was selected as the final decision for the reasons outlined above.
+
+Both approaches are valid; the choice depends on project priorities (speed vs. early validation vs. complexity tolerance).
 
