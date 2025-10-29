@@ -653,72 +653,103 @@ This approach balances risk, speed, and portfolio impact while following industr
 
 ---
 
-## Final Decision (Updated Post-Session)
+## Final Decision (Updated October 29, 2025 - End of Day)
 
-After completing TT-28 (automated testing), we have **revised the deployment strategy** for simplicity and clarity:
+After completing TT-28 (automated testing) and careful analysis of both TT-20 and TT-23, we have **finalized the deployment strategy**:
 
-### Selected Approach: Simplified Linear Progression
+### Selected Approach: Backend-First Deployment
 
 **Sequence:**
 ```
-TT-20 (Local Dev) → TT-23 (Backend Deploy) → TT-27 (Frontend Integration)
+TT-23 (Backend Deploy) → TT-20 (Local Dev) → TT-23b (Frontend Deploy)
 ```
 
-### Rationale for Simplification
+### Rationale for Backend-First
 
-**Why we changed from the complex 4-phase approach:**
+**Why TT-23 before TT-20:**
 
-1. **TT-28 Already Complete**
-   - The analysis document was written during the session
-   - TT-28 was completed in the same session
-   - No longer part of "next steps"
+1. **Validate Production Infrastructure Early**
+   - Test RDS connectivity in real AWS environment
+   - Identify security group, VPC, subnet issues early
+   - Verify AWS Secrets Manager integration works
+   - De-risks infrastructure before frontend complexity
 
-2. **Simpler Mental Model**
-   - Linear progression easier to understand and execute
-   - Reduces cognitive overhead
-   - Clearer documentation across all files
+2. **Portfolio Value During Job Search**
+   - Show working backend API in production immediately
+   - Demonstrate AWS deployment skills
+   - Can reference live API in interviews: https://davidshaevel.com/api/health
+   - Faster time to portfolio demonstration (hours vs days)
 
-3. **Local Testing First**
-   - Validates full-stack integration before AWS deployment
-   - Cheaper to debug (no AWS costs during troubleshooting)
-   - Docker Compose provides production-like environment
+3. **TT-20 Prerequisites Satisfied**
+   - TT-20 describes: "TT-23a: Backend deployed to ECS (can test against remote backend)"
+   - TT-20 specifically mentions: "Can switch between local and remote backend"
+   - The real value of TT-20 comes AFTER you have a deployed backend
 
-4. **Consistency with Existing Documentation**
-   - AGENT_HANDOFF.md recommends this sequence
-   - README.md uses this sequence
-   - Linear project update uses this sequence
+4. **Lower Deployment Risk**
+   - Smaller, incremental deployment
+   - Isolate backend issues before frontend integration
+   - Easier troubleshooting with clear error boundaries
+   - Backend logs isolated from frontend
 
-5. **Lower Risk**
-   - We know the stack works locally before deploying
-   - Can catch integration issues early
-   - Reduces AWS troubleshooting complexity
+5. **Realistic Testing Enabled**
+   - After TT-23: Frontend can test against real deployed backend (in TT-20)
+   - Catch environment-specific issues early
+   - More realistic than only local testing
+   - Validates CORS configuration in real environment
+
+6. **No CI/CD Complexity**
+   - TT-23 scope clarified: Manual deployment only (no GitHub Actions)
+   - Estimated time reduced from 6-8 hours to 3-4 hours
+   - GitHub Actions CI/CD deferred to future enhancement
+   - Focus on getting backend running in production quickly
 
 ### Implementation Plan
 
-**TT-20: Local Development Environment (4-6 hours)**
+**TT-23: Deploy Backend to ECS (3-4 hours) - IMMEDIATE NEXT STEP**
+- Create ECR repository for backend (30 min)
+- Build and push backend Docker image to ECR (30 min)
+- Update Terraform compute module with ECR image URI (1 hour)
+- Deploy backend to ECS Fargate via Terraform apply (automated)
+- Verify health checks passing on ALB (1 hour)
+- Test API via https://davidshaevel.com/api/health
+- **Deliverable:** Working backend API in production ✅
+
+**TT-20: Local Development Environment (4-6 hours) - AFTER TT-23**
 - Create Docker Compose configuration
 - PostgreSQL + Frontend + Backend containers
 - Verify frontend makes API calls to backend
 - Test full-stack locally
+- **New capability:** Can test frontend locally against deployed AWS backend
+- **New capability:** Validate CORS configuration end-to-end
 
-**TT-23: Deploy Backend to ECS (6-8 hours)**
-- Create ECR repository for backend
-- Build and push backend Docker image to ECR
-- Update ECS task definition with ECR image URI
-- Deploy backend to ECS Fargate
-- Verify health checks passing on ALB
-- Test API via https://davidshaevel.com/api/
-
-**TT-27: Frontend Integration (Future)**
-- Frontend makes API calls to deployed backend
+**TT-23b: Deploy Frontend to ECS (Future)**
+- After TT-20 frontend integration is complete
 - Deploy frontend to ECS
 - Full-stack application live
 
+### Why Not TT-20 First?
+
+The original analysis suggested TT-20 first for these reasons:
+
+❌ **"Local Testing First" - Not as valuable without deployed backend**
+- Local testing is useful, but lacks production environment validation
+- Can't test against real RDS, real Secrets Manager, real security groups
+- Misses opportunity for early infrastructure validation
+
+❌ **"Cheaper to Debug" - Marginal benefit**
+- Backend already tested locally (TT-28 automated tests)
+- Infrastructure issues only appear in AWS, not locally
+- Docker Compose can't catch VPC, security group, or IAM issues
+
+❌ **"Consistency with Documentation" - Documentation updated**
+- All documentation now reflects TT-23 first approach
+- Linear issues aligned with backend-first strategy
+
 ### Note on This Document
 
-This document captures the **strategic analysis** performed during the October 29, 2025 session. The complex 4-phase approach (Option A) was thoroughly analyzed and remains a valid alternative for future projects or if requirements change.
+This document captures the **strategic analysis** performed during the October 29, 2025 session. Both the complex 4-phase approach (Option A) and the simpler linear approach were thoroughly analyzed.
 
-However, for this specific project, the **simpler linear approach** was selected as the final decision for the reasons outlined above.
+The **final decision** after end-of-day review: **Backend-first deployment (TT-23 → TT-20 → TT-23b)**
 
-Both approaches are valid; the choice depends on project priorities (speed vs. early validation vs. complexity tolerance).
+This maximizes portfolio value, de-risks AWS infrastructure early, and provides faster time to working demonstration.
 

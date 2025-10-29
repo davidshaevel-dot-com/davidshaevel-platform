@@ -117,6 +117,30 @@ output "backend_url" {
 }
 
 # -----------------------------------------------------------------------------
+# ECR Repository Outputs
+# -----------------------------------------------------------------------------
+
+output "backend_ecr_repository_url" {
+  description = "URL of the backend ECR repository (use for docker push)"
+  value       = module.compute.backend_ecr_repository_url
+}
+
+output "backend_ecr_repository_name" {
+  description = "Name of the backend ECR repository"
+  value       = module.compute.backend_ecr_repository_name
+}
+
+output "frontend_ecr_repository_url" {
+  description = "URL of the frontend ECR repository (use for docker push)"
+  value       = module.compute.frontend_ecr_repository_url
+}
+
+output "frontend_ecr_repository_name" {
+  description = "Name of the frontend ECR repository"
+  value       = module.compute.frontend_ecr_repository_name
+}
+
+# -----------------------------------------------------------------------------
 # CDN Outputs (CloudFront)
 # -----------------------------------------------------------------------------
 
