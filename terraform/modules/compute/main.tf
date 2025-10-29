@@ -444,7 +444,7 @@ resource "aws_ecs_task_definition" "backend" {
       environment = [
         {
           name  = "NODE_ENV"
-          value = var.environment
+          value = "production"  # Always use production for deployed backend (enables SSL for RDS)
         },
         {
           name  = "DB_HOST"
