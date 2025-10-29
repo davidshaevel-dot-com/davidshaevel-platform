@@ -9,9 +9,9 @@
 ## ✅ Tasks Completed
 
 ### 1. Linear Project Update
-- **File:** `docs/2025-10-29_linear_project_update_for_posting.md` (168 lines)
+- **File:** `docs/2025-10-29_linear_project_update_for_posting.md` (199 lines)
 - **Status:** Ready to copy into Linear UI
-- **Content:** Full day summary under 180 line limit
+- **Content:** Full day summary under 200 line limit
 
 ### 2. README.md Updated
 - Applications: 50% → 67% complete
@@ -111,7 +111,7 @@
 - **Working Tree:** Clean (after PR #20 merge)
 
 ### Linear Updates Needed
-1. Mark TT-23 (Backend Deployment) as **Done**
+1. Keep TT-23 (Backend Deployment) as **In Progress** (schema creation pending)
 2. Post project update from `2025-10-29_linear_project_update_for_posting.md`
 3. Verify TT-18, TT-19, TT-28 marked as **Done**
 
