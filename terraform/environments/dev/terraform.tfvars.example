@@ -46,6 +46,15 @@ db_multi_az            = false  # Set to true for production
 db_deletion_protection = false  # Set to true for production
 
 # -----------------------------------------------------------------------------
+# Container Image Configuration
+# -----------------------------------------------------------------------------
+
+# Backend container image (must specify explicit tag, not :latest)
+# Format: <account-id>.dkr.ecr.<region>.amazonaws.com/<project-name>/backend:<git-sha>
+# Example: 123456789012.dkr.ecr.us-east-1.amazonaws.com/myproject/backend:f00ba12
+backend_container_image = "123456789012.dkr.ecr.us-east-1.amazonaws.com/myproject/backend:abc1234"
+
+# -----------------------------------------------------------------------------
 # Additional Tags (Optional)
 # -----------------------------------------------------------------------------
 
