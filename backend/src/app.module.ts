@@ -26,6 +26,11 @@ import { ProjectsModule } from './projects/projects.module';
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: configService.get('NODE_ENV') === 'development', // Only in dev!
         logging: configService.get('NODE_ENV') === 'development',
+        // Enable SSL for production RDS (required by AWS RDS)
+        ssl:
+          configService.get('NODE_ENV') === 'production'
+            ? { rejectUnauthorized: false }
+            : false,
       }),
     }),
     HealthModule,
