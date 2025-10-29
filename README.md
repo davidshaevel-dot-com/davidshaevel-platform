@@ -66,12 +66,12 @@ This project serves as both a personal website and a demonstration of production
 - ✅ Cloudflare DNS configured (gray cloud mode)
 
 **Current State:**
-- **Total Resources:** 76 AWS resources deployed
+- **Total Resources:** 78 AWS resources deployed (76 + 2 ECR repos)
 - **Monthly Cost:** ~$117-124
 - **Infrastructure:** 100% complete ✅
-- **Applications:** 50% complete (Frontend ✅, Backend ✅, Deployment ⏳)
+- **Applications:** 67% complete (Frontend ✅, Backend ✅ & Deployed ✅, Frontend Deployment ⏳)
 - **Testing:** Automated integration tests (14/14 passing) ✅
-- **Status:** https://davidshaevel.com operational (ready for container deployment)
+- **Backend API Live:** https://davidshaevel.com/api/health (200 OK, DB connected)
 
 ## 📁 Repository Structure
 
@@ -318,22 +318,30 @@ terraform output  # View all outputs
 - CI/CD ready with multiple modes
 - 553-line bash test script
 
+**✅ TT-23: Backend Deployed to ECS** (Complete - Oct 29, 2025)
+- ECR repository created (immutable tags)
+- Backend image: `davidshaevel/backend:634dd23`
+- Deployed via Terraform with explicit git SHA tags
+- 2/2 ECS tasks healthy, ALB targets healthy
+- Database connected with SSL (relaxed validation)
+- Production API live: https://davidshaevel.com/api/health
+
 ### Next Steps
 
-**TT-20: Local Development Environment** (4-6 hours)
+**TT-23: Deploy Frontend to ECS** (2-3 hours) - Priority 1
+- Build and push frontend Docker image to ECR
+- Update Terraform with frontend image URI
+- Deploy to ECS Fargate
+- Verify https://davidshaevel.com serves frontend
+- No more 502 errors
+
+**TT-20: Local Development Environment** (4-6 hours) - Priority 2
 - Docker Compose for full-stack local development
 - PostgreSQL + Frontend + Backend containers
 - Environment variable configuration
 - Frontend-backend integration verification
 
-**TT-23: Deploy Backend to ECS** (6-8 hours)
-- Create ECR repository
-- Build and push backend image
-- Update ECS task definition
-- Verify health checks on ALB
-- Test API via CloudFront
-
-**Expected Outcome:** https://davidshaevel.com serving real backend API
+**Expected Outcome:** Full-stack platform live at https://davidshaevel.com
 
 ## 🔄 Git Workflow
 
@@ -362,10 +370,11 @@ Austin, Texas
 
 **Project Timeline:**
 - Infrastructure: October 23-26, 2025 (100% Complete)
-- Applications: October 28-29, 2025 (50% Complete)
+- Applications: October 28-29, 2025 (67% Complete)
+- Backend Deployment: October 29, 2025 (Complete)
 
-**Status:** Infrastructure 100%, Applications 50%, Testing Infrastructure 100%  
-**Last Updated:** October 29, 2025
+**Status:** Infrastructure 100%, Applications 67%, Backend Deployed ✅  
+**Last Updated:** October 29, 2025 (End of Day)
 
 ## 🤖 AI Agent Sessions
 
@@ -375,8 +384,9 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - Oct 26 Session 1: TT-22 (Steps 8-9) - Compute Module
 - Oct 26 Session 2: TT-24 (Step 10) - CDN Module
 - Oct 28: TT-18 - Next.js Frontend Application
-- Oct 29: TT-19 - Nest.js Backend API
-- Oct 29: TT-28 - Automated Integration Testing
+- Oct 29 AM: TT-19 - Nest.js Backend API
+- Oct 29 AM: TT-28 - Automated Integration Testing
+- Oct 29 PM: TT-23 - Backend Deployment to ECS (PR #18, #19)
 
 **Infrastructure Milestones:**
 - ✅ TT-16 (Steps 1-3): Foundation
@@ -389,7 +399,8 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - ✅ TT-18: Next.js Frontend (Complete)
 - ✅ TT-19: Nest.js Backend (Complete)
 - ✅ TT-28: Automated Testing (Complete)
-- ⏳ TT-20: Local Development (Todo)
-- ⏳ TT-23: Backend Deployment (Todo)
+- ✅ TT-23: Backend Deployment (Complete - Oct 29, 2025)
+- ⏳ TT-23: Frontend Deployment (Todo - Priority 1)
+- ⏳ TT-20: Local Development (Todo - Priority 2)
 
-**Next Phase:** Container Deployment (TT-20, TT-23)
+**Next Phase:** Frontend Deployment & Local Development (TT-23, TT-20)
