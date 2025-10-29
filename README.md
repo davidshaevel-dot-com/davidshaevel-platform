@@ -328,6 +328,13 @@ terraform output  # View all outputs
 
 ### Next Steps
 
+**TT-23: Complete Backend Deployment** (30-60 minutes) - Priority 0 (Quick Win!)
+- Create database schema for `projects` table in RDS
+- Verify CRUD operations work end-to-end
+- Test all 5 endpoints: GET all, GET by ID, POST, PUT, DELETE
+- **Current State:** Backend deployed and healthy, but projects table doesn't exist yet
+- **Expected Outcome:** Fully functional backend API with working CRUD operations ✅
+
 **TT-23: Deploy Frontend to ECS** (2-3 hours) - Priority 1
 - Build and push frontend Docker image to ECR
 - Update Terraform with frontend image URI
