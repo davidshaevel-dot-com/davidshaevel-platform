@@ -27,10 +27,8 @@ import { ProjectsModule } from './projects/projects.module';
         synchronize: configService.get('NODE_ENV') === 'development', // Only in dev!
         logging: configService.get('NODE_ENV') === 'development',
         // Enable SSL for production RDS (required by AWS RDS)
-        ssl:
-          configService.get('NODE_ENV') === 'production'
-            ? { rejectUnauthorized: false }
-            : false,
+        // Uses proper certificate validation with trusted Amazon Root CAs
+        ssl: configService.get('NODE_ENV') === 'production',
       }),
     }),
     HealthModule,

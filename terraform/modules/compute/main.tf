@@ -444,7 +444,7 @@ resource "aws_ecs_task_definition" "backend" {
       environment = [
         {
           name  = "NODE_ENV"
-          value = "production"  # Always use production for deployed backend (enables SSL for RDS)
+          value = "production" # Always use production for deployed backend (enables SSL for RDS)
         },
         {
           name  = "DB_HOST"
@@ -481,7 +481,10 @@ resource "aws_ecs_task_definition" "backend" {
       }
 
       healthCheck = {
-        command     = ["CMD-SHELL", "curl -f http://localhost:${local.backend_port}/api/health || exit 1"]
+        command = [
+          "CMD-SHELL",
+          "node -e \"require('http').get('http://localhost:${local.backend_port}/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""
+        ]
         interval    = 30
         timeout     = 5
         retries     = 3

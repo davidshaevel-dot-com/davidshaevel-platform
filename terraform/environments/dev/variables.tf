@@ -167,9 +167,10 @@ variable "frontend_container_image" {
 }
 
 variable "backend_container_image" {
-  description = "Docker image for backend container"
+  description = "Docker image for backend container (must specify explicit tag, e.g., :abc123)"
   type        = string
-  default     = "108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend:latest"
+  # No default - explicit image tag required for safe, predictable deployments
+  # Example: terraform apply -var 'backend_container_image=108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend:abc123'
 }
 
 variable "frontend_task_cpu" {
