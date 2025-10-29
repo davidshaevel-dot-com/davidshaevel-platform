@@ -26,7 +26,7 @@ export class Project {
   @Column({ length: 500, nullable: true })
   githubUrl: string;
 
-  @Column('simple-array', { nullable: true })
+  @Column({ type: 'text', array: true, nullable: true })
   technologies: string[];
 
   @Column({ default: true })

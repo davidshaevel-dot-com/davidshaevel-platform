@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
@@ -31,7 +31,7 @@ export class HealthService {
 
     const isHealthy = databaseStatus === 'connected';
 
-    return {
+    const response = {
       status: isHealthy ? 'healthy' : 'unhealthy',
       timestamp: now.toISOString(),
       version: process.env.npm_package_version || '1.0.0',
@@ -41,9 +41,16 @@ export class HealthService {
       database: {
         status: databaseStatus,
         type: 'postgresql',
-        ...(databaseError && { error: databaseError }),
+        ...(databaseError &&
+          process.env.NODE_ENV === 'development' && { error: databaseError }),
       },
     };
+
+    if (!isHealthy) {
+      throw new ServiceUnavailableException(response);
+    }
+
+    return response;
   }
 }
 

@@ -1,12 +1,19 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const logger = new Logger('Bootstrap');
   
   // Enable CORS for frontend
-  app.enableCors();
+  app.enableCors({
+    origin:
+      process.env.NODE_ENV === 'production'
+        ? process.env.FRONTEND_URL || 'https://davidshaevel.com'
+        : '*',
+    credentials: true,
+  });
   
   // Enable validation
   app.useGlobalPipes(new ValidationPipe({
@@ -19,6 +26,6 @@ async function bootstrap() {
   
   const port = process.env.PORT ?? 3001;
   await app.listen(port);
-  console.log(`🚀 Backend API running on port ${port}`);
+  logger.log(`🚀 Backend API running on port ${port}`);
 }
 bootstrap();

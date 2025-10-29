@@ -33,8 +33,13 @@ export class ProjectsService {
   }
 
   async update(id: string, updateProjectDto: UpdateProjectDto): Promise<Project> {
-    const project = await this.findOne(id);
-    Object.assign(project, updateProjectDto);
+    const project = await this.projectsRepository.preload({
+      id,
+      ...updateProjectDto,
+    });
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${id} not found`);
+    }
     return this.projectsRepository.save(project);
   }
 
