@@ -169,7 +169,7 @@ variable "frontend_container_image" {
 variable "backend_container_image" {
   description = "Docker image for backend container"
   type        = string
-  default     = "nginx:latest"
+  default     = "108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend:latest"
 }
 
 variable "frontend_task_cpu" {
