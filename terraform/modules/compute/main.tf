@@ -452,10 +452,6 @@ resource "aws_ecs_task_definition" "backend" {
           value = "production" # Always use production for deployed backend (enables SSL for RDS)
         },
         {
-          name  = "TYPEORM_SYNCHRONIZE"
-          value = "true" # Temporarily enable schema auto-creation (remove after initial deployment)
-        },
-        {
           name  = "DB_HOST"
           value = split(":", var.database_endpoint)[0]
         },

@@ -3,6 +3,8 @@
 -- Created: 2025-10-31
 -- Author: David Shaevel
 
+BEGIN;
+
 -- Create projects table
 CREATE TABLE IF NOT EXISTS projects (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -33,6 +35,8 @@ $$ language 'plpgsql';
 
 CREATE TRIGGER update_projects_updated_at BEFORE UPDATE ON projects
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+COMMIT;
 
 -- Verify table creation
 SELECT

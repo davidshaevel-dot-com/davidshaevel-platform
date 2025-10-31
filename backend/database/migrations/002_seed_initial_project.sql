@@ -3,7 +3,10 @@
 -- Created: 2025-10-31
 -- Author: David Shaevel
 
+BEGIN;
+
 -- Insert initial project showcasing this platform
+-- Uses WHERE NOT EXISTS to ensure idempotency based on title
 INSERT INTO projects (
     title,
     description,
@@ -14,7 +17,7 @@ INSERT INTO projects (
     "isActive",
     "sortOrder"
 )
-VALUES (
+SELECT
     'DavidShaevel.com Platform Engineering Portfolio',
     'Production-grade full-stack web platform demonstrating DevOps and platform engineering expertise. Built with modern cloud-native technologies and deployed on AWS with comprehensive infrastructure automation.
 
@@ -48,8 +51,11 @@ This project serves as both a personal website and a demonstration of production
     ],
     true,
     1
-)
-ON CONFLICT (id) DO NOTHING;
+WHERE NOT EXISTS (
+    SELECT 1 FROM projects WHERE title = 'DavidShaevel.com Platform Engineering Portfolio'
+);
+
+COMMIT;
 
 -- Verify insertion
 SELECT

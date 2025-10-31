@@ -24,11 +24,7 @@ import { ProjectsModule } from './projects/projects.module';
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get('DB_NAME', 'davidshaevel'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        // Allow manual schema synchronization via TYPEORM_SYNCHRONIZE env var
-        // This is useful for initial schema creation in deployed environments
-        synchronize:
-          configService.get('TYPEORM_SYNCHRONIZE') === 'true' ||
-          configService.get('NODE_ENV') === 'development',
+        synchronize: configService.get('NODE_ENV') === 'development', // Only in dev!
         logging: configService.get('NODE_ENV') === 'development',
         // Enable SSL for production RDS (required by AWS RDS)
         // Note: rejectUnauthorized: false allows RDS certificate without requiring CA bundle
