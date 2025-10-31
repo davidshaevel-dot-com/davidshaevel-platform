@@ -402,8 +402,13 @@ resource "aws_ecs_task_definition" "frontend" {
         }
       }
 
+      # Health check using Node.js HTTP module (same as Dockerfile HEALTHCHECK)
+      # This enables ECS to monitor container health and show HEALTHY status
       healthCheck = {
-        command     = ["CMD-SHELL", "curl -f http://localhost:${local.frontend_port}/ || exit 1"]
+        command = [
+          "CMD-SHELL",
+          "node -e \"require('http').get('http://localhost:${local.frontend_port}/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""
+        ]
         interval    = 30
         timeout     = 5
         retries     = 3

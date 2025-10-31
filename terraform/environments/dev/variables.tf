@@ -268,9 +268,9 @@ variable "cdn_price_class" {
 }
 
 variable "cdn_default_root_object" {
-  description = "Object that CloudFront returns when requesting the root URL"
+  description = "Object that CloudFront returns when requesting the root URL (empty for Next.js dynamic routing)"
   type        = string
-  default     = "index.html"
+  default     = ""
 }
 
 variable "cdn_logging_bucket" {

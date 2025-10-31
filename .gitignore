@@ -19,6 +19,7 @@ out/
 **/.terraform.lock.hcl
 **/terraform.tfstate
 **/terraform.tfstate.*
+**/terraform.tfstate.backup
 **/terraform.tfvars
 **/*.tfvars
 !**/terraform.tfvars.example
@@ -28,6 +29,10 @@ out/
 **/override.tf.json
 **/*_override.tf
 **/*_override.tf.json
+# Terraform plan files (contain sensitive data, should never be committed)
+**/*.tfplan
+**/tfplan
+**/tfplan.binary
 
 # IDEs
 .vscode/
