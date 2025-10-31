@@ -265,7 +265,7 @@ variable "alb_ssl_policy" {
 variable "frontend_health_check_path" {
   description = "Health check path for frontend service"
   type        = string
-  default     = "/"
+  default     = "/health"
 }
 
 variable "backend_health_check_path" {
