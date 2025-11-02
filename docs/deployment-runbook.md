@@ -49,8 +49,8 @@
 ### Step 1: Build Docker Image
 
 ```bash
-# Navigate to backend directory
-cd /Users/dshaevel/workspace-ds/davidshaevel-platform/backend
+# Navigate to backend directory from project root
+cd backend
 
 # Get current git SHA for tagging
 export IMAGE_TAG=$(git rev-parse --short HEAD)
@@ -70,13 +70,9 @@ backend       abc1234   <timestamp>   XXX MB
 ### Step 2: Tag for ECR
 
 ```bash
-# Tag image for ECR repository
+# Tag image for ECR repository with immutable git SHA tag
 docker tag backend:${IMAGE_TAG} \
   108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend:${IMAGE_TAG}
-
-# Also tag as 'latest'
-docker tag backend:${IMAGE_TAG} \
-  108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend:latest
 ```
 
 ### Step 3: Login to ECR
@@ -98,9 +94,6 @@ Login Succeeded
 ```bash
 # Push tagged image
 docker push 108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend:${IMAGE_TAG}
-
-# Push latest tag
-docker push 108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend:latest
 ```
 
 **Monitor Progress:**
@@ -110,15 +103,15 @@ docker push 108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend:la
 ### Step 5: Update Terraform Configuration
 
 ```bash
-# Navigate to Terraform environment
-cd /Users/dshaevel/workspace-ds/davidshaevel-platform/terraform/environments/dev
+# Navigate to Terraform environment from project root
+cd terraform/environments/dev
 
-# Update backend_image_tag variable in terraform.tfvars or main.tf
-# Edit the file to set new image tag:
-# backend_image_tag = "abc1234"  # Use your $IMAGE_TAG value
+# Update backend_container_image variable with full ECR image URI
+# Option 1: Edit terraform.tfvars or main.tf to set:
+# backend_container_image = "108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend:abc1234"
 
-# Alternatively, pass as command-line variable:
-export TF_VAR_backend_image_tag=${IMAGE_TAG}
+# Option 2: Pass as command-line variable
+export TF_VAR_backend_container_image="108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend:${IMAGE_TAG}"
 ```
 
 ### Step 6: Deploy via Terraform
@@ -192,8 +185,8 @@ curl https://davidshaevel.com/api/projects
 ### Step 1: Build Docker Image
 
 ```bash
-# Navigate to frontend directory
-cd /Users/dshaevel/workspace-ds/davidshaevel-platform/frontend
+# Navigate to frontend directory from project root
+cd frontend
 
 # Get current git SHA for tagging
 export IMAGE_TAG=$(git rev-parse --short HEAD)
@@ -208,13 +201,9 @@ docker images | grep frontend
 ### Step 2: Tag for ECR
 
 ```bash
-# Tag image for ECR repository
+# Tag image for ECR repository with immutable git SHA tag
 docker tag frontend:${IMAGE_TAG} \
   108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend:${IMAGE_TAG}
-
-# Also tag as 'latest'
-docker tag frontend:${IMAGE_TAG} \
-  108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend:latest
 ```
 
 ### Step 3: Push to ECR
@@ -227,19 +216,16 @@ AWS_PROFILE=davidshaevel-dev aws ecr get-login-password --region us-east-1 | \
 
 # Push tagged image
 docker push 108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend:${IMAGE_TAG}
-
-# Push latest tag
-docker push 108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend:latest
 ```
 
 ### Step 4: Update Terraform and Deploy
 
 ```bash
-# Navigate to Terraform environment
-cd /Users/dshaevel/workspace-ds/davidshaevel-platform/terraform/environments/dev
+# Navigate to Terraform environment from project root
+cd terraform/environments/dev
 
-# Update frontend_image_tag variable
-export TF_VAR_frontend_image_tag=${IMAGE_TAG}
+# Update frontend_container_image variable with full ECR image URI
+export TF_VAR_frontend_container_image="108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend:${IMAGE_TAG}"
 
 # Deploy
 export AWS_PROFILE=davidshaevel-dev
@@ -298,8 +284,8 @@ curl -I https://davidshaevel.com/health
 ### Testing Migrations Locally
 
 ```bash
-# Navigate to backend directory
-cd /Users/dshaevel/workspace-ds/davidshaevel-platform/backend
+# Navigate to backend directory from project root
+cd backend
 
 # Run migration script locally
 node database/run-migration.js \
@@ -316,6 +302,8 @@ node database/run-migration.js \
 
 ### Running Migrations in Production
 
+**IMPORTANT NOTE:** The current backend Dockerfile does not include the `database/` directory in the production image. Migrations must be run from your local machine with database access. To run migrations from ECS tasks, update the Dockerfile runner stage to include: `COPY --from=builder /app/database ./database`
+
 ```bash
 # Get RDS credentials from AWS Secrets Manager
 AWS_PROFILE=davidshaevel-dev aws secretsmanager get-secret-value \
@@ -330,7 +318,8 @@ AWS_PROFILE=davidshaevel-dev aws secretsmanager get-secret-value \
 # - port
 # - dbname
 
-# Run migration (from ECS task or bastion host)
+# Run migration from local machine (recommended until Dockerfile is updated)
+cd backend
 node database/run-migration.js \
   --host <rds-endpoint> \
   --port 5432 \
@@ -444,9 +433,9 @@ AWS_PROFILE=davidshaevel-dev aws ecr describe-images \
   --output table
 
 # 2. Update Terraform with previous image tag
-cd /Users/dshaevel/workspace-ds/davidshaevel-platform/terraform/environments/dev
+cd terraform/environments/dev
 
-export TF_VAR_backend_image_tag=<previous-working-tag>
+export TF_VAR_backend_container_image="108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend:<previous-working-tag>"
 
 # 3. Apply rollback
 export AWS_PROFILE=davidshaevel-dev
@@ -474,9 +463,9 @@ AWS_PROFILE=davidshaevel-dev aws ecr describe-images \
   --output table
 
 # 2. Update Terraform with previous image tag
-cd /Users/dshaevel/workspace-ds/davidshaevel-platform/terraform/environments/dev
+cd terraform/environments/dev
 
-export TF_VAR_frontend_image_tag=<previous-working-tag>
+export TF_VAR_frontend_container_image="108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend:<previous-working-tag>"
 
 # 3. Apply rollback
 export AWS_PROFILE=davidshaevel-dev

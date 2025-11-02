@@ -429,21 +429,42 @@ curl https://davidshaevel.com/api/health
 
 **Frontend Deployment:**
 ```bash
-# Same process as backend, but for frontend
+# Build and push frontend image (same as backend)
 cd frontend
 docker build -t frontend:$(git rev-parse --short HEAD) .
-# ... (same steps as backend)
+docker tag frontend:$(git rev-parse --short HEAD) \
+  108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend:$(git rev-parse --short HEAD)
+aws ecr get-login-password --region us-east-1 | \
+  docker login --username AWS --password-stdin \
+  108581769167.dkr.ecr.us-east-1.amazonaws.com
+docker push 108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend:$(git rev-parse --short HEAD)
+
+# Update Terraform and deploy
+cd terraform/environments/dev
+# Set the frontend_container_image variable with full ECR image URI
+terraform apply -var 'frontend_container_image=108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend:<git-sha>'
+
+# CRITICAL: Invalidate CloudFront cache for changes to be visible
+aws cloudfront create-invalidation --distribution-id <distribution-id> --paths "/*"
 ```
 
 **Database Migrations:**
 ```bash
-# Run migrations from ECS task
-aws ecs execute-command \
-  --cluster dev-davidshaevel-cluster \
-  --task <task-arn> \
-  --container backend \
-  --interactive \
-  --command "node database/run-migrations.js"
+# NOTE: Current backend Dockerfile does not include database/ directory in production image.
+# Migrations must be run from local machine with database access, OR Dockerfile must be updated.
+
+# Option 1: Run from local machine (recommended for now)
+cd backend
+node database/run-migration.js \
+  --host <rds-endpoint> \
+  --port 5432 \
+  --database <dbname> \
+  --username <username> \
+  --password <password> \
+  <migration-file.sql>
+
+# Option 2: Update Dockerfile to include database directory (future enhancement)
+# Add to backend/Dockerfile runner stage: COPY --from=builder /app/database ./database
 ```
 
 ### Future CI/CD Process (TT-31)
