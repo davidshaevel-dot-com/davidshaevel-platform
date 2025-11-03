@@ -77,7 +77,7 @@ Move session-specific documents to `docs/internal-notes/`:
 - [ ] `backend-setup-log.md` (development log)
 - [ ] `security-group-drift-analysis.md` (analysis doc)
 
-**Files to Move (26 total):**
+**Files to Move (40 total):**
 ```
 2025-10-25_agenda.md
 2025-10-28_review_feedback_resolution.md
@@ -342,7 +342,7 @@ Update `README.md` deployment section:
 
 ### Phase 0: Docs Cleanup ✅
 - [ ] Create `docs/internal-notes/` directory
-- [ ] Move 39 internal development files to `internal-notes/`
+- [ ] Move 40 internal development files to `internal-notes/`
 - [ ] Move 3 architecture files to `docs/architecture/`
 - [ ] Keep 2 operational files in `docs/` root
 - [ ] Update this agenda file after moves complete
