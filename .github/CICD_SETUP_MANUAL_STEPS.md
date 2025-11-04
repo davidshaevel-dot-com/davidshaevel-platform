@@ -50,7 +50,9 @@ AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
 ---
 
-## Part 2: Configure GitHub Repository Secrets (5 min)
+## Part 2: Configure GitHub Environment and Secrets (7 min)
+
+**Why Environments?** We use GitHub Environments to match our Terraform structure (`terraform/environments/dev/`). This makes it easy to add `prod` later with the same secret names but different values, and enables deployment protection rules.
 
 ### Prerequisites
 
@@ -60,12 +62,33 @@ AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
 ### Steps
 
-1. **Navigate to GitHub Secrets**
-   - Go to: https://github.com/davidshaevel/davidshaevel-platform
-   - Click **Settings** → **Secrets and variables** → **Actions**
-   - Click **New repository secret**
+#### Step 2.1: Create `dev` Environment (2 min)
 
-2. **Add 8 Repository Secrets**
+1. **Navigate to Environments**
+   - Go to: https://github.com/davidshaevel/davidshaevel-platform
+   - Click **Settings** → **Environments**
+   - Click **New environment**
+
+2. **Create Development Environment**
+   - Name: `dev` (exactly, lowercase)
+   - Click **Configure environment**
+
+3. **Configure Environment (Optional Settings)**
+   - **Environment URL**: `https://davidshaevel.com` (for deployment tracking)
+   - **Protection rules**: Leave empty for now (we'll add for prod later)
+   - **Deployment branches**: No restriction (default)
+   - Settings auto-save
+
+#### Step 2.2: Add Secrets to `dev` Environment (5 min)
+
+1. **Navigate to Environment Secrets**
+   - Still in Settings → Environments → `dev`
+   - Scroll down to **Environment secrets** section
+   - Click **Add secret**
+
+2. **Add 9 Environment Secrets**
+
+   **Important:** Add these to the **`dev` environment**, not repository secrets!
 
    Add each secret one at a time using the values below:
 
@@ -98,9 +121,28 @@ AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
    ```
 
 4. **Verify All Secrets**
-   - Confirm you see 9 secrets in the GitHub UI
-   - Secret values are hidden (only you can see when you set them)
+   - Confirm you see 9 secrets in **Environment secrets** section
+   - Environment page shows "9 secrets" count
+   - Secret values are hidden (only shown when you set them)
    - No green "Updated" timestamp yet (secrets not used)
+
+### Benefits of GitHub Environments Approach
+
+✅ **Future-proof for production:**
+- When adding prod: Create `prod` environment, same secret names, different values
+- Clean separation: Dev and prod secrets completely isolated
+- No name prefixes needed (avoid `DEV_AWS_ACCESS_KEY_ID` vs `PROD_AWS_ACCESS_KEY_ID`)
+
+✅ **Deployment protection:**
+- Can add required reviewers for prod deployments later
+- Can restrict prod to main branch only
+- GitHub tracks deployment history per environment
+
+✅ **Architectural symmetry:**
+- Terraform: `terraform/environments/dev/` and `terraform/environments/prod/`
+- GitHub: `dev` environment and `prod` environment
+- AWS: `dev-davidshaevel-*` resources and `prod-davidshaevel-*` resources
+- Perfect alignment across infrastructure, CI/CD, and cloud resources
 
 ---
 
@@ -109,9 +151,10 @@ AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 Before proceeding to create GitHub Actions workflows, verify:
 
 - [ ] AWS IAM user exists: `dev-davidshaevel-github-actions`
-- [ ] IAM policy attached with minimal ECS/ECR/CloudWatch permissions
+- [ ] IAM policy attached with least-privilege resource scoping
 - [ ] AWS access keys generated and saved securely
-- [ ] 9 GitHub repository secrets configured
+- [ ] GitHub `dev` environment created
+- [ ] 9 environment secrets configured in `dev` environment
 - [ ] All secret values copied exactly (no typos)
 - [ ] Ready to create `.github/workflows/` files
 
@@ -136,15 +179,18 @@ Before proceeding to create GitHub Actions workflows, verify:
 ### GitHub Secrets
 
 ✅ **DO:**
-- Use repository secrets (not environment secrets yet)
-- Review who has admin access to repository
+- Use environment secrets (matches Terraform environments/)
+- Create separate environments (dev, prod) with same secret names, different values
+- Review who has admin access to repository and environments
 - Monitor GitHub audit log for secret access
-- Update secrets when rotating AWS keys
+- Update environment secrets when rotating AWS keys
+- Use protection rules for production environment
 
 ❌ **DON'T:**
 - Print secrets in workflow logs (GitHub masks them, but don't try)
 - Store secrets in workflow files or code
-- Use organization secrets unless needed across repos
+- Use repository secrets when you have multiple environments (use environment secrets instead)
+- Use organization secrets unless needed across many repos
 
 ---
 
@@ -198,7 +244,8 @@ After completing these manual steps:
 
 **GitHub:**
 - Repository: `davidshaevel/davidshaevel-platform`
-- Secrets location: Settings → Secrets and variables → Actions
+- Environment: `dev` (Settings → Environments → dev)
+- Secrets location: Settings → Environments → dev → Environment secrets
 
 **Related:**
 - Linear Issue: TT-31
