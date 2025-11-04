@@ -150,7 +150,7 @@ policy_name = "dev-davidshaevel-github-actions-deployment"
 **Scoped Resources:**
 - IAM PassRole: Only specific task execution and task roles
 - CloudWatch Logs: Only `/ecs/davidshaevel/*` log groups
-- ECR/ECS: Currently all resources (can be scoped tighter if needed)
+- ECR/ECS: Scoped to specific repositories and services.
 
 **Best Practices:**
 - Rotate access keys every 90 days
