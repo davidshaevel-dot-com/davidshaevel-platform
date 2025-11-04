@@ -188,3 +188,27 @@ output "cache_invalidation_command" {
   description = "AWS CLI command to invalidate CloudFront cache"
   value       = module.cdn.cache_invalidation_command
 }
+
+# -----------------------------------------------------------------------------
+# CI/CD IAM Outputs
+# -----------------------------------------------------------------------------
+
+output "cicd_iam_user_name" {
+  description = "Name of the GitHub Actions IAM user"
+  value       = module.cicd_iam.user_name
+}
+
+output "cicd_iam_user_arn" {
+  description = "ARN of the GitHub Actions IAM user"
+  value       = module.cicd_iam.user_arn
+}
+
+output "cicd_iam_policy_arn" {
+  description = "ARN of the GitHub Actions deployment policy"
+  value       = module.cicd_iam.policy_arn
+}
+
+output "cicd_iam_policy_name" {
+  description = "Name of the GitHub Actions deployment policy"
+  value       = module.cicd_iam.policy_name
+}
