@@ -220,3 +220,16 @@ module "cdn" {
   logging_bucket = var.cdn_logging_bucket
   logging_prefix = var.cdn_logging_prefix
 }
+
+# ==============================================================================
+# CI/CD IAM Module
+# ==============================================================================
+
+module "cicd_iam" {
+  source = "../../modules/cicd-iam"
+
+  environment    = var.environment
+  project_name   = var.project_name
+  aws_account_id = var.aws_account_id
+  aws_region     = var.aws_region
+}
