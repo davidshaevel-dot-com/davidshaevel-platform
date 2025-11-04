@@ -111,7 +111,7 @@ AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
    AWS_PROFILE=davidshaevel-dev terraform output
    ```
 
-   Copy these exact values:
+   Use the output from the command you just ran. For example:
    ```
    ECR_BACKEND_REPOSITORY=108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend
    ECR_FRONTEND_REPOSITORY=108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend

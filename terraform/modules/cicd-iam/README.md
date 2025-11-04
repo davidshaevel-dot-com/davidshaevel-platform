@@ -120,8 +120,8 @@ terraform apply
    - `ECR_BACKEND_REPOSITORY` = `108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend`
    - `ECR_FRONTEND_REPOSITORY` = `108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend`
    - `ECS_CLUSTER` = `dev-davidshaevel-cluster`
-   - `ECS_BACKEND_SERVICE` = `backend`
-   - `ECS_FRONTEND_SERVICE` = `frontend`
+   - `ECS_BACKEND_SERVICE` = `dev-davidshaevel-backend`
+   - `ECS_FRONTEND_SERVICE` = `dev-davidshaevel-frontend`
 
 ### Step 5: Delete Temporary Credentials
 

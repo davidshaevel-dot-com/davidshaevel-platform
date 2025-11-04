@@ -112,7 +112,10 @@ resource "aws_iam_policy" "github_actions_deployment" {
           "logs:PutLogEvents",
           "logs:DescribeLogStreams"
         ]
-        Resource = "arn:aws:logs:${var.aws_region}:${var.aws_account_id}:log-group:/ecs/${var.project_name}/*"
+        Resource = [
+          "arn:aws:logs:${var.aws_region}:${var.aws_account_id}:log-group:/ecs/${var.environment}-${var.project_name}/*",
+          "arn:aws:logs:${var.aws_region}:${var.aws_account_id}:log-group:/ecs/${var.environment}-${var.project_name}/*:*"
+        ]
       }
     ]
   })
