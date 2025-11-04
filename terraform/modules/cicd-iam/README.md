@@ -14,24 +14,53 @@ This module implements the **Terraform hybrid approach** for CI/CD credentials:
 - `aws_iam_policy.github_actions_deployment` - Minimal permissions policy
 - `aws_iam_user_policy_attachment.github_actions_deployment` - Attaches policy to user
 
-## Permissions Granted
+## Permissions Granted (Least-Privilege)
+
+This policy follows AWS least-privilege best practices by scoping resources to the minimum required for deployments.
 
 ### ECR (Elastic Container Registry)
-- Get authorization token
-- Push Docker images
-- Manage image layers
+
+**Account-wide (AWS requirement):**
+- `ecr:GetAuthorizationToken` - Must be `Resource: "*"` per AWS
+
+**Repository-scoped:**
+- Push/pull images, manage layers - Scoped to:
+  - `arn:aws:ecr:region:account:repository/davidshaevel/backend`
+  - `arn:aws:ecr:region:account:repository/davidshaevel/frontend`
 
 ### ECS (Elastic Container Service)
-- Describe services and task definitions
-- Register new task definitions
-- Update services for deployments
-- List and describe tasks
+
+**Task definitions (AWS limitation):**
+- `ecs:RegisterTaskDefinition`, `ecs:DescribeTaskDefinition` - Must be `Resource: "*"` (ARNs unknown before creation)
+
+**Service-scoped:**
+- `ecs:DescribeServices`, `ecs:UpdateService` - Scoped to:
+  - `arn:aws:ecs:region:account:service/dev-cluster/dev-backend`
+  - `arn:aws:ecs:region:account:service/dev-cluster/dev-frontend`
+
+**Cluster-scoped (via condition):**
+- `ecs:DescribeTasks`, `ecs:ListTasks` - Limited to `dev-davidshaevel-cluster` via condition
 
 ### IAM
-- PassRole for ECS task execution and task roles (scoped to specific roles)
+
+**Role-scoped:**
+- `iam:PassRole` - Scoped to specific ECS task roles:
+  - ECS task execution role
+  - Backend task role
+  - Frontend task role
 
 ### CloudWatch Logs
-- Create and write to log groups under `/ecs/davidshaevel/*`
+
+**Log group-scoped:**
+- Create and write logs - Scoped to `/ecs/davidshaevel/*`
+
+### Security Benefits
+
+✅ Cannot push to arbitrary ECR repositories (only our 2 repos)
+✅ Cannot update arbitrary ECS services (only our 2 services)
+✅ Cannot access other clusters (condition-based restriction)
+✅ Cannot assume arbitrary IAM roles (only our 3 ECS roles)
+✅ Cannot write to arbitrary log groups (only our ECS logs)
 
 ## Usage
 

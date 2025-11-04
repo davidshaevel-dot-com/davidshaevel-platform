@@ -28,11 +28,18 @@ resource "aws_iam_policy" "github_actions_deployment" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
+      # ECR: GetAuthorizationToken must use "*" (AWS requirement)
       {
-        Sid    = "ECRAuthAndPush"
+        Sid      = "ECRGetAuthorizationToken"
+        Effect   = "Allow"
+        Action   = ["ecr:GetAuthorizationToken"]
+        Resource = "*"
+      },
+      # ECR: Repository-specific actions scoped to our repositories
+      {
+        Sid    = "ECRRepositoryAccess"
         Effect = "Allow"
         Action = [
-          "ecr:GetAuthorizationToken",
           "ecr:BatchCheckLayerAvailability",
           "ecr:PutImage",
           "ecr:InitiateLayerUpload",
@@ -41,33 +48,61 @@ resource "aws_iam_policy" "github_actions_deployment" {
           "ecr:BatchGetImage",
           "ecr:GetDownloadUrlForLayer"
         ]
+        Resource = [
+          "arn:aws:ecr:${var.aws_region}:${var.aws_account_id}:repository/${var.project_name}/backend",
+          "arn:aws:ecr:${var.aws_region}:${var.aws_account_id}:repository/${var.project_name}/frontend"
+        ]
+      },
+      # ECS: Task definition operations must use "*" (ARNs unknown before creation)
+      {
+        Sid    = "ECSTaskDefinitionOperations"
+        Effect = "Allow"
+        Action = [
+          "ecs:RegisterTaskDefinition",
+          "ecs:DescribeTaskDefinition"
+        ]
         Resource = "*"
       },
+      # ECS: Service operations scoped to specific services
       {
-        Sid    = "ECSTaskDefinitionManagement"
+        Sid    = "ECSServiceOperations"
         Effect = "Allow"
         Action = [
           "ecs:DescribeServices",
-          "ecs:DescribeTaskDefinition",
-          "ecs:DescribeTasks",
-          "ecs:ListTasks",
-          "ecs:RegisterTaskDefinition",
           "ecs:UpdateService"
         ]
-        Resource = "*"
+        Resource = [
+          "arn:aws:ecs:${var.aws_region}:${var.aws_account_id}:service/${var.environment}-${var.project_name}-cluster/${var.environment}-${var.project_name}-backend",
+          "arn:aws:ecs:${var.aws_region}:${var.aws_account_id}:service/${var.environment}-${var.project_name}-cluster/${var.environment}-${var.project_name}-frontend"
+        ]
       },
+      # ECS: Task operations with cluster condition
+      {
+        Sid    = "ECSTaskOperations"
+        Effect = "Allow"
+        Action = [
+          "ecs:DescribeTasks",
+          "ecs:ListTasks"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "ecs:cluster" = "arn:aws:ecs:${var.aws_region}:${var.aws_account_id}:cluster/${var.environment}-${var.project_name}-cluster"
+          }
+        }
+      },
+      # IAM: PassRole scoped to specific ECS task roles
       {
         Sid    = "IAMPassRoleForECS"
         Effect = "Allow"
-        Action = [
-          "iam:PassRole"
-        ]
+        Action = ["iam:PassRole"]
         Resource = [
           "arn:aws:iam::${var.aws_account_id}:role/${var.environment}-${var.project_name}-ecs-task-execution-role",
           "arn:aws:iam::${var.aws_account_id}:role/${var.environment}-${var.project_name}-backend-task-role",
           "arn:aws:iam::${var.aws_account_id}:role/${var.environment}-${var.project_name}-frontend-task-role"
         ]
       },
+      # CloudWatch Logs: Scoped to ECS log groups
       {
         Sid    = "CloudWatchLogsForDeployment"
         Effect = "Allow"
