@@ -530,8 +530,46 @@ resource "aws_ecs_service" "frontend" {
 
   health_check_grace_period_seconds = var.health_check_grace_period
 
-  # Ignore task definition changes - managed by CI/CD deployments
-  # Terraform manages the task definition structure, CI/CD manages image updates
+  # ------------------------------------------------------------------------------
+  # Lifecycle: Ignore Task Definition Changes
+  # ------------------------------------------------------------------------------
+  # This lifecycle block prevents Terraform drift when GitHub Actions CI/CD
+  # creates new task definition revisions during deployments.
+  #
+  # WHY THIS PATTERN:
+  # - Enables fast, secure deployments with least-privilege IAM permissions
+  # - GitHub Actions only needs: ECR push + ECS deploy (not full Terraform access)
+  # - Optimizes for common case: Daily/weekly image deployments
+  #
+  # SECURITY RATIONALE:
+  # - Phase 1 CI/CD IAM policy grants minimal permissions (ECR + ECS only)
+  # - Alternative GitOps approach would require admin-level AWS permissions
+  # - Least-privilege design: CI/CD cannot modify networking, database, IAM, etc.
+  #
+  # HOW IT WORKS:
+  # - Terraform manages task definition STRUCTURE (CPU, memory, env vars, secrets, IAM roles)
+  # - GitHub Actions manages task definition REVISIONS (new container images)
+  # - No drift warnings when CI/CD creates new task definition revisions
+  # - Terraform can still update service properties (desired_count, network config, etc.)
+  #
+  # LIMITATION:
+  # - Infrastructure updates (CPU, memory, env vars) create new task definitions
+  # - ECS service continues using previous task definition revision
+  # - Updates only apply on next CI/CD deployment OR manual service update
+  #
+  # UPDATING INFRASTRUCTURE (Rare - Monthly/Quarterly):
+  # When you need to update task definition infrastructure (CPU, memory, env vars):
+  # 1. Update task definition resource in this file
+  # 2. Temporarily comment out this lifecycle block
+  # 3. Run: terraform apply
+  # 4. Verify service is running with new task definition
+  # 5. Re-add this lifecycle block
+  # 6. Commit both changes together
+  #
+  # INDUSTRY STANDARD:
+  # This is a widely accepted pattern for ECS + Terraform + CI/CD architectures.
+  # See: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_service#ignoring-changes-to-desired-count
+  # ------------------------------------------------------------------------------
   lifecycle {
     ignore_changes = [task_definition]
   }
@@ -570,8 +608,46 @@ resource "aws_ecs_service" "backend" {
 
   health_check_grace_period_seconds = var.health_check_grace_period
 
-  # Ignore task definition changes - managed by CI/CD deployments
-  # Terraform manages the task definition structure, CI/CD manages image updates
+  # ------------------------------------------------------------------------------
+  # Lifecycle: Ignore Task Definition Changes
+  # ------------------------------------------------------------------------------
+  # This lifecycle block prevents Terraform drift when GitHub Actions CI/CD
+  # creates new task definition revisions during deployments.
+  #
+  # WHY THIS PATTERN:
+  # - Enables fast, secure deployments with least-privilege IAM permissions
+  # - GitHub Actions only needs: ECR push + ECS deploy (not full Terraform access)
+  # - Optimizes for common case: Daily/weekly image deployments
+  #
+  # SECURITY RATIONALE:
+  # - Phase 1 CI/CD IAM policy grants minimal permissions (ECR + ECS only)
+  # - Alternative GitOps approach would require admin-level AWS permissions
+  # - Least-privilege design: CI/CD cannot modify networking, database, IAM, etc.
+  #
+  # HOW IT WORKS:
+  # - Terraform manages task definition STRUCTURE (CPU, memory, env vars, secrets, IAM roles)
+  # - GitHub Actions manages task definition REVISIONS (new container images)
+  # - No drift warnings when CI/CD creates new task definition revisions
+  # - Terraform can still update service properties (desired_count, network config, etc.)
+  #
+  # LIMITATION:
+  # - Infrastructure updates (CPU, memory, env vars) create new task definitions
+  # - ECS service continues using previous task definition revision
+  # - Updates only apply on next CI/CD deployment OR manual service update
+  #
+  # UPDATING INFRASTRUCTURE (Rare - Monthly/Quarterly):
+  # When you need to update task definition infrastructure (CPU, memory, env vars):
+  # 1. Update task definition resource in this file
+  # 2. Temporarily comment out this lifecycle block
+  # 3. Run: terraform apply
+  # 4. Verify service is running with new task definition
+  # 5. Re-add this lifecycle block
+  # 6. Commit both changes together
+  #
+  # INDUSTRY STANDARD:
+  # This is a widely accepted pattern for ECS + Terraform + CI/CD architectures.
+  # See: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_service#ignoring-changes-to-desired-count
+  # ------------------------------------------------------------------------------
   lifecycle {
     ignore_changes = [task_definition]
   }
