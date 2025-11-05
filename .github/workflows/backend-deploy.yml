@@ -82,13 +82,12 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         working-directory: backend
         run: |
-          # Build Docker image
+          # Build Docker image with commit SHA tag
           docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
-          docker tag $ECR_REPOSITORY:$IMAGE_TAG $ECR_REPOSITORY:latest
 
-          # Push both tags
+          # Push image with commit SHA tag
+          # Note: ECR has immutable tags enabled, so we only push unique commit SHA tags
           docker push $ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REPOSITORY:latest
 
           # Output the full image URI for the deploy job
           echo "image=$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
