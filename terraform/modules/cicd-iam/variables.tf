@@ -26,13 +26,3 @@ variable "aws_region" {
   type        = string
   default     = "us-east-1"
 }
-
-variable "alb_arn" {
-  description = "ARN of the Application Load Balancer for scoped ELB permissions"
-  type        = string
-}
-
-variable "target_group_arns" {
-  description = "List of Target Group ARNs for scoped ELB permissions"
-  type        = list(string)
-}

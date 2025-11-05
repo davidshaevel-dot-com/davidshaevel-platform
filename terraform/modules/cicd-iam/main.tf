@@ -118,7 +118,31 @@ resource "aws_iam_policy" "github_actions_deployment" {
         ]
       },
       # ELB: Read-only permissions to retrieve service URLs for deployment reporting
-      # Scoped to specific ALB and Target Group ARNs for principle of least privilege
+      #
+      # IMPORTANT: Resource must be "*" for Describe operations
+      # This is an AWS IAM platform limitation, not a security oversight.
+      #
+      # Why we cannot scope this more tightly:
+      # 1. DescribeLoadBalancers and DescribeTargetGroups are LIST operations
+      # 2. AWS IAM evaluates permissions BEFORE knowing which resources will be returned
+      # 3. Tag-based conditions fail because Describe operations may return resources
+      #    without the required tags, causing blanket denial
+      # 4. Specific resource ARNs fail because AWS treats Describe as a list operation
+      #    that requires wildcard access for IAM evaluation
+      # 5. AWS's own managed policies (e.g., ElasticLoadBalancingReadOnly) use Resource="*"
+      #    for all Describe operations
+      #
+      # Security considerations:
+      # - These are READ-ONLY operations with no ability to modify resources
+      # - Only exposes metadata (DNS names, ARNs, health status, tags)
+      # - No sensitive data like credentials or application data is accessible
+      # - Acceptable deviation from strict least-privilege given AWS platform constraints
+      # - Alternative would be hardcoding DNS/URLs, eliminating deployment automation
+      #
+      # Attempts made to scope more tightly (all failed due to AWS limitations):
+      # - Attempt 1: Tag-based condition (aws:ResourceTag/Project) - AccessDenied
+      # - Attempt 2: Specific resource ARNs via concat([alb_arn], target_group_arns) - AccessDenied
+      # - Conclusion: Only Resource="*" works for ELB Describe operations
       {
         Sid    = "ELBReadOnlyForServiceURL"
         Effect = "Allow"
@@ -126,7 +150,7 @@ resource "aws_iam_policy" "github_actions_deployment" {
           "elasticloadbalancing:DescribeTargetGroups",
           "elasticloadbalancing:DescribeLoadBalancers"
         ]
-        Resource = concat([var.alb_arn], var.target_group_arns)
+        Resource = "*"
       }
     ]
   })

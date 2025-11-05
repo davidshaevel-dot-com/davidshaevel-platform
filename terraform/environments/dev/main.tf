@@ -232,11 +232,4 @@ module "cicd_iam" {
   project_name   = var.project_name
   aws_account_id = var.aws_account_id
   aws_region     = var.aws_region
-
-  # ELB resource ARNs for scoped permissions (from compute module)
-  alb_arn = module.compute.alb_arn
-  target_group_arns = [
-    module.compute.frontend_target_group_arn,
-    module.compute.backend_target_group_arn
-  ]
 }
