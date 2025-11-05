@@ -28,4 +28,9 @@ async function bootstrap() {
   await app.listen(port);
   logger.log(`🚀 Backend API running on port ${port}`);
 }
-bootstrap();
+
+bootstrap().catch((error: unknown) => {
+  const logger = new Logger('Bootstrap');
+  logger.error('Failed to start application', error);
+  process.exit(1);
+});

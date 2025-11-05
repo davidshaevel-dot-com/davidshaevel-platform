@@ -20,13 +20,14 @@ export class HealthService {
 
     try {
       // Check database connection
-      const result = await this.dataSource.query('SELECT 1');
+      const result: unknown = await this.dataSource.query('SELECT 1');
       if (result) {
         databaseStatus = 'connected';
       }
-    } catch (error) {
+    } catch (error: unknown) {
       databaseStatus = 'error';
-      databaseError = error.message;
+      databaseError =
+        error instanceof Error ? error.message : 'Unknown database error';
     }
 
     const isHealthy = databaseStatus === 'connected';
