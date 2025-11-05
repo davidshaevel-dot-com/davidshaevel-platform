@@ -530,6 +530,12 @@ resource "aws_ecs_service" "frontend" {
 
   health_check_grace_period_seconds = var.health_check_grace_period
 
+  # Ignore task definition changes - managed by CI/CD deployments
+  # Terraform manages the task definition structure, CI/CD manages image updates
+  lifecycle {
+    ignore_changes = [task_definition]
+  }
+
   # Ensure target group is created before service
   depends_on = [
     aws_lb_listener.http,
@@ -563,6 +569,12 @@ resource "aws_ecs_service" "backend" {
   }
 
   health_check_grace_period_seconds = var.health_check_grace_period
+
+  # Ignore task definition changes - managed by CI/CD deployments
+  # Terraform manages the task definition structure, CI/CD manages image updates
+  lifecycle {
+    ignore_changes = [task_definition]
+  }
 
   # Ensure target group is created before service
   depends_on = [
