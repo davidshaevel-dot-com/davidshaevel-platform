@@ -102,9 +102,7 @@ jobs:
     name: Deploy to ECS
     runs-on: ubuntu-latest
     needs: build
-    environment:
-      name: ${{ github.event.inputs.environment || 'dev' }}
-      url: ${{ steps.service-url.outputs.service-url }}
+    environment: ${{ github.event.inputs.environment || 'dev' }}
 
     steps:
       - name: Configure AWS credentials
