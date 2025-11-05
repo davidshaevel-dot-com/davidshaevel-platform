@@ -126,6 +126,11 @@ resource "aws_iam_policy" "github_actions_deployment" {
           "elasticloadbalancing:DescribeLoadBalancers"
         ]
         Resource = "*"
+        Condition = {
+          StringEquals = {
+            "aws:ResourceTag/Project" = var.project_name
+          }
+        }
       }
     ]
   })
