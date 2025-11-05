@@ -104,6 +104,14 @@ jobs:
       url: ${{ steps.service-url.outputs.service-url }}
 
     steps:
+      - name: Debug - Check build outputs
+        run: |
+          echo "Build job outputs:"
+          echo "  image: ${{ needs.build.outputs.image }}"
+          echo "  image length: ${#image}"
+        env:
+          image: ${{ needs.build.outputs.image }}
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
