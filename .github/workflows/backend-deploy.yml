@@ -94,7 +94,7 @@ jobs:
           echo "Built and pushed: $ECR_REPOSITORY:$IMAGE_TAG"
 
       - name: Image digest
-        run: echo "Image tag: ${{ steps.build-image.outputs.image_tag }}"
+        run: 'echo "Image tag: ${{ steps.build-image.outputs.image_tag }}"'
 
   deploy:
     name: Deploy to ECS
