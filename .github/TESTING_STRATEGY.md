@@ -236,9 +236,9 @@ and found no differences, so no changes are needed.
 
 All tests must pass to consider Phase 2 complete:
 
-- [ ] **Test 1:** Workflow syntax validation passes
-- [ ] **Test 2:** PR #26 merged successfully, workflow registered
-- [ ] **Test 3:** Manual deployment completes, service healthy
+- [x] **Test 1:** Workflow syntax validation passes
+- [x] **Test 2:** PR #26 merged successfully, workflow registered
+- [x] **Test 3:** Manual deployment completes, service healthy
 - [ ] **Test 4:** No Terraform drift detected after deployment
 
 ### Test Results
@@ -257,18 +257,63 @@ All tests must pass to consider Phase 2 complete:
 ---
 
 #### Test 2: Merge PR and Register Workflow
-**Date:** _TBD_
-**Result:** ⏳ Pending
+**Date:** 2025-11-04
+**Result:** ✅ **PASSED**
 **PR:** https://github.com/davidshaevel-dot-com/davidshaevel-platform/pull/26
 **Notes:**
+- PR #26 merged successfully to main branch
+- Workflow "Backend CI/CD" registered with GitHub Actions
+- Workflow appears in workflow list (ID: 204023568)
+- Workflow file: `.github/workflows/backend-deploy.yml`
 
 ---
 
 #### Test 3: Manual Workflow Trigger (Full Deployment)
-**Date:** _TBD_
-**Result:** ⏳ Pending
-**Workflow Run:** _URL_
+**Date:** 2025-11-05
+**Result:** ✅ **PASSED** (with minor issue)
+**Workflow Run:** https://github.com/davidshaevel-dot-com/davidshaevel-platform/actions/runs/19091119005
 **Notes:**
+
+**Deployment Successful:**
+- ✅ Test job: All linting and unit tests passed (27s)
+- ✅ Build job: Docker image built and pushed to ECR (43s)
+- ✅ Deploy job: ECS service updated successfully (3m19s)
+- ✅ ECS service status: ACTIVE with 2/2 running tasks
+- ✅ Task definition updated: revision 10
+
+**Issues Encountered and Resolved:**
+
+1. **ESLint Errors (Run #19090317620):**
+   - Fixed TypeScript type annotations in health.service.ts
+   - Added catch handler to bootstrap promise in main.ts
+
+2. **Wrong Task Definition Name (Run #19090496226):**
+   - Fixed: Changed from `${{ secrets.ECS_CLUSTER }}-backend` to `${{ secrets.ECS_BACKEND_SERVICE }}`
+
+3. **ECR Immutable Tags (Runs #19090576904, #19090666956):**
+   - Fixed: Changed ECR repository to MUTABLE tags for testing
+
+4. **GitHub Actions Secret Masking (Run #19090861256):**
+   - **Root cause:** ECR repository URL contains AWS account ID, triggering secret masking
+   - **Solution:** Pass only `image_tag` (commit SHA) between jobs, construct full URI in deploy job
+   - **Fix applied:** Run #19091119005 succeeded with this approach
+
+5. **YAML Syntax Error (Run #19091079962):**
+   - Fixed: Added quotes around run command with GitHub Actions expressions
+
+**Minor Issue (Non-blocking):**
+- ❌ Get service URL step failed: IAM user lacks `elasticloadbalancing:DescribeTargetGroups` permission
+- **Impact:** Cannot display service URL in workflow summary
+- **Resolution:** This is optional; deployment succeeded without it
+- **Options:**
+  - Add ELB read permissions to IAM policy (recommended)
+  - Make step conditional/non-blocking
+
+**Deployment Verification:**
+- ECS service: dev-davidshaevel-backend (ACTIVE)
+- Running tasks: 2/2
+- Task definition: arn:aws:ecs:us-east-1:108581769167:task-definition/dev-davidshaevel-backend:10
+- Deployment status: PRIMARY
 
 ---
 
