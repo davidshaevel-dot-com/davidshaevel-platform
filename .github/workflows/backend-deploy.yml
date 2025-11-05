@@ -116,7 +116,7 @@ jobs:
         id: download-taskdef
         run: |
           aws ecs describe-task-definition \
-            --task-definition ${{ secrets.ECS_CLUSTER }}-backend \
+            --task-definition ${{ secrets.ECS_BACKEND_SERVICE }} \
             --query taskDefinition \
             --output json > task-definition.json
 
