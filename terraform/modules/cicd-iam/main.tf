@@ -118,9 +118,7 @@ resource "aws_iam_policy" "github_actions_deployment" {
         ]
       },
       # ELB: Read-only permissions to retrieve service URLs for deployment reporting
-      # Note: Condition removed because Describe* operations with Resource="*" are denied
-      # if ANY resource in the account lacks the tag, even if our resources have it.
-      # These are read-only operations with minimal security risk.
+      # Scoped to specific ALB and Target Group ARNs for principle of least privilege
       {
         Sid    = "ELBReadOnlyForServiceURL"
         Effect = "Allow"
@@ -128,7 +126,7 @@ resource "aws_iam_policy" "github_actions_deployment" {
           "elasticloadbalancing:DescribeTargetGroups",
           "elasticloadbalancing:DescribeLoadBalancers"
         ]
-        Resource = "*"
+        Resource = concat([var.alb_arn], var.target_group_arns)
       }
     ]
   })
