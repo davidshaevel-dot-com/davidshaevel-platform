@@ -58,7 +58,7 @@ jobs:
     environment: ${{ github.event.inputs.environment || 'dev' }}
 
     outputs:
-      image: ${{ steps.build-image.outputs.image }}
+      image_tag: ${{ steps.build-image.outputs.image_tag }}
 
     steps:
       - name: Checkout code
@@ -86,14 +86,15 @@ jobs:
           docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
 
           # Push image with commit SHA tag
-          # Note: ECR has immutable tags enabled, so we only push unique commit SHA tags
+          # Note: ECR has mutable tags enabled for testing
           docker push $ECR_REPOSITORY:$IMAGE_TAG
 
-          # Output the full image URI for the deploy job
-          echo "image=$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          # Output only the image tag (not full URI to avoid secret masking)
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "Built and pushed: $ECR_REPOSITORY:$IMAGE_TAG"
 
       - name: Image digest
-        run: echo "Built and pushed image ${{ steps.build-image.outputs.image }}"
+        run: echo "Image tag: ${{ steps.build-image.outputs.image_tag }}"
 
   deploy:
     name: Deploy to ECS
@@ -104,14 +105,6 @@ jobs:
       url: ${{ steps.service-url.outputs.service-url }}
 
     steps:
-      - name: Debug - Check build outputs
-        run: |
-          echo "Build job outputs:"
-          echo "  image: ${{ needs.build.outputs.image }}"
-          echo "  image length: ${#image}"
-        env:
-          image: ${{ needs.build.outputs.image }}
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -130,13 +123,21 @@ jobs:
           echo "Downloaded task definition:"
           cat task-definition.json | jq '.family'
 
+      - name: Construct image URI
+        id: image-uri
+        run: |
+          # Construct full image URI from ECR repository + tag
+          IMAGE_URI="${{ secrets.ECR_BACKEND_REPOSITORY }}:${{ needs.build.outputs.image_tag }}"
+          echo "image=$IMAGE_URI" >> $GITHUB_OUTPUT
+          echo "Deploying image: $IMAGE_URI"
+
       - name: Update task definition with new image
         id: update-taskdef
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition.json
           container-name: backend
-          image: ${{ needs.build.outputs.image }}
+          image: ${{ steps.image-uri.outputs.image }}
 
       - name: Deploy to Amazon ECS
         id: deploy
@@ -176,7 +177,7 @@ jobs:
         run: |
           echo "## Backend Deployment Successful ✅" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Image:** \`${{ needs.build.outputs.image }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ steps.image-uri.outputs.image }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Cluster:** \`${{ secrets.ECS_CLUSTER }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Service:** \`${{ secrets.ECS_BACKEND_SERVICE }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**URL:** ${{ steps.service-url.outputs.service-url }}" >> $GITHUB_STEP_SUMMARY
