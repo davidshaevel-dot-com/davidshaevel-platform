@@ -116,6 +116,21 @@ resource "aws_iam_policy" "github_actions_deployment" {
           "arn:aws:logs:${var.aws_region}:${var.aws_account_id}:log-group:/ecs/${var.environment}-${var.project_name}/*",
           "arn:aws:logs:${var.aws_region}:${var.aws_account_id}:log-group:/ecs/${var.environment}-${var.project_name}/*:*"
         ]
+      },
+      # ELB: Read-only permissions to retrieve service URLs for deployment reporting
+      {
+        Sid    = "ELBReadOnlyForServiceURL"
+        Effect = "Allow"
+        Action = [
+          "elasticloadbalancing:DescribeTargetGroups",
+          "elasticloadbalancing:DescribeLoadBalancers"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "aws:ResourceTag/Project" = var.project_name
+          }
+        }
       }
     ]
   })
