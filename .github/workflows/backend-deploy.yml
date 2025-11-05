@@ -79,14 +79,16 @@ jobs:
         id: build-image
         env:
           ECR_REPOSITORY: ${{ secrets.ECR_BACKEND_REPOSITORY }}
-          IMAGE_TAG: ${{ github.sha }}
         working-directory: backend
         run: |
-          # Build Docker image with commit SHA tag
+          # Use git short SHA for cleaner image tags (Git determines optimal length)
+          IMAGE_TAG=$(git rev-parse --short HEAD)
+
+          # Build Docker image with short SHA tag
           docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
 
-          # Push image with commit SHA tag
-          # Note: ECR has mutable tags enabled for testing
+          # Push image with short SHA tag
+          # Note: ECR has immutable tags enabled
           docker push $ECR_REPOSITORY:$IMAGE_TAG
 
           # Output only the image tag (not full URI to avoid secret masking)
