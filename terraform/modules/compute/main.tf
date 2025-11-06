@@ -578,10 +578,9 @@ resource "aws_ecs_service" "frontend" {
   # This is a widely accepted pattern for ECS + Terraform + CI/CD architectures.
   # See: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_service#ignoring-changes-to-desired-count
   # ------------------------------------------------------------------------------
-  # TEMPORARILY COMMENTED OUT FOR TT-37 - Task definition environment variable update
-  # lifecycle {
-  #   ignore_changes = [task_definition]
-  # }
+  lifecycle {
+    ignore_changes = [task_definition]
+  }
 
   # Ensure target group is created before service
   depends_on = [
@@ -657,10 +656,9 @@ resource "aws_ecs_service" "backend" {
   # This is a widely accepted pattern for ECS + Terraform + CI/CD architectures.
   # See: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_service#ignoring-changes-to-desired-count
   # ------------------------------------------------------------------------------
-  # TEMPORARILY COMMENTED OUT FOR TT-37 - Task definition environment variable update
-  # lifecycle {
-  #   ignore_changes = [task_definition]
-  # }
+  lifecycle {
+    ignore_changes = [task_definition]
+  }
 
   # Ensure target group is created before service
   depends_on = [
