@@ -289,9 +289,9 @@ terraform output  # View all outputs
 - Docker (Containerization) - Multi-stage builds ✅
 - Automated Testing (14 integration tests) - TT-28 ✅
 
-**CI/CD (Future):**
-- GitHub Actions
-- Amazon ECR (Container Registry) - TT-23
+**CI/CD:**
+- GitHub Actions (automated workflows)
+- Amazon ECR (Container Registry)
 
 ## 🎯 Application Status
 
@@ -362,18 +362,21 @@ terraform output  # View all outputs
 - ✅ RDS database: Connected and operational
 - ✅ CloudFront CDN: Serving correctly
 
-**Current Deployment Process:** Manual (Docker build → ECR push → Terraform apply)
+**Deployment Process:** Automated via GitHub Actions (TT-31 Complete)
+
+### Completed Enhancements
+
+**✅ TT-31: GitHub Actions CI/CD Workflows** (Complete - November 6, 2025)
+- Automated testing on every push (lint + tests)
+- Automated Docker builds and ECR push
+- Automated ECS deployments triggered by path changes
+- Eliminated manual deployment steps
+- Portfolio enhancement: Demonstrates CI/CD expertise
+- 6 PRs merged, both workflows fully operational
 
 ### Planned Enhancements
 
-**TT-31: GitHub Actions CI/CD Workflows** (4-6 hours) - Priority 1
-- Automate testing on every PR
-- Automate Docker builds and ECR push
-- Automate ECS deployments on merge to main
-- Eliminate manual deployment steps
-- Portfolio enhancement: Demonstrate CI/CD expertise
-
-**TT-20: Local Development Environment** (6-8 hours) - Priority 2
+**TT-20: Local Development Environment** (6-8 hours) - Priority 1
 - Docker Compose for full-stack local development
 - PostgreSQL + Frontend + Backend containers
 - Hot reload for rapid iteration
@@ -467,35 +470,162 @@ node database/run-migration.js \
 # Add to backend/Dockerfile runner stage: COPY --from=builder /app/database ./database
 ```
 
-### Future CI/CD Process (TT-31)
+### Automated CI/CD Process
 
-Once TT-31 is complete, deployments will be fully automated:
+**✅ Status:** Fully operational (TT-31 Complete - November 6, 2025)
 
-1. **Developer workflow:**
-   - Create feature branch
-   - Make changes
-   - Push to GitHub
-   - Create PR
+Deployments are now fully automated via GitHub Actions:
 
-2. **Automated testing:**
-   - GitHub Actions runs tests automatically
-   - Linting, type checking, integration tests
-   - PR cannot merge until tests pass
+#### Developer Workflow
 
-3. **Automated deployment:**
-   - Merge PR to main
-   - GitHub Actions automatically:
-     - Builds Docker images
-     - Tags with git SHA
-     - Pushes to ECR
-     - Updates ECS task definitions
-     - Deploys to ECS
-     - Verifies health checks
-   - Deployment complete in 5-7 minutes
+1. **Make changes:**
+   - Edit code in `backend/` or `frontend/`
+   - Commit to main branch (or feature branch for PRs)
 
-4. **Rollback (if needed):**
-   - Revert commit in main
-   - CI/CD automatically deploys previous version
+2. **Automatic deployment:**
+   - Push triggers CI/CD workflow automatically
+   - Path-based triggers: `backend/**` or `frontend/**`
+   - Concurrent deployment prevention ensures safe deployments
+
+#### CI/CD Pipeline
+
+**Backend Workflow** (`.github/workflows/backend-deploy.yml`):
+1. **Test & Lint** (~20s)
+   - ESLint code quality checks
+   - Jest unit tests
+2. **Build & Push** (~35-40s)
+   - Docker multi-stage build
+   - Tag with git short SHA (e.g., `6881409`)
+   - Push to ECR with immutable tags
+3. **Deploy to ECS** (~3 minutes)
+   - Download current task definition
+   - Update with new image
+   - Deploy to ECS Fargate
+   - Wait for service stability (health checks)
+   - Retrieve service URL from ALB
+
+**Frontend Workflow** (`.github/workflows/frontend-deploy.yml`):
+1. **Test & Lint** (~28s)
+   - ESLint code quality checks
+   - Next.js build validation (TypeScript type checking)
+2. **Build & Push** (~55-60s)
+   - Docker multi-stage build
+   - Tag with git short SHA
+   - Push to ECR with immutable tags
+3. **Deploy to ECS** (~3 minutes)
+   - Download current task definition
+   - Update with new image
+   - Deploy to ECS Fargate
+   - Wait for service stability (health checks)
+   - Retrieve service URL from ALB
+
+**Total Deployment Time:** ~5-7 minutes from push to production
+
+#### Workflow Features
+
+**Automatic Triggers:**
+- ✅ Push to `main` with backend changes → Backend workflow
+- ✅ Push to `main` with frontend changes → Frontend workflow
+- ✅ Path-based filtering prevents unnecessary deployments
+
+**Manual Triggers:**
+- ✅ `workflow_dispatch` for on-demand deployments
+- ✅ Environment selection (dev/prod)
+
+**Concurrency Control:**
+- ✅ One deployment per environment at a time
+- ✅ Queued deployments wait for current deployment to complete
+- ✅ `cancel-in-progress: false` ensures safe sequential deployments
+
+**Security:**
+- ✅ GitHub environment secrets (dev/prod isolation)
+- ✅ AWS IAM least-privilege credentials
+- ✅ ECR immutable tags prevent image overwrites
+
+**Observability:**
+- ✅ Deployment summary with service URLs
+- ✅ CloudWatch Logs integration (7-day retention)
+- ✅ GitHub Actions run history
+
+#### Rollback
+
+If a deployment fails or causes issues:
+
+**Option 1: Revert and Redeploy**
+```bash
+git revert <bad-commit-sha>
+git push origin main
+# CI/CD automatically deploys previous version
+```
+
+**Option 2: Manual Rollback (Immediate)**
+```bash
+# Find previous task definition revision
+aws ecs list-task-definitions --family-prefix dev-davidshaevel-backend --sort DESC
+
+# Update service to previous task definition
+aws ecs update-service \
+  --cluster dev-davidshaevel-cluster \
+  --service dev-davidshaevel-backend \
+  --task-definition dev-davidshaevel-backend:<revision>
+```
+
+#### GitHub Secrets Configuration
+
+Each environment (dev/prod) requires these secrets:
+
+```bash
+# AWS Credentials
+AWS_ACCESS_KEY_ID          # IAM user access key
+AWS_SECRET_ACCESS_KEY      # IAM user secret key
+AWS_REGION                 # us-east-1
+
+# ECR Repositories (full URIs)
+ECR_BACKEND_REPOSITORY     # 108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend
+ECR_FRONTEND_REPOSITORY    # 108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend
+
+# ECS Configuration
+ECS_CLUSTER                # dev-davidshaevel-cluster
+ECS_BACKEND_SERVICE        # dev-davidshaevel-backend
+ECS_FRONTEND_SERVICE       # dev-davidshaevel-frontend
+```
+
+See [docs/prod-environment-setup.md](docs/prod-environment-setup.md) for production setup instructions.
+
+#### Monitoring Deployments
+
+**Watch workflow runs:**
+```bash
+# List recent runs
+gh run list --workflow=backend-deploy.yml --limit 5
+gh run list --workflow=frontend-deploy.yml --limit 5
+
+# Watch current run
+gh run watch <run-id>
+
+# View run details
+gh run view <run-id>
+```
+
+**Check ECS deployment status:**
+```bash
+# List running tasks
+aws ecs list-tasks --cluster dev-davidshaevel-cluster
+
+# Check service status
+aws ecs describe-services \
+  --cluster dev-davidshaevel-cluster \
+  --services dev-davidshaevel-backend dev-davidshaevel-frontend
+```
+
+**Tail CloudWatch logs:**
+```bash
+# Backend logs
+aws logs tail /ecs/dev-davidshaevel/backend --since 10m --follow
+
+# Frontend logs
+aws logs tail /ecs/dev-davidshaevel/frontend --since 10m --follow
+```
 
 ## 🔄 Git Workflow
 
@@ -547,6 +677,10 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - Oct 30: Database schema & initial frontend deployment (PR #20, #21)
 - Oct 31: Frontend fixes & PR feedback (PR #22)
 - Nov 2: CI/CD issue creation & documentation updates (TT-31)
+- Nov 5: TT-31 Phase 1 - GitHub IAM setup (PR #25)
+- Nov 5: TT-31 Phase 2 - Backend CI/CD workflow (PR #26, #27, #28)
+- Nov 6: TT-31 Phase 3 - Frontend CI/CD workflow (PR #29, #30)
+- Nov 6: TT-31 Phase 4 & 5 - Testing, validation, and documentation
 
 **Infrastructure Milestones:**
 - ✅ TT-16 (Steps 1-3): Foundation
@@ -561,9 +695,9 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - ✅ TT-28: Automated Testing (Complete)
 - ✅ TT-23: Backend Deployment (Complete - Oct 29, 2025)
 - ✅ TT-29: Frontend Deployment (Complete - Oct 30-31, 2025)
-- 🔄 TT-31: CI/CD Workflows (Planned - 4-6 hours)
+- ✅ TT-31: CI/CD Workflows (Complete - Nov 6, 2025)
 - ⏳ TT-20: Local Development (Planned - 6-8 hours)
 - ⏳ TT-25: Observability (Planned - 8-10 hours)
 - ⏳ TT-26: Documentation (Planned - 4-6 hours)
 
-**Current Phase:** Production operational, planning CI/CD automation and enhancements
+**Current Phase:** Production operational with automated CI/CD, planning observability and local development enhancements
