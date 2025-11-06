@@ -15,9 +15,9 @@ export default function About() {
         {/* Bio Section */}
         <div className="mt-16 space-y-8 text-lg text-zinc-600 dark:text-zinc-400">
           <p>
-            I'm David Shaevel, a Platform Engineer based in Austin, Texas, specializing in AWS cloud 
-            architecture, infrastructure as code, and DevOps best practices. With extensive experience 
-            in building production-grade systems, I focus on creating reliable, scalable, and secure 
+            I&apos;m David Shaevel, a Platform Engineer based in Austin, Texas, specializing in AWS cloud
+            architecture, infrastructure as code, and DevOps best practices. With extensive experience
+            in building production-grade systems, I focus on creating reliable, scalable, and secure
             infrastructure that enables teams to ship faster.
           </p>
           <p>
@@ -100,7 +100,7 @@ export default function About() {
                 Security by Default
               </h3>
               <p className="mt-2">
-                Security isn't an afterthought—it's built into every layer. From least-privilege IAM 
+                Security isn&apos;t an afterthought—it&apos;s built into every layer. From least-privilege IAM
                 to encrypted secrets and secure network architecture, security is fundamental.
               </p>
             </div>
@@ -109,7 +109,7 @@ export default function About() {
                 Comprehensive Observability
               </h3>
               <p className="mt-2">
-                You can't improve what you can't measure. I implement detailed monitoring, alerting, 
+                You can&apos;t improve what you can&apos;t measure. I implement detailed monitoring, alerting,
                 and logging from day one, providing visibility into system health and performance.
               </p>
             </div>
@@ -118,7 +118,7 @@ export default function About() {
                 Automation & Efficiency
               </h3>
               <p className="mt-2">
-                Manual processes are error-prone and don't scale. I automate repetitive tasks, 
+                Manual processes are error-prone and don&apos;t scale. I automate repetitive tasks,
                 enabling teams to focus on building features rather than managing infrastructure.
               </p>
             </div>
