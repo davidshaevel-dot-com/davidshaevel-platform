@@ -388,6 +388,10 @@ resource "aws_ecs_task_definition" "frontend" {
           value = var.environment
         },
         {
+          name  = "APP_ENV"
+          value = var.environment
+        },
+        {
           name  = "BACKEND_URL"
           value = "http://${aws_lb.main.dns_name}/api"
         }
@@ -450,6 +454,10 @@ resource "aws_ecs_task_definition" "backend" {
         {
           name  = "NODE_ENV"
           value = "production" # Always use production for deployed backend (enables SSL for RDS)
+        },
+        {
+          name  = "APP_ENV"
+          value = var.environment # Deployment environment for health/metrics endpoints
         },
         {
           name  = "DB_HOST"
@@ -570,9 +578,10 @@ resource "aws_ecs_service" "frontend" {
   # This is a widely accepted pattern for ECS + Terraform + CI/CD architectures.
   # See: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_service#ignoring-changes-to-desired-count
   # ------------------------------------------------------------------------------
-  lifecycle {
-    ignore_changes = [task_definition]
-  }
+  # TEMPORARILY COMMENTED OUT FOR TT-37 - Task definition environment variable update
+  # lifecycle {
+  #   ignore_changes = [task_definition]
+  # }
 
   # Ensure target group is created before service
   depends_on = [
@@ -648,9 +657,10 @@ resource "aws_ecs_service" "backend" {
   # This is a widely accepted pattern for ECS + Terraform + CI/CD architectures.
   # See: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_service#ignoring-changes-to-desired-count
   # ------------------------------------------------------------------------------
-  lifecycle {
-    ignore_changes = [task_definition]
-  }
+  # TEMPORARILY COMMENTED OUT FOR TT-37 - Task definition environment variable update
+  # lifecycle {
+  #   ignore_changes = [task_definition]
+  # }
 
   # Ensure target group is created before service
   depends_on = [
