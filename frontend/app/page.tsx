@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+// Test: Verify automatic CI/CD trigger on frontend changes
 export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-zinc-50 dark:from-zinc-950 dark:to-zinc-900">
