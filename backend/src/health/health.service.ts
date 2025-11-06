@@ -38,7 +38,7 @@ export class HealthService {
       version: process.env.npm_package_version || '1.0.0',
       service: 'backend',
       uptime: uptimeSeconds,
-      environment: process.env.NODE_ENV || 'development',
+      environment: process.env.APP_ENV || process.env.NODE_ENV || 'development',
       database: {
         status: databaseStatus,
         type: 'postgresql',

@@ -15,7 +15,7 @@ export class MetricsService {
       '',
       '# HELP backend_info Backend application information',
       '# TYPE backend_info gauge',
-      `backend_info{version="${process.env.npm_package_version || '1.0.0'}",environment="${process.env.NODE_ENV || 'development'}"} 1`,
+      `backend_info{version="${process.env.npm_package_version || '1.0.0'}",environment="${process.env.APP_ENV || process.env.NODE_ENV || 'development'}"} 1`,
       '',
       '# HELP nodejs_memory_usage_bytes Node.js memory usage in bytes',
       '# TYPE nodejs_memory_usage_bytes gauge',

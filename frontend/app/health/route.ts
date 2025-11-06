@@ -15,7 +15,7 @@ export async function GET() {
     version: process.env.npm_package_version || '1.0.0',
     service: 'frontend',
     uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
+    environment: process.env.APP_ENV || process.env.NODE_ENV || 'development',
   };
 
   return NextResponse.json(healthCheck, { status: 200 });
