@@ -624,14 +624,34 @@ aws ecs describe-services --profile davidshaevel-dev \
   --output table
 
 echo -e "\n=== ALB Target Health ==="
-# Get target group ARNs first, then check health
+# Get backend target group health
+BACKEND_TG_ARN=$(aws ecs describe-services --profile davidshaevel-dev \
+  --cluster dev-davidshaevel-cluster \
+  --services dev-davidshaevel-backend \
+  --query 'services[0].loadBalancers[0].targetGroupArn' \
+  --output text)
+aws elbv2 describe-target-health --profile davidshaevel-dev \
+  --target-group-arn "$BACKEND_TG_ARN" \
+  --query 'TargetHealthDescriptions[*].[Target.Id,TargetHealth.State]' \
+  --output table
+
+# Get frontend target group health
+FRONTEND_TG_ARN=$(aws ecs describe-services --profile davidshaevel-dev \
+  --cluster dev-davidshaevel-cluster \
+  --services dev-davidshaevel-frontend \
+  --query 'services[0].loadBalancers[0].targetGroupArn' \
+  --output text)
+aws elbv2 describe-target-health --profile davidshaevel-dev \
+  --target-group-arn "$FRONTEND_TG_ARN" \
+  --query 'TargetHealthDescriptions[*].[Target.Id,TargetHealth.State]' \
+  --output table
 
 echo -e "\n=== Application Health Endpoints ==="
 curl -s -o /dev/null -w "Frontend: %{http_code}\n" https://davidshaevel.com/health
 curl -s -o /dev/null -w "Backend: %{http_code}\n" https://davidshaevel.com/api/health
 
 echo -e "\n=== Recent Errors in Logs ==="
-aws logs tail /ecs/dev-davidshaevel/backend --since 10m --filter-pattern ERROR | head -20
+aws logs tail /ecs/dev-davidshaevel/backend --profile davidshaevel-dev --since 10m --filter-pattern ERROR | head -20
 ```
 
 ---

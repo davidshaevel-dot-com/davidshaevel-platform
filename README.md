@@ -563,11 +563,13 @@ git push origin main
 # Find previous task definition revision
 aws ecs list-task-definitions --family-prefix dev-davidshaevel-backend --sort DESC
 
-# Update service to previous task definition
+# Update service to previous task definition (backend example)
 aws ecs update-service \
   --cluster dev-davidshaevel-cluster \
   --service dev-davidshaevel-backend \
   --task-definition dev-davidshaevel-backend:<revision>
+
+# For frontend, replace 'backend' with 'frontend' in the commands above
 ```
 
 #### GitHub Secrets Configuration

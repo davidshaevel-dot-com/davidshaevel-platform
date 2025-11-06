@@ -50,6 +50,8 @@ gh workflow run frontend-deploy.yml --field environment=dev
 ### Complete Manual Deployment (if CI/CD unavailable)
 
 ```bash
+# NOTE: Examples below use 'backend' - replace with 'frontend' for frontend deployments
+
 # 1. Build and tag image
 cd backend/  # or frontend/
 IMAGE_TAG=$(git rev-parse --short HEAD)
@@ -104,6 +106,12 @@ aws ecs wait services-stable --profile davidshaevel-dev \
 
 # 4. Verify
 curl https://davidshaevel.com/api/health
+
+# For frontend rollback, replace 'backend' with 'frontend':
+# - family-prefix: dev-davidshaevel-frontend
+# - service: dev-davidshaevel-frontend
+# - task-definition: dev-davidshaevel-frontend:XX
+# - verify: curl https://davidshaevel.com/
 ```
 
 ---
@@ -136,8 +144,16 @@ aws ecs describe-services --profile davidshaevel-dev \
 **Frontend Not Updating:**
 - Invalidate CloudFront cache:
   ```bash
+  # Option 1: Use known distribution ID
   aws cloudfront create-invalidation --profile davidshaevel-dev \
     --distribution-id EJVDEMX0X00IG --paths "/*"
+
+  # Option 2: Dynamically retrieve distribution ID (if tagged)
+  DIST_ID=$(aws cloudfront list-distributions --profile davidshaevel-dev \
+    --query "DistributionList.Items[?Origins.Items[?DomainName=='davidshaevel.com']].Id | [0]" \
+    --output text)
+  aws cloudfront create-invalidation --profile davidshaevel-dev \
+    --distribution-id "$DIST_ID" --paths "/*"
   ```
 
 ### Monitoring Commands

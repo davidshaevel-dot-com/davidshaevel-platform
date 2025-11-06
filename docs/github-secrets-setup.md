@@ -8,7 +8,7 @@ The CI/CD workflows require environment-specific secrets to authenticate with AW
 
 ## Required Secrets Per Environment
 
-Each GitHub environment needs 7 secrets configured:
+Each GitHub environment needs 8 secrets configured:
 
 | Secret Name | Description | Example Value |
 |-------------|-------------|---------------|

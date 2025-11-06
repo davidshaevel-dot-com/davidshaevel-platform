@@ -210,28 +210,31 @@ If a production deployment fails or causes issues:
 ### Option 1: Redeploy Previous Version
 
 1. Find the previous successful deployment commit SHA
-2. Manually trigger workflow with that commit:
+2. Manually trigger workflow using the `--ref` flag with that commit SHA:
    ```bash
-   git checkout <previous-commit-sha>
-   gh workflow run backend-deploy.yml --field environment=prod
-   gh workflow run frontend-deploy.yml --field environment=prod
-   git checkout main
+   # For backend
+   gh workflow run backend-deploy.yml --field environment=prod --ref <previous-commit-sha>
+
+   # For frontend
+   gh workflow run frontend-deploy.yml --field environment=prod --ref <previous-commit-sha>
    ```
 
 ### Option 2: Manual ECS Service Update
 
-1. Find the previous task definition revision:
+1. Find the previous task definition revision (example for backend):
    ```bash
    aws ecs list-task-definitions --family-prefix prod-davidshaevel-backend --sort DESC
    ```
 
-2. Update service to previous task definition:
+2. Update service to previous task definition (example for backend):
    ```bash
    aws ecs update-service \
      --cluster prod-davidshaevel-cluster \
      --service prod-davidshaevel-backend \
      --task-definition prod-davidshaevel-backend:<revision-number>
    ```
+
+   *Note: To rollback the frontend, replace `backend` with `frontend` in the service and family-prefix names.*
 
 ## Current Status
 
