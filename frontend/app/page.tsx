@@ -14,7 +14,7 @@ export default function Home() {
             </span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Hi, I'm David Shaevel, a Platform Engineer specializing in AWS cloud architecture,
+            Hi, I&apos;m David Shaevel, a Platform Engineer specializing in AWS cloud architecture,
             infrastructure as code with Terraform, and production-ready DevOps practices.
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-6">
@@ -204,7 +204,7 @@ export default function Home() {
             Ready to Build Something Great?
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-zinc-300">
-            Let's discuss how platform engineering can help scale your infrastructure.
+            Let&apos;s discuss how platform engineering can help scale your infrastructure.
           </p>
           <Link
             href="/contact"

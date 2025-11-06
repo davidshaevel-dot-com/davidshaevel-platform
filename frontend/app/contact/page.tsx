@@ -30,7 +30,7 @@ export default function Contact() {
             Get in Touch
           </h1>
           <p className="mt-6 text-xl text-zinc-600 dark:text-zinc-400">
-            Let's discuss how platform engineering can help your team
+            Let&apos;s discuss how platform engineering can help your team
           </p>
         </div>
 
@@ -110,7 +110,7 @@ export default function Contact() {
 
               {formState === 'submitted' && (
                 <p className="text-center text-sm text-green-600 dark:text-green-400">
-                  Thank you! I'll get back to you soon.
+                  Thank you! I&apos;ll get back to you soon.
                 </p>
               )}
             </form>
@@ -123,7 +123,7 @@ export default function Contact() {
                 Contact Information
               </h2>
               <p className="mt-4 text-zinc-600 dark:text-zinc-400">
-                Feel free to reach out through any of these channels. I'm always interested in 
+                Feel free to reach out through any of these channels. I&apos;m always interested in
                 discussing platform engineering, infrastructure challenges, and exciting opportunities.
               </p>
             </div>
@@ -193,9 +193,9 @@ export default function Contact() {
                 Interested in collaborating?
               </h3>
               <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-                I'm always open to discussing platform engineering challenges, infrastructure 
-                consulting, or full-time opportunities. Whether you need help with AWS architecture, 
-                Terraform modules, or building scalable systems, let's talk.
+                I&apos;m always open to discussing platform engineering challenges, infrastructure
+                consulting, or full-time opportunities. Whether you need help with AWS architecture,
+                Terraform modules, or building scalable systems, let&apos;s talk.
               </p>
             </div>
           </div>
