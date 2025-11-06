@@ -1,0 +1,186 @@
+name: Frontend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-deploy.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+
+# Prevent concurrent deployments to the same environment
+concurrency:
+  group: frontend-deploy-${{ github.event.inputs.environment || 'dev' }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run linter
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Build check (validates TypeScript types)
+        working-directory: frontend
+        run: npm run build
+
+  build:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+
+    outputs:
+      image_tag: ${{ steps.build-image.outputs.image_tag }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REPOSITORY: ${{ secrets.ECR_FRONTEND_REPOSITORY }}
+        working-directory: frontend
+        run: |
+          # Use git short SHA for cleaner image tags (Git determines optimal length)
+          IMAGE_TAG=$(git rev-parse --short HEAD)
+
+          # Build Docker image with short SHA tag
+          docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
+
+          # Push image with short SHA tag
+          # Note: ECR has immutable tags enabled
+          docker push $ECR_REPOSITORY:$IMAGE_TAG
+
+          # Output only the image tag (not full URI to avoid secret masking)
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "Built and pushed: $ECR_REPOSITORY:$IMAGE_TAG"
+
+      - name: Image digest
+        run: 'echo "Image tag: ${{ steps.build-image.outputs.image_tag }}"'
+
+  deploy:
+    name: Deploy to ECS
+    runs-on: ubuntu-latest
+    needs: build
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Download current task definition
+        id: download-taskdef
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ secrets.ECS_FRONTEND_SERVICE }} \
+            --query taskDefinition \
+            --output json > task-definition.json
+
+          echo "Downloaded task definition:"
+          cat task-definition.json | jq '.family'
+
+      - name: Construct image URI
+        id: image-uri
+        run: |
+          # Construct full image URI from ECR repository + tag
+          IMAGE_URI="${{ secrets.ECR_FRONTEND_REPOSITORY }}:${{ needs.build.outputs.image_tag }}"
+          echo "image=$IMAGE_URI" >> $GITHUB_OUTPUT
+          echo "Deploying image: $IMAGE_URI"
+
+      - name: Update task definition with new image
+        id: update-taskdef
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: frontend
+          image: ${{ steps.image-uri.outputs.image }}
+
+      - name: Deploy to Amazon ECS
+        id: deploy
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.update-taskdef.outputs.task-definition }}
+          service: ${{ secrets.ECS_FRONTEND_SERVICE }}
+          cluster: ${{ secrets.ECS_CLUSTER }}
+          wait-for-service-stability: true
+          wait-for-minutes: 10
+
+      - name: Get service URL
+        id: service-url
+        run: |
+          # Get ALB DNS name from ECS service
+          SERVICE_ARN=$(aws ecs describe-services \
+            --cluster ${{ secrets.ECS_CLUSTER }} \
+            --services ${{ secrets.ECS_FRONTEND_SERVICE }} \
+            --query 'services[0].loadBalancers[0].targetGroupArn' \
+            --output text)
+
+          ALB_ARN=$(aws elbv2 describe-target-groups \
+            --target-group-arns $SERVICE_ARN \
+            --query 'TargetGroups[0].LoadBalancerArns[0]' \
+            --output text)
+
+          ALB_DNS=$(aws elbv2 describe-load-balancers \
+            --load-balancer-arns $ALB_ARN \
+            --query 'LoadBalancers[0].DNSName' \
+            --output text)
+
+          SERVICE_URL="http://${ALB_DNS}"
+          echo "service-url=$SERVICE_URL" >> $GITHUB_OUTPUT
+          echo "Frontend deployed to: $SERVICE_URL"
+
+      - name: Deployment summary
+        run: |
+          echo "## Frontend Deployment Successful ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ steps.image-uri.outputs.image }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Cluster:** \`${{ secrets.ECS_CLUSTER }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Service:** \`${{ secrets.ECS_FRONTEND_SERVICE }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** ${{ steps.service-url.outputs.service-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🚀 Deployment triggered by: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "📝 Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
