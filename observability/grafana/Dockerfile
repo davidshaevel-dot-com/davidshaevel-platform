@@ -9,18 +9,13 @@ LABEL maintainer="David Shaevel <david@davidshaevel.com>"
 LABEL description="Grafana dashboards for DavidShaevel.com platform observability"
 LABEL version="1.0.0"
 
-# Switch to root to copy provisioning files
-USER root
+# Copy provisioning configuration with proper ownership
+# Using --chown flag reduces image layers compared to separate RUN chown command
+COPY --chown=grafana:grafana provisioning/datasources/ /etc/grafana/provisioning/datasources/
+COPY --chown=grafana:grafana provisioning/dashboards/ /etc/grafana/provisioning/dashboards/
+COPY --chown=grafana:grafana provisioning/dashboard-definitions/ /etc/grafana/provisioning/dashboard-definitions/
 
-# Copy provisioning configuration
-COPY provisioning/datasources/ /etc/grafana/provisioning/datasources/
-COPY provisioning/dashboards/ /etc/grafana/provisioning/dashboards/
-COPY provisioning/dashboard-definitions/ /etc/grafana/provisioning/dashboard-definitions/
-
-# Set proper permissions for Grafana user
-RUN chown -R grafana:grafana /etc/grafana/provisioning
-
-# Switch back to grafana user for security
+# Ensure running as grafana user for security
 USER grafana
 
 # Expose Grafana port
