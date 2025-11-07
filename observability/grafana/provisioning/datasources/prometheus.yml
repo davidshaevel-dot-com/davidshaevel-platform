@@ -1,0 +1,16 @@
+# Grafana Datasource Provisioning - Prometheus
+# This file automatically configures the Prometheus datasource when Grafana starts
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    # Use service discovery DNS name for Prometheus
+    url: http://prometheus.davidshaevel.local:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      httpMethod: POST
+      timeInterval: 15s

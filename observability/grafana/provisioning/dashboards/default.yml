@@ -1,0 +1,16 @@
+# Grafana Dashboard Provisioning Configuration
+# This file tells Grafana where to find pre-configured dashboards
+
+apiVersion: 1
+
+providers:
+  - name: 'DavidShaevel Platform'
+    orgId: 1
+    folder: ''
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboard-definitions
+      foldersFromFilesStructure: true

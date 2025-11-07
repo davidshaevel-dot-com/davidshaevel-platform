@@ -1,0 +1,60 @@
+# Prometheus Configuration for DavidShaevel.com Platform
+# This configuration defines how Prometheus scrapes metrics from the platform services
+
+global:
+  scrape_interval: 15s      # Scrape metrics every 15 seconds
+  evaluation_interval: 15s  # Evaluate alerting rules every 15 seconds
+  external_labels:
+    environment: 'dev'
+    platform: 'davidshaevel'
+
+# Scrape configuration for all services
+scrape_configs:
+  # Backend API metrics
+  - job_name: 'backend'
+    metrics_path: '/api/metrics'
+    static_configs:
+      - targets: ['dev-davidshaevel-backend.davidshaevel.local:3001']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'backend'
+      - source_labels: []
+        target_label: service
+        replacement: 'backend'
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'nodejs_.*'
+        action: keep
+      - source_labels: [__name__]
+        regex: 'backend_.*'
+        action: keep
+
+  # Frontend application metrics
+  - job_name: 'frontend'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['dev-davidshaevel-frontend.davidshaevel.local:3000']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'frontend'
+      - source_labels: []
+        target_label: service
+        replacement: 'frontend'
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'nodejs_.*'
+        action: keep
+      - source_labels: [__name__]
+        regex: 'frontend_.*'
+        action: keep
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    relabel_configs:
+      - source_labels: []
+        target_label: service
+        replacement: 'prometheus'
