@@ -5,6 +5,7 @@
 #   - environment: Target environment (dev, staging, prod)
 #   - service_prefix: Cloud Map service name prefix (e.g., dev-davidshaevel)
 #   - platform_name: Platform identifier for external_labels (e.g., davidshaevel)
+#   - private_dns_zone: Private hosted zone name (e.g., davidshaevel.local, dev.internal)
 
 global:
   scrape_interval: 15s      # Scrape metrics every 15 seconds
@@ -20,7 +21,7 @@ scrape_configs:
     metrics_path: '/api/metrics'
     dns_sd_configs:
       - names:
-          - '${service_prefix}-backend.davidshaevel.local'
+          - '${service_prefix}-backend.${private_dns_zone}'
         type: 'SRV'
     relabel_configs:
       - source_labels: [job]
@@ -35,7 +36,7 @@ scrape_configs:
     metrics_path: '/metrics'
     dns_sd_configs:
       - names:
-          - '${service_prefix}-frontend.davidshaevel.local'
+          - '${service_prefix}-frontend.${private_dns_zone}'
         type: 'SRV'
     relabel_configs:
       - source_labels: [job]

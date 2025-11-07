@@ -18,6 +18,17 @@ The template (`prometheus.yml.tpl`) uses the following variables:
 | `environment` | Target environment name | `dev`, `staging`, `prod` |
 | `service_prefix` | Cloud Map service name prefix | `dev-davidshaevel`, `prod-davidshaevel` |
 | `platform_name` | Platform identifier for external_labels | `davidshaevel`, `myapp` |
+| `private_dns_zone` | Private hosted zone name for service discovery | `davidshaevel.local`, `dev.internal`, `prod.internal` |
+
+**Multi-Account Architecture Note:**
+
+In multi-account AWS architectures (where dev, staging, and prod environments run in separate AWS accounts), each account typically has its own private hosted zone for service discovery. The `private_dns_zone` variable provides flexibility to support different organizational patterns:
+
+- **Pattern A:** Same zone name across all accounts (e.g., `davidshaevel.local` in dev, staging, and prod accounts)
+- **Pattern B:** Account-specific zone names (e.g., `davidshaevel-dev.local`, `davidshaevel-prod.local`)
+- **Pattern C:** Environment-specific zone names (e.g., `dev.internal`, `staging.internal`, `prod.internal`)
+
+All patterns work because Route 53 private hosted zones are scoped to their AWS account and associated VPCs. Services in different accounts cannot conflict even with identical zone names.
 
 ## Usage in Terraform
 
@@ -37,9 +48,10 @@ locals {
   prometheus_config = templatefile(
     "${path.module}/../../observability/prometheus/prometheus.yml.tpl",
     {
-      environment    = var.environment
-      service_prefix = "${var.environment}-${var.project_name}"
-      platform_name  = var.project_name
+      environment      = var.environment
+      service_prefix   = "${var.environment}-${var.project_name}"
+      platform_name    = var.project_name
+      private_dns_zone = var.private_dns_zone  # e.g., "davidshaevel.local" or "dev.internal"
     }
   )
 }
@@ -168,18 +180,36 @@ See the main Terraform infrastructure code (Phase 3-6) for the complete implemen
 ```yaml
 external_labels:
   environment: 'dev'
+  platform: 'davidshaevel'
 
-dns_sd_configs:
-  - names: ['dev-davidshaevel-backend.davidshaevel.local']
+# In scrape_configs:
+- job_name: 'backend'
+  dns_sd_configs:
+    - names: ['dev-davidshaevel-backend.davidshaevel.local']
+      type: 'SRV'
+
+- job_name: 'frontend'
+  dns_sd_configs:
+    - names: ['dev-davidshaevel-frontend.davidshaevel.local']
+      type: 'SRV'
 ```
 
 ### Production (`prod`)
 ```yaml
 external_labels:
   environment: 'prod'
+  platform: 'davidshaevel'
 
-dns_sd_configs:
-  - names: ['prod-davidshaevel-backend.davidshaevel.local']
+# In scrape_configs:
+- job_name: 'backend'
+  dns_sd_configs:
+    - names: ['prod-davidshaevel-backend.davidshaevel.local']
+      type: 'SRV'
+
+- job_name: 'frontend'
+  dns_sd_configs:
+    - names: ['prod-davidshaevel-frontend.davidshaevel.local']
+      type: 'SRV'
 ```
 
 ## Local Development
