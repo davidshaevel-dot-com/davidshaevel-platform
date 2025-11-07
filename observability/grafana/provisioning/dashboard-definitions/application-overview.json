@@ -14,19 +14,21 @@
         "gridPos": {"x": 0, "y": 0, "w": 8, "h": 4},
         "targets": [
           {
-            "expr": "backend_info",
+            "expr": "up{job=\"backend\"}",
             "refId": "A"
           }
         ],
         "fieldConfig": {
           "defaults": {
             "mappings": [
-              {"type": "value", "value": "1", "text": "HEALTHY"}
+              {"type": "value", "options": {"1": {"text": "UP"}, "0": {"text": "DOWN"}}},
+              {"type": "special", "options": {"no-value": {"text": "NO DATA"}}}
             ],
             "thresholds": {
               "mode": "absolute",
               "steps": [
-                {"value": null, "color": "green"}
+                {"value": null, "color": "red"},
+                {"value": 1, "color": "green"}
               ]
             }
           }
@@ -39,19 +41,21 @@
         "gridPos": {"x": 8, "y": 0, "w": 8, "h": 4},
         "targets": [
           {
-            "expr": "frontend_info",
+            "expr": "up{job=\"frontend\"}",
             "refId": "A"
           }
         ],
         "fieldConfig": {
           "defaults": {
             "mappings": [
-              {"type": "value", "value": "1", "text": "HEALTHY"}
+              {"type": "value", "options": {"1": {"text": "UP"}, "0": {"text": "DOWN"}}},
+              {"type": "special", "options": {"no-value": {"text": "NO DATA"}}}
             ],
             "thresholds": {
               "mode": "absolute",
               "steps": [
-                {"value": null, "color": "green"}
+                {"value": null, "color": "red"},
+                {"value": 1, "color": "green"}
               ]
             }
           }

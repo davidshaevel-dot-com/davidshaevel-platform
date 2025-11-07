@@ -1,5 +1,5 @@
 # Prometheus Dockerfile for DavidShaevel.com Platform
-# Multi-stage build for optimal image size
+# Custom Prometheus image with pre-loaded configuration
 
 # Use official Prometheus base image
 FROM prom/prometheus:v2.48.1

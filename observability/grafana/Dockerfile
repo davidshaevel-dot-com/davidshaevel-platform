@@ -1,5 +1,5 @@
 # Grafana Dockerfile for DavidShaevel.com Platform
-# Multi-stage build for optimal image size with pre-configured dashboards
+# Grafana image with pre-configured dashboards and provisioning
 
 # Use official Grafana base image
 FROM grafana/grafana:10.2.3

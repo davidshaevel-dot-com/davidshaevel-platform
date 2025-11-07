@@ -13,41 +13,33 @@ scrape_configs:
   # Backend API metrics
   - job_name: 'backend'
     metrics_path: '/api/metrics'
-    static_configs:
-      - targets: ['dev-davidshaevel-backend.davidshaevel.local:3001']
+    dns_sd_configs:
+      - names:
+          - 'dev-davidshaevel-backend.davidshaevel.local'
+        type: 'SRV'
     relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
-        replacement: 'backend'
       - source_labels: []
         target_label: service
         replacement: 'backend'
     metric_relabel_configs:
       - source_labels: [__name__]
-        regex: 'nodejs_.*'
-        action: keep
-      - source_labels: [__name__]
-        regex: 'backend_.*'
+        regex: 'nodejs_.*|backend_.*'
         action: keep
 
   # Frontend application metrics
   - job_name: 'frontend'
     metrics_path: '/metrics'
-    static_configs:
-      - targets: ['dev-davidshaevel-frontend.davidshaevel.local:3000']
+    dns_sd_configs:
+      - names:
+          - 'dev-davidshaevel-frontend.davidshaevel.local'
+        type: 'SRV'
     relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
-        replacement: 'frontend'
       - source_labels: []
         target_label: service
         replacement: 'frontend'
     metric_relabel_configs:
       - source_labels: [__name__]
-        regex: 'nodejs_.*'
-        action: keep
-      - source_labels: [__name__]
-        regex: 'frontend_.*'
+        regex: 'nodejs_.*|frontend_.*'
         action: keep
 
   # Prometheus self-monitoring

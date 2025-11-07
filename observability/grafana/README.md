@@ -17,7 +17,7 @@ Grafana is deployed as an ECS Fargate service that visualizes metrics from Prome
 │  ┌───────────────────────────────┐ │
 │  │   Grafana Container           │ │
 │  │   - Port 3000                 │ │
-│  │   - EFS mount: /var/lib/graf  │ │
+│  │   - EFS mount: /var/lib/grafana  │ │
 │  └───────────────────────────────┘ │
 │              │                      │
 │              ▼                      │

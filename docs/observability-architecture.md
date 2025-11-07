@@ -186,8 +186,8 @@ The observability stack provides real-time monitoring and visualization of appli
 **Security groups:**
 - Prometheus SG: Allow inbound 9090 from Grafana SG and ALB SG
 - Grafana SG: Allow inbound 3000 from ALB SG
-- Backend SG: Allow inbound 3001 from Prometheus SG
-- Frontend SG: Allow inbound 3000 from Prometheus SG
+- Backend SG: Allow inbound 3001 from Prometheus SG, ALB SG, and Frontend SG
+- Frontend SG: Allow inbound 3000 from Prometheus SG and ALB SG
 
 **Private subnet placement:**
 - All ECS tasks run in private subnets (no direct internet access)
