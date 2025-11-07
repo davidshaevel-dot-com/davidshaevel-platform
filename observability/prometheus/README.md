@@ -78,12 +78,12 @@ Prometheus data is stored in EFS at `/prometheus` with:
 ## Access
 
 Prometheus UI is accessible at:
-- **Internal:** `http://prometheus.davidshaevel.local:9090`
+- **Internal:** `http://dev-davidshaevel-prometheus.davidshaevel.local:9090`
 - **External (via ALB):** `https://davidshaevel.com/prometheus`
 
 ## Monitoring Prometheus
 
-Health check endpoint: `http://prometheus.davidshaevel.local:9090/-/healthy`
+Health check endpoint: `http://dev-davidshaevel-prometheus.davidshaevel.local:9090/-/healthy`
 
 Query self-monitoring metrics:
 ```promql
@@ -103,11 +103,12 @@ prometheus_tsdb_storage_blocks_bytes
 
 1. Check service discovery:
    ```bash
-   dig +short backend.davidshaevel.local
-   dig +short frontend.davidshaevel.local
+   dig +short dev-davidshaevel-backend.davidshaevel.local
+   dig +short dev-davidshaevel-frontend.davidshaevel.local
    ```
 
-2. Check Prometheus targets page: `http://prometheus:9090/targets`
+2. Check Prometheus targets page (from within VPC): `http://prometheus:9090/targets`
+   - Or via ALB: `https://davidshaevel.com/prometheus/targets`
 
 3. Check security groups allow traffic from Prometheus to backend/frontend
 
@@ -127,6 +128,8 @@ prometheus_tsdb_storage_blocks_bytes
 Prometheus supports live config reload:
 ```bash
 # Send SIGHUP signal to Prometheus process
+# Note: This command uses short hostname and must be run from within the VPC
+# (e.g., via ECS Exec, bastion host, or VPN connection where Cloud Map DNS resolution works)
 curl -X POST http://prometheus:9090/-/reload
 ```
 

@@ -93,7 +93,7 @@ Grafana data is stored in EFS at `/var/lib/grafana` including:
 ## Access
 
 Grafana UI is accessible at:
-- **Internal:** `http://grafana.davidshaevel.local:3000`
+- **Internal:** `http://dev-davidshaevel-grafana.davidshaevel.local:3000`
 - **External (via ALB):** `https://davidshaevel.com/grafana`
 
 **Default credentials:**
@@ -120,7 +120,7 @@ Grafana UI is accessible at:
 
 ## Monitoring Grafana
 
-Health check endpoint: `http://grafana.davidshaevel.local:3000/api/health`
+Health check endpoint: `http://dev-davidshaevel-grafana.davidshaevel.local:3000/api/health`
 
 Response when healthy:
 ```json
@@ -136,7 +136,7 @@ Response when healthy:
 
 1. Check service discovery DNS:
    ```bash
-   dig +short prometheus.davidshaevel.local
+   dig +short dev-davidshaevel-prometheus.davidshaevel.local
    ```
 
 2. Check Grafana datasource status:
