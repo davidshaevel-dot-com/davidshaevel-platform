@@ -54,10 +54,10 @@ The observability stack provides real-time monitoring and visualization of appli
 │  ┌──────────────────────────────────────────────────────────┐ │
 │  │         Service Discovery (AWS Cloud Map)                 │ │
 │  │  Namespace: davidshaevel.local                           │ │
-│  │  - backend.davidshaevel.local → Backend tasks            │ │
-│  │  - frontend.davidshaevel.local → Frontend tasks          │ │
-│  │  - prometheus.davidshaevel.local → Prometheus task       │ │
-│  │  - grafana.davidshaevel.local → Grafana task             │ │
+│  │  - dev-davidshaevel-backend.davidshaevel.local → Backend tasks            │ │
+│  │  - dev-davidshaevel-frontend.davidshaevel.local → Frontend tasks          │ │
+│  │  - dev-davidshaevel-prometheus.davidshaevel.local → Prometheus task       │ │
+│  │  - dev-davidshaevel-grafana.davidshaevel.local → Grafana task             │ │
 │  └──────────────────────────────────────────────────────────┘ │
 │                                                                │
 │  ┌──────────────────────────────────────────────────────────┐ │

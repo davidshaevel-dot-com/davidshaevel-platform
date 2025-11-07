@@ -48,7 +48,7 @@ grafana/
 Automatically configures Prometheus as the default datasource when Grafana starts.
 
 **Key settings:**
-- **URL:** `http://prometheus.davidshaevel.local:9090` (via service discovery)
+- **URL:** `http://dev-davidshaevel-prometheus.davidshaevel.local:9090` (via service discovery)
 - **Access mode:** Proxy (Grafana queries Prometheus on behalf of browser)
 - **Default:** Yes (primary datasource)
 - **Editable:** No (prevents accidental changes)

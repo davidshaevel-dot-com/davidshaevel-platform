@@ -22,8 +22,8 @@ Prometheus is deployed as an ECS Fargate service that scrapes metrics from:
 │              │                      │
 │              ▼                      │
 │   Service Discovery (Cloud Map)    │
-│   - backend.davidshaevel.local     │
-│   - frontend.davidshaevel.local    │
+│   - dev-davidshaevel-backend.davidshaevel.local     │
+│   - dev-davidshaevel-frontend.davidshaevel.local    │
 └─────────────────────────────────────┘
 ```
 
