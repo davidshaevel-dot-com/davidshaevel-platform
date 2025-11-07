@@ -82,7 +82,7 @@ resource "aws_ecs_task_definition" "prometheus" {
       # Init container: Fetches config from S3 to EFS before Prometheus starts
       name      = "config-init"
       image     = "public.ecr.aws/aws-cli/aws-cli:latest"
-      essential = false  # Task continues even if init container fails after retries
+      essential = true   # Task should fail and restart if config sync fails
       command = [
         "s3", "cp",
         "s3://${var.config_bucket_name}/${var.project_name}/${var.environment}/observability/prometheus/prometheus.yml",
@@ -135,6 +135,7 @@ The example above uses an **init container** to sync the configuration from S3 t
 - ✅ **Automatic:** Config refreshed on every task restart
 - ✅ **Simple:** No custom entrypoint scripts in Prometheus image
 - ✅ **Reliable:** Task won't start until config is in place
+- ✅ **Fail-fast:** Init container is `essential = true`, so task fails and retries if config sync fails (clear failure signal vs confusing "running but non-functional" state)
 
 **IAM Requirements:**
 
