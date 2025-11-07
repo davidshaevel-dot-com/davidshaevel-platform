@@ -152,12 +152,13 @@ The observability stack provides real-time monitoring and visualization of appli
 
 **How it works:**
 1. ECS registers tasks with Cloud Map on startup
-2. Cloud Map creates DNS A records for each service
-3. Prometheus/Grafana resolve service names to task IPs
+2. Cloud Map creates DNS SRV records for each service (returns both IP and port)
+3. Prometheus uses DNS-SD to discover all task IPs and ports automatically
 4. If tasks restart with new IPs, DNS updates automatically
 
 **Benefits:**
-- No hardcoded IPs in configuration
+- No hardcoded IPs or ports in configuration (SRV records provide both)
+- Discovers all tasks in a service (important for multi-task services)
 - Automatic failover and load balancing
 - Works seamlessly with ECS service auto-scaling
 
