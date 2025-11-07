@@ -77,33 +77,87 @@ resource "aws_ecs_task_definition" "prometheus" {
     }
   }
 
-  container_definitions = jsonencode([{
-    name  = "prometheus"
-    image = "${var.ecr_repository_url}:${var.image_tag}"
+  container_definitions = jsonencode([
+    {
+      # Init container: Fetches config from S3 to EFS before Prometheus starts
+      name      = "config-init"
+      image     = "public.ecr.aws/aws-cli/aws-cli:latest"
+      essential = false  # Task continues even if init container fails after retries
+      command = [
+        "s3", "cp",
+        "s3://${var.config_bucket_name}/${var.project_name}/${var.environment}/observability/prometheus/prometheus.yml",
+        "/etc/prometheus/prometheus.yml"
+      ]
+      mountPoints = [
+        {
+          sourceVolume  = "prometheus-config"
+          containerPath = "/etc/prometheus"
+          readOnly      = false  # Writable for init container
+        }
+      ]
+    },
+    {
+      name      = "prometheus"
+      image     = "${var.ecr_repository_url}:${var.image_tag}"
+      essential = true
+      dependsOn = [
+        {
+          containerName = "config-init"
+          condition     = "SUCCESS"  # Wait for config sync
+        }
+      ]
 
-    # Mount EFS volumes
-    mountPoints = [
-      {
-        sourceVolume  = "prometheus-config"
-        containerPath = "/etc/prometheus"
-        readOnly      = true
-      },
-      {
-        sourceVolume  = "prometheus-data"
-        containerPath = "/prometheus"
-        readOnly      = false
-      }
-    ]
+      # Mount EFS volumes
+      mountPoints = [
+        {
+          sourceVolume  = "prometheus-config"
+          containerPath = "/etc/prometheus"
+          readOnly      = true  # Read-only for main container
+        },
+        {
+          sourceVolume  = "prometheus-data"
+          containerPath = "/prometheus"
+          readOnly      = false
+        }
+      ]
 
-    # ... rest of container config ...
-  }])
+      # ... rest of container config ...
+    }
+  ])
 }
 ```
 
-**Note:** The configuration file must be synced from S3 to the EFS `/config` directory before the Prometheus task starts. This can be done using:
-- **Lambda function** triggered on S3 object creation
-- **ECS task** (one-time or scheduled) that runs `aws s3 cp`
-- **Init container** in the task definition that syncs before Prometheus starts
+**Configuration Sync Pattern:**
+
+The example above uses an **init container** to sync the configuration from S3 to EFS before Prometheus starts. This is the recommended approach because:
+
+- ✅ **Self-contained:** No external processes (Lambda, cron) required
+- ✅ **Automatic:** Config refreshed on every task restart
+- ✅ **Simple:** No custom entrypoint scripts in Prometheus image
+- ✅ **Reliable:** Task won't start until config is in place
+
+**IAM Requirements:**
+
+The ECS task execution role needs `s3:GetObject` permission:
+
+```hcl
+resource "aws_iam_role_policy" "prometheus_s3_config" {
+  role   = aws_iam_role.prometheus_task_role.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = ["s3:GetObject"]
+      Resource = "${aws_s3_object.prometheus_config.arn}"
+    }]
+  })
+}
+```
+
+**Alternative Approaches:**
+
+- **Lambda function:** Triggered on S3 object changes, syncs to EFS (more complex)
+- **ECS task:** One-time or scheduled task runs `aws s3 cp` (requires scheduling)
 
 See the main Terraform infrastructure code (Phase 3-6) for the complete implementation.
 
