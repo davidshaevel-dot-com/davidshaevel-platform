@@ -54,12 +54,15 @@ locals {
       private_dns_zone = var.private_dns_zone  # e.g., "davidshaevel.local" or "dev.internal"
     }
   )
+
+  # Define S3 key path once for DRY principle
+  prometheus_config_s3_key = "${var.project_name}/${var.environment}/observability/prometheus/prometheus.yml"
 }
 
 # Store rendered config in S3
 resource "aws_s3_object" "prometheus_config" {
   bucket  = var.config_bucket_name
-  key     = "${var.project_name}/${var.environment}/observability/prometheus/prometheus.yml"
+  key     = local.prometheus_config_s3_key
   content = local.prometheus_config
   etag    = md5(local.prometheus_config)
 }
@@ -97,7 +100,7 @@ resource "aws_ecs_task_definition" "prometheus" {
       essential = true   # Task should fail and restart if config sync fails
       command = [
         "s3", "cp",
-        "s3://${var.config_bucket_name}/${var.project_name}/${var.environment}/observability/prometheus/prometheus.yml",
+        "s3://${var.config_bucket_name}/${local.prometheus_config_s3_key}",
         "/etc/prometheus/prometheus.yml"
       ]
       mountPoints = [
