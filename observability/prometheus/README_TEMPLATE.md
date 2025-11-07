@@ -28,6 +28,8 @@ During ECS task definition creation, Terraform will:
 
 ### Example Terraform Code
 
+The recommended approach is to store the rendered configuration in S3 and make it available to the Prometheus container via an EFS volume mount.
+
 ```hcl
 # Generate Prometheus config from template
 locals {
@@ -40,33 +42,68 @@ locals {
   )
 }
 
-# Store config in SSM Parameter Store or S3
-resource "aws_ssm_parameter" "prometheus_config" {
-  name  = "/${var.environment}/observability/prometheus/config"
-  type  = "String"
-  value = local.prometheus_config
+# Store rendered config in S3
+resource "aws_s3_object" "prometheus_config" {
+  bucket  = var.config_bucket_name
+  key     = "${var.environment}/observability/prometheus/prometheus.yml"
+  content = local.prometheus_config
+  etag    = md5(local.prometheus_config)
 }
 
-# ECS task definition will mount this config
+# ECS task definition with EFS volume mount
 resource "aws_ecs_task_definition" "prometheus" {
-  # ... task definition ...
+  family                   = "${var.environment}-prometheus"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = "256"
+  memory                   = "512"
+
+  # EFS volume for config and data
+  volume {
+    name = "prometheus-config"
+    efs_volume_configuration {
+      file_system_id = aws_efs_file_system.prometheus.id
+      root_directory = "/config"  # Config files stored here
+    }
+  }
+
+  volume {
+    name = "prometheus-data"
+    efs_volume_configuration {
+      file_system_id = aws_efs_file_system.prometheus.id
+      root_directory = "/data"    # TSDB data stored here
+    }
+  }
 
   container_definitions = jsonencode([{
-    # ... container config ...
+    name  = "prometheus"
+    image = "${var.ecr_repository_url}:${var.image_tag}"
 
-    # Option 1: Mount from SSM Parameter Store
-    secrets = [{
-      name      = "PROMETHEUS_CONFIG"
-      valueFrom = aws_ssm_parameter.prometheus_config.arn
-    }]
+    # Mount EFS volumes
+    mountPoints = [
+      {
+        sourceVolume  = "prometheus-config"
+        containerPath = "/etc/prometheus"
+        readOnly      = true
+      },
+      {
+        sourceVolume  = "prometheus-data"
+        containerPath = "/prometheus"
+        readOnly      = false
+      }
+    ]
 
-    # Option 2: Use S3 + EFS
-    # - Store in S3
-    # - Sync to EFS on startup
-    # - Mount EFS to /etc/prometheus
+    # ... rest of container config ...
   }])
 }
 ```
+
+**Note:** The configuration file must be synced from S3 to the EFS `/config` directory before the Prometheus task starts. This can be done using:
+- **Lambda function** triggered on S3 object creation
+- **ECS task** (one-time or scheduled) that runs `aws s3 cp`
+- **Init container** in the task definition that syncs before Prometheus starts
+
+See the main Terraform infrastructure code (Phase 3-6) for the complete implementation.
 
 ## Environment-Specific Configs
 
