@@ -17,6 +17,7 @@ The template (`prometheus.yml.tpl`) uses the following variables:
 |----------|-------------|----------------|
 | `environment` | Target environment name | `dev`, `staging`, `prod` |
 | `service_prefix` | Cloud Map service name prefix | `dev-davidshaevel`, `prod-davidshaevel` |
+| `platform_name` | Platform identifier for external_labels | `davidshaevel`, `myapp` |
 
 ## Usage in Terraform
 
@@ -37,7 +38,8 @@ locals {
     "${path.module}/../../observability/prometheus/prometheus.yml.tpl",
     {
       environment    = var.environment
-      service_prefix = "${var.environment}-davidshaevel"
+      service_prefix = "${var.environment}-${var.project_name}"
+      platform_name  = var.project_name
     }
   )
 }
@@ -45,7 +47,7 @@ locals {
 # Store rendered config in S3
 resource "aws_s3_object" "prometheus_config" {
   bucket  = var.config_bucket_name
-  key     = "${var.environment}/observability/prometheus/prometheus.yml"
+  key     = "${var.project_name}/${var.environment}/observability/prometheus/prometheus.yml"
   content = local.prometheus_config
   etag    = md5(local.prometheus_config)
 }

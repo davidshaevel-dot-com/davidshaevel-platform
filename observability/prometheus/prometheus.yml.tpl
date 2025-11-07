@@ -4,13 +4,14 @@
 # TEMPLATE VARIABLES (populated by Terraform):
 #   - environment: Target environment (dev, staging, prod)
 #   - service_prefix: Cloud Map service name prefix (e.g., dev-davidshaevel)
+#   - platform_name: Platform identifier for external_labels (e.g., davidshaevel)
 
 global:
   scrape_interval: 15s      # Scrape metrics every 15 seconds
   evaluation_interval: 15s  # Evaluate alerting rules every 15 seconds
   external_labels:
     environment: '${environment}'
-    platform: 'davidshaevel'
+    platform: '${platform_name}'
 
 # Scrape configuration for all services
 scrape_configs:
