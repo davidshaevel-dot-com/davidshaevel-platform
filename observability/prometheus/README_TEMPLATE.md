@@ -96,7 +96,7 @@ resource "aws_ecs_task_definition" "prometheus" {
     {
       # Init container: Fetches config from S3 to EFS before Prometheus starts
       name      = "config-init"
-      image     = "public.ecr.aws/aws-cli/aws-cli:latest"
+      image     = "public.ecr.aws/aws-cli/aws-cli:2.17.8"  # Pin to specific version for stability
       essential = true   # Task should fail and restart if config sync fails
       command = [
         "s3", "cp",
@@ -154,7 +154,7 @@ The example above uses an **init container** to sync the configuration from S3 t
 
 **IAM Requirements:**
 
-The ECS task execution role needs `s3:GetObject` permission:
+The ECS task role needs `s3:GetObject` permission:
 
 ```hcl
 resource "aws_iam_role_policy" "prometheus_s3_config" {

@@ -50,3 +50,7 @@ scrape_configs:
     relabel_configs:
       - source_labels: [job]
         target_label: service
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: '^(up|prometheus_build_info|prometheus_config_.*|prometheus_engine_.*|prometheus_http_.*|prometheus_notifications_.*|prometheus_rule_.*|prometheus_target_.*|prometheus_tsdb_.*)$'
+        action: keep
