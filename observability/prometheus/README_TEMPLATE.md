@@ -58,7 +58,15 @@ The ECS task requires two IAM roles:
 
 The recommended approach is to store the rendered configuration in S3 and make it available to the Prometheus container via an EFS volume mount.
 
+**Prerequisites:**
+- AWS region data source: `data "aws_region" "current" {}` (provides current region name)
+
+**Security Note:** For production deployments, consider pinning the AWS CLI image to a digest (`@sha256:...`) instead of a tag for true immutability. Get the digest via: `docker manifest inspect public.ecr.aws/aws-cli/aws-cli:2.17.8`
+
 ```hcl
+# Get current AWS region
+data "aws_region" "current" {}
+
 # Generate Prometheus config from template
 locals {
   prometheus_config = templatefile(
@@ -118,6 +126,7 @@ resource "aws_ecs_task_definition" "prometheus" {
       essential = true   # Task should fail and restart if config sync fails
       command = [
         "s3", "cp",
+        "--region", "${data.aws_region.current.name}",  # Explicit region for reliability
         "s3://${var.config_bucket_name}/${local.prometheus_config_s3_key}",
         "/etc/prometheus/prometheus.yml"
       ]
