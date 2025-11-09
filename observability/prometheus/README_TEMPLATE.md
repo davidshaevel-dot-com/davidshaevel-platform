@@ -38,6 +38,22 @@ During ECS task definition creation, Terraform will:
 2. Substitute variables based on environment
 3. Mount the generated config into the Prometheus container
 
+### Required IAM Roles
+
+The ECS task requires two IAM roles:
+
+1. **Execution Role** (`prometheus_execution_role`):
+   - Used by the ECS agent to set up the task
+   - Permissions: Pull container images from ECR, write logs to CloudWatch
+   - Required for all ECS tasks
+
+2. **Task Role** (`prometheus_task_role`):
+   - Used by containers running inside the task
+   - Permissions: S3 access for config-init container (see IAM Requirements section below)
+   - Used at runtime by application code
+
+**Note:** Complete IAM role definitions will be provided in the Phase 3-6 Terraform infrastructure modules. For AWS documentation on ECS IAM roles, see: [ECS Task IAM Roles](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html)
+
 ### Example Terraform Code
 
 The recommended approach is to store the rendered configuration in S3 and make it available to the Prometheus container via an EFS volume mount.
@@ -74,6 +90,8 @@ resource "aws_ecs_task_definition" "prometheus" {
   requires_compatibilities = ["FARGATE"]
   cpu                      = "256"
   memory                   = "512"
+  execution_role_arn       = aws_iam_role.prometheus_execution_role.arn  # For pulling images, writing logs
+  task_role_arn            = aws_iam_role.prometheus_task_role.arn       # For S3 access in init container
 
   # EFS volume for config and data
   volume {
