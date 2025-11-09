@@ -1,15 +1,18 @@
-# Prometheus Configuration for DavidShaevel.com Platform - DEV ENVIRONMENT
+# Prometheus Configuration for DavidShaevel.com Platform
 # This configuration defines how Prometheus scrapes metrics from the platform services
 #
-# NOTE: This is a pre-rendered version for the DEV environment.
-# For other environments, Terraform will generate the config from prometheus.yml.tpl
+# TEMPLATE VARIABLES (populated by Terraform):
+#   - environment: Target environment (dev, staging, prod)
+#   - service_prefix: Cloud Map service name prefix (e.g., dev-davidshaevel)
+#   - platform_name: Platform identifier for external_labels (e.g., davidshaevel)
+#   - private_dns_zone: Private hosted zone name (e.g., davidshaevel.local, dev.internal)
 
 global:
   scrape_interval: 15s      # Scrape metrics every 15 seconds
   evaluation_interval: 15s  # Evaluate alerting rules every 15 seconds
   external_labels:
-    environment: 'dev'
-    platform: 'davidshaevel'
+    environment: '${environment}'
+    platform: '${platform_name}'
 
 # Scrape configuration for all services
 scrape_configs:
@@ -18,7 +21,7 @@ scrape_configs:
     metrics_path: '/api/metrics'
     dns_sd_configs:
       - names:
-          - 'dev-davidshaevel-backend.davidshaevel.local'
+          - '${service_prefix}-backend.${private_dns_zone}'
         type: 'SRV'
     relabel_configs:
       - source_labels: [job]
@@ -33,7 +36,7 @@ scrape_configs:
     metrics_path: '/metrics'
     dns_sd_configs:
       - names:
-          - 'dev-davidshaevel-frontend.davidshaevel.local'
+          - '${service_prefix}-frontend.${private_dns_zone}'
         type: 'SRV'
     relabel_configs:
       - source_labels: [job]
