@@ -382,11 +382,12 @@ terraform output  # View all outputs
 - Hot reload for rapid iteration
 - Frontend-backend integration testing
 
-**TT-25: Observability with Grafana/Prometheus** (8-10 hours) - Priority 3
-- Prometheus metrics collection
-- Grafana dashboards
-- Application and infrastructure monitoring
-- Alerting configuration
+**TT-25: Observability with Grafana/Prometheus** (8-10 hours) - Priority 3 [IN PROGRESS]
+- ✅ Phase 1: Docker configurations (PR #32 - Complete Nov 7)
+- ✅ Phase 2: Prometheus templating system (PR #33 - Complete Nov 9)
+- ⏳ Phase 3-6: Terraform infrastructure (EFS, service discovery, ECS, ALB)
+- ⏳ Phase 7-8: Enhanced metrics endpoints (backend + frontend)
+- ⏳ Phase 9-10: Dashboards, deployment, and verification
 
 **TT-26: Documentation & Demo Materials** (4-6 hours) - Priority 4
 - Architecture diagrams
