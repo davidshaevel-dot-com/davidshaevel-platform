@@ -233,3 +233,36 @@ module "cicd_iam" {
   aws_account_id = var.aws_account_id
   aws_region     = var.aws_region
 }
+
+# ==============================================================================
+# Observability Module
+# ==============================================================================
+
+module "observability" {
+  source = "../../modules/observability"
+
+  # Environment configuration
+  environment  = var.environment
+  project_name = var.project_name
+
+  # Networking inputs (from networking module)
+  vpc_id                       = module.networking.vpc_id
+  private_app_subnet_ids       = module.networking.private_app_subnet_ids
+  prometheus_security_group_id = module.networking.prometheus_security_group_id
+
+  # EFS configuration
+  enable_prometheus_efs            = true
+  prometheus_efs_performance_mode  = "generalPurpose"
+  prometheus_efs_throughput_mode   = "bursting"
+  prometheus_data_retention_days   = 15
+  enable_efs_encryption            = true
+
+  # S3 configuration
+  enable_config_bucket_versioning = true
+  config_bucket_lifecycle_days    = 90
+
+  tags = {
+    CostCenter = "Platform Engineering"
+    Owner      = "David Shaevel"
+  }
+}
