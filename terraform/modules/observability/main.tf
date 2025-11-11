@@ -113,14 +113,11 @@ resource "aws_efs_file_system" "prometheus" {
   # Encryption at rest with AWS-managed KMS key
   encrypted = var.enable_efs_encryption
 
-  # Lifecycle management - transition to Infrequent Access after 30 days
-  # Reduces costs for data not frequently accessed
+  # Lifecycle management - transition to Infrequent Access and back to primary
+  # transition_to_ia: Move to IA after configured days to reduce costs
+  # transition_to_primary_storage_class: Move back to primary after first access
   lifecycle_policy {
-    transition_to_ia = "AFTER_30_DAYS"
-  }
-
-  # Enable automatic backups
-  lifecycle_policy {
+    transition_to_ia                    = "AFTER_${var.efs_transition_to_ia_days}_DAYS"
     transition_to_primary_storage_class = "AFTER_1_ACCESS"
   }
 
@@ -173,6 +170,8 @@ resource "aws_security_group" "efs" {
 }
 
 # Ingress rule: Allow NFS (port 2049) from Prometheus security group
+# Security groups are stateful - this ingress rule automatically allows return traffic
+# No explicit egress rule needed for EFS mount targets (passive endpoints)
 resource "aws_vpc_security_group_ingress_rule" "efs_nfs_from_prometheus" {
   count = var.enable_prometheus_efs ? 1 : 0
 
@@ -183,23 +182,12 @@ resource "aws_vpc_security_group_ingress_rule" "efs_nfs_from_prometheus" {
   to_port                      = 2049
   ip_protocol                  = "tcp"
 
-  tags = {
-    Name = "efs-nfs-from-prometheus"
-  }
-}
-
-# Egress rule: Allow all outbound (required for EFS communication)
-resource "aws_vpc_security_group_egress_rule" "efs_all_outbound" {
-  count = var.enable_prometheus_efs ? 1 : 0
-
-  security_group_id = aws_security_group.efs[0].id
-  description       = "Allow all outbound traffic"
-  cidr_ipv4         = "0.0.0.0/0"
-  ip_protocol       = "-1"
-
-  tags = {
-    Name = "efs-all-outbound"
-  }
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "efs-nfs-from-prometheus"
+    }
+  )
 }
 
 # ==============================================================================

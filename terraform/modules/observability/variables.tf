@@ -86,14 +86,19 @@ variable "prometheus_efs_throughput_mode" {
   }
 }
 
-variable "prometheus_data_retention_days" {
-  description = "Number of days to retain Prometheus metrics data"
+variable "efs_transition_to_ia_days" {
+  description = <<-EOT
+    Number of days before transitioning EFS data to Infrequent Access storage class.
+    This controls EFS lifecycle management, not Prometheus data retention.
+    Prometheus retention is configured separately in the Dockerfile CMD flags.
+    Valid values: 1, 7, 14, 30, 60, 90 days (AWS EFS constraints).
+  EOT
   type        = number
-  default     = 15
+  default     = 14
 
   validation {
-    condition     = var.prometheus_data_retention_days >= 1 && var.prometheus_data_retention_days <= 90
-    error_message = "Data retention must be between 1 and 90 days."
+    condition     = contains([1, 7, 14, 30, 60, 90], var.efs_transition_to_ia_days)
+    error_message = "EFS IA transition must be one of: 1, 7, 14, 30, 60, 90 days."
   }
 }
 

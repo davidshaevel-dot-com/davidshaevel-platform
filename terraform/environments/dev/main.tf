@@ -251,11 +251,11 @@ module "observability" {
   prometheus_security_group_id = module.networking.prometheus_security_group_id
 
   # EFS configuration
-  enable_prometheus_efs            = true
-  prometheus_efs_performance_mode  = "generalPurpose"
-  prometheus_efs_throughput_mode   = "bursting"
-  prometheus_data_retention_days   = 15
-  enable_efs_encryption            = true
+  enable_prometheus_efs           = true
+  prometheus_efs_performance_mode = "generalPurpose"
+  prometheus_efs_throughput_mode  = "bursting"
+  efs_transition_to_ia_days       = 14  # Changed from 15 to comply with AWS EFS constraints
+  enable_efs_encryption           = true
 
   # S3 configuration
   enable_config_bucket_versioning = true
