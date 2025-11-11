@@ -155,3 +155,13 @@ output "database_security_group_arn" {
   value       = aws_security_group.database.arn
 }
 
+output "prometheus_security_group_id" {
+  description = "ID of the Prometheus security group"
+  value       = aws_security_group.prometheus.id
+}
+
+output "prometheus_security_group_arn" {
+  description = "ARN of the Prometheus security group"
+  value       = aws_security_group.prometheus.arn
+}
+
