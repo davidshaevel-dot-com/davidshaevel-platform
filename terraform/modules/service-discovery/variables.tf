@@ -1,0 +1,81 @@
+# ==============================================================================
+# Service Discovery Module Variables
+# ==============================================================================
+#
+# This module provisions AWS Cloud Map service discovery infrastructure:
+# - Private DNS namespace for internal service communication
+# - Service discovery services for ECS applications
+# - SRV records for Prometheus service discovery
+#
+# Phase 4 of TT-25: AWS Cloud Map service discovery
+
+# ------------------------------------------------------------------------------
+# Required Variables
+# ------------------------------------------------------------------------------
+
+variable "environment" {
+  description = "Environment name (dev, staging, prod)"
+  type        = string
+
+  validation {
+    condition     = can(regex("^(dev|staging|prod)$", var.environment))
+    error_message = "Environment must be dev, staging, or prod."
+  }
+}
+
+variable "project_name" {
+  description = "Project name used for resource naming and tagging"
+  type        = string
+
+  validation {
+    condition     = can(regex("^[a-z0-9-]+$", var.project_name))
+    error_message = "Project name must contain only lowercase letters, numbers, and hyphens."
+  }
+}
+
+variable "vpc_id" {
+  description = "ID of the VPC where the private DNS namespace will be created"
+  type        = string
+}
+
+variable "private_dns_namespace" {
+  description = "Private DNS namespace for service discovery (e.g., davidshaevel.local)"
+  type        = string
+
+  validation {
+    condition     = can(regex("^[a-z0-9-]+\\.(local|internal)$", var.private_dns_namespace))
+    error_message = "Private DNS namespace must end with .local or .internal and contain only lowercase letters, numbers, and hyphens."
+  }
+}
+
+# ------------------------------------------------------------------------------
+# Optional Variables with Defaults
+# ------------------------------------------------------------------------------
+
+variable "backend_service_name" {
+  description = "Name for the backend service in Cloud Map"
+  type        = string
+  default     = "backend"
+
+  validation {
+    condition     = can(regex("^[a-z0-9-]+$", var.backend_service_name))
+    error_message = "Backend service name must contain only lowercase letters, numbers, and hyphens."
+  }
+}
+
+variable "frontend_service_name" {
+  description = "Name for the frontend service in Cloud Map"
+  type        = string
+  default     = "frontend"
+
+  validation {
+    condition     = can(regex("^[a-z0-9-]+$", var.frontend_service_name))
+    error_message = "Frontend service name must contain only lowercase letters, numbers, and hyphens."
+  }
+}
+
+variable "tags" {
+  description = "Additional tags to apply to all resources"
+  type        = map(string)
+  default     = {}
+}
