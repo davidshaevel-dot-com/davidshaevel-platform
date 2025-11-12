@@ -172,7 +172,7 @@ The observability stack provides real-time monitoring and visualization of appli
 - **Encryption:** At rest (AES-256) and in transit (TLS)
 - **Performance mode:** General Purpose (sufficient for observability workloads)
 - **Throughput mode:** Bursting (scales with file system size)
-- **Lifecycle management:** None (retain all data within retention period)
+- **Lifecycle management:** Infrequent Access (IA) after a configurable number of days (default: 14), auto-transition back to primary after first access
 - **Backup:** AWS Backup enabled (daily snapshots, 7-day retention)
 
 **Access points:**
