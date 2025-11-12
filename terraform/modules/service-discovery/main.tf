@@ -19,6 +19,12 @@
 locals {
   name_prefix = "${var.environment}-${var.project_name}"
 
+  # Map of service ports for Prometheus configuration
+  service_ports = {
+    backend  = var.backend_port
+    frontend = var.frontend_port
+  }
+
   common_tags = merge(
     var.tags,
     {
@@ -71,14 +77,13 @@ resource "aws_service_discovery_service" "app_service" {
     namespace_id = aws_service_discovery_private_dns_namespace.main.id
 
     # Create both A and SRV records for comprehensive service discovery
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-
-    dns_records {
-      ttl  = 10
-      type = "SRV"
+    # Using dynamic block to reduce duplication and improve maintainability
+    dynamic "dns_records" {
+      for_each = toset(["A", "SRV"])
+      content {
+        ttl  = 10
+        type = dns_records.value
+      }
     }
 
     routing_policy = "MULTIVALUE"

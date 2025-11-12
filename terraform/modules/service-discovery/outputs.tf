@@ -81,20 +81,31 @@ output "frontend_dns_name" {
 }
 
 # ------------------------------------------------------------------------------
+# Consolidated Service Map Output
+# ------------------------------------------------------------------------------
+
+output "services" {
+  description = "Map of all created service discovery services with their attributes"
+  value = {
+    for k, v in aws_service_discovery_service.app_service : k => {
+      id       = v.id
+      arn      = v.arn
+      name     = v.name
+      dns_name = "${v.name}.${aws_service_discovery_private_dns_namespace.main.name}"
+    }
+  }
+}
+
+# ------------------------------------------------------------------------------
 # Prometheus Configuration Helpers
 # ------------------------------------------------------------------------------
 
 output "prometheus_dns_sd_configs" {
   description = "DNS service discovery configuration for Prometheus (use in prometheus.yml.tpl)"
   value = {
-    backend = {
-      dns_name = "${aws_service_discovery_service.app_service["backend"].name}.${aws_service_discovery_private_dns_namespace.main.name}"
-      port     = var.backend_port
-      type     = "SRV"
-    }
-    frontend = {
-      dns_name = "${aws_service_discovery_service.app_service["frontend"].name}.${aws_service_discovery_private_dns_namespace.main.name}"
-      port     = var.frontend_port
+    for k, v in aws_service_discovery_service.app_service : k => {
+      dns_name = "${v.name}.${aws_service_discovery_private_dns_namespace.main.name}"
+      port     = local.service_ports[k]
       type     = "SRV"
     }
   }

@@ -284,9 +284,8 @@ module "service_discovery" {
   # DNS namespace configuration
   private_dns_namespace = var.private_dns_namespace
 
-  # Service names (defaults to "backend" and "frontend")
-  backend_service_name  = "backend"
-  frontend_service_name = "frontend"
+  # Note: backend_service_name and frontend_service_name use module defaults
+  # ("backend" and "frontend" respectively)
 
   tags = {
     CostCenter = "Platform Engineering"
