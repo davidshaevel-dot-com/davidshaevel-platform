@@ -109,6 +109,17 @@ variable "availability_zones" {
   }
 }
 
+variable "private_dns_namespace" {
+  description = "Private DNS namespace for AWS Cloud Map service discovery (e.g., davidshaevel.local)"
+  type        = string
+  default     = "davidshaevel.local"
+
+  validation {
+    condition     = can(regex("^[a-z0-9-]+\\.(local|internal)$", var.private_dns_namespace))
+    error_message = "Private DNS namespace must end with .local or .internal and contain only lowercase letters, numbers, and hyphens."
+  }
+}
+
 # -----------------------------------------------------------------------------
 # Database Configuration
 # -----------------------------------------------------------------------------

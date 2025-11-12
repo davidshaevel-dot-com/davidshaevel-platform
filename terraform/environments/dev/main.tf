@@ -266,3 +266,29 @@ module "observability" {
     Owner      = "David Shaevel"
   }
 }
+
+# ==============================================================================
+# Service Discovery Module (AWS Cloud Map)
+# ==============================================================================
+
+module "service_discovery" {
+  source = "../../modules/service-discovery"
+
+  # Environment configuration
+  environment  = var.environment
+  project_name = var.project_name
+
+  # Networking inputs (from networking module)
+  vpc_id = module.networking.vpc_id
+
+  # DNS namespace configuration
+  private_dns_namespace = var.private_dns_namespace
+
+  # Note: backend_service_name and frontend_service_name use module defaults
+  # ("backend" and "frontend" respectively)
+
+  tags = {
+    CostCenter = "Platform Engineering"
+    Owner      = "David Shaevel"
+  }
+}
