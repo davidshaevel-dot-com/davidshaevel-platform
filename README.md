@@ -90,7 +90,8 @@ davidshaevel-platform/
 │   │   ├── networking/      # VPC, subnets, security groups (v2.1)
 │   │   ├── database/        # RDS PostgreSQL (v1.1)
 │   │   ├── compute/         # ECS Fargate, ALB (v1.0)
-│   │   └── cdn/             # CloudFront, ACM (v1.0)
+│   │   ├── cdn/             # CloudFront, ACM (v1.0)
+│   │   └── observability/   # Prometheus/Grafana infrastructure (v1.0 - NEW)
 │   ├── environments/
 │   │   ├── dev/            # Development environment (deployed)
 │   │   └── prod/           # Production environment (future)
@@ -255,9 +256,10 @@ terraform output  # View all outputs
 - **CloudFront:** ~$2-4 (low traffic, free tier)
 - **CloudWatch Logs:** ~$1
 - **VPC Flow Logs:** Minimal
+- **Observability (EFS + S3):** ~$1.10 (new - TT-25 Phase 3)
 - **ACM Certificate:** $0 (free)
 
-**Total:** ~$117-124/month
+**Total:** ~$118-125/month
 
 ## 📝 Documentation
 
@@ -273,6 +275,7 @@ terraform output  # View all outputs
 - [Database Module](terraform/modules/database/README.md) - 276 lines
 - [Compute Module](terraform/modules/compute/README.md) - 533 lines
 - [CDN Module](terraform/modules/cdn/README.md) - 555 lines
+- [Observability Module](terraform/modules/observability/README.md) - 251 lines (new - TT-25 Phase 3)
 
 ## 🛠️ Technology Stack
 
@@ -385,7 +388,14 @@ terraform output  # View all outputs
 **TT-25: Observability with Grafana/Prometheus** (8-10 hours) - Priority 3 [IN PROGRESS]
 - ✅ Phase 1: Docker configurations (PR #32 - Complete Nov 7)
 - ✅ Phase 2: Prometheus templating system (PR #33 - Complete Nov 9)
-- ⏳ Phase 3-6: Terraform infrastructure (EFS, service discovery, ECS, ALB)
+- ✅ Phase 3: EFS file systems and observability module (PR #37 - Complete Nov 11)
+  - New Terraform module: `terraform/modules/observability/` (840 lines)
+  - EFS for Prometheus TSDB data persistence with encryption
+  - S3 bucket for config storage with versioning
+  - Multi-AZ deployment, security groups, IAM policies
+  - 16 AWS resources, ~$1.10/month cost
+- ⏳ Phase 4: AWS Cloud Map service discovery (2-3 hours)
+- ⏳ Phase 5-6: ECS services and ALB integration
 - ⏳ Phase 7-8: Enhanced metrics endpoints (backend + frontend)
 - ⏳ Phase 9-10: Dashboards, deployment, and verification
 
@@ -699,8 +709,8 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - ✅ TT-23: Backend Deployment (Complete - Oct 29, 2025)
 - ✅ TT-29: Frontend Deployment (Complete - Oct 30-31, 2025)
 - ✅ TT-31: CI/CD Workflows (Complete - Nov 6, 2025)
+- ⏳ TT-25: Observability (In Progress - Phase 3/10 Complete - Nov 11, 2025)
 - ⏳ TT-20: Local Development (Planned - 6-8 hours)
-- ⏳ TT-25: Observability (Planned - 8-10 hours)
 - ⏳ TT-26: Documentation (Planned - 4-6 hours)
 
-**Current Phase:** Production operational with automated CI/CD, planning observability and local development enhancements
+**Current Phase:** Production operational with automated CI/CD, actively building observability infrastructure (Prometheus/Grafana)
