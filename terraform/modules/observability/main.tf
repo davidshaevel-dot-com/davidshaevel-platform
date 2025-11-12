@@ -113,11 +113,15 @@ resource "aws_efs_file_system" "prometheus" {
   # Encryption at rest with AWS-managed KMS key
   encrypted = var.enable_efs_encryption
 
-  # Lifecycle management - transition to Infrequent Access and back to primary
-  # transition_to_ia: Move to IA after configured days to reduce costs
-  # transition_to_primary_storage_class: Move back to primary after first access
+  # Lifecycle management - transition to Infrequent Access after configured days
+  # Reduces costs for data not frequently accessed
   lifecycle_policy {
-    transition_to_ia                    = "AFTER_${var.efs_transition_to_ia_days}_DAYS"
+    transition_to_ia = "AFTER_${var.efs_transition_to_ia_days}_DAYS"
+  }
+
+  # Auto-transition back to primary storage class after first access
+  # Ensures frequently accessed data has optimal performance
+  lifecycle_policy {
     transition_to_primary_storage_class = "AFTER_1_ACCESS"
   }
 
