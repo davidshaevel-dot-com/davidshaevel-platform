@@ -36,6 +36,11 @@ variable "project_name" {
 variable "vpc_id" {
   description = "ID of the VPC where the private DNS namespace will be created"
   type        = string
+
+  validation {
+    condition     = substr(var.vpc_id, 0, 4) == "vpc-"
+    error_message = "The vpc_id must be a valid VPC ID, starting with 'vpc-'."
+  }
 }
 
 variable "private_dns_namespace" {
@@ -71,6 +76,28 @@ variable "frontend_service_name" {
   validation {
     condition     = can(regex("^[a-z0-9-]+$", var.frontend_service_name))
     error_message = "Frontend service name must contain only lowercase letters, numbers, and hyphens."
+  }
+}
+
+variable "backend_port" {
+  description = "Port number for the backend service"
+  type        = number
+  default     = 3001
+
+  validation {
+    condition     = var.backend_port > 0 && var.backend_port <= 65535
+    error_message = "Backend port must be between 1 and 65535."
+  }
+}
+
+variable "frontend_port" {
+  description = "Port number for the frontend service"
+  type        = number
+  default     = 3000
+
+  validation {
+    condition     = var.frontend_port > 0 && var.frontend_port <= 65535
+    error_message = "Frontend port must be between 1 and 65535."
   }
 }
 

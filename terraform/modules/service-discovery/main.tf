@@ -51,16 +51,21 @@ resource "aws_service_discovery_private_dns_namespace" "main" {
 }
 
 # ==============================================================================
-# Backend Service Discovery
+# Service Discovery for Applications
 # ==============================================================================
 
-# Service discovery for backend API
+# Service discovery for backend and frontend applications
 # Enables automatic DNS registration and health checking
-# Prometheus will discover backend instances via SRV records
-resource "aws_service_discovery_service" "backend" {
-  name = var.backend_service_name
+# Prometheus will discover instances via SRV records
+resource "aws_service_discovery_service" "app_service" {
+  for_each = {
+    backend  = var.backend_service_name
+    frontend = var.frontend_service_name
+  }
 
-  description = "Service discovery for backend API in ${var.environment}"
+  name = each.value
+
+  description = "Service discovery for ${each.key} application in ${var.environment}"
 
   dns_config {
     namespace_id = aws_service_discovery_private_dns_namespace.main.id
@@ -86,50 +91,8 @@ resource "aws_service_discovery_service" "backend" {
   tags = merge(
     local.common_tags,
     {
-      Name        = "${local.name_prefix}-backend-service-discovery"
-      Application = "backend"
-    }
-  )
-}
-
-# ==============================================================================
-# Frontend Service Discovery
-# ==============================================================================
-
-# Service discovery for frontend application
-# Enables automatic DNS registration and health checking
-# Prometheus will discover frontend instances via SRV records
-resource "aws_service_discovery_service" "frontend" {
-  name = var.frontend_service_name
-
-  description = "Service discovery for frontend application in ${var.environment}"
-
-  dns_config {
-    namespace_id = aws_service_discovery_private_dns_namespace.main.id
-
-    # Create both A and SRV records for comprehensive service discovery
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-
-    dns_records {
-      ttl  = 10
-      type = "SRV"
-    }
-
-    routing_policy = "MULTIVALUE"
-  }
-
-  # Health check configuration - ECS will manage health checks
-  # failure_threshold is deprecated and always set to 1 by AWS
-  health_check_custom_config {}
-
-  tags = merge(
-    local.common_tags,
-    {
-      Name        = "${local.name_prefix}-frontend-service-discovery"
-      Application = "frontend"
+      Name        = "${local.name_prefix}-${each.key}-service-discovery"
+      Application = each.key
     }
   )
 }
