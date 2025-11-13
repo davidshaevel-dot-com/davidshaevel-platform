@@ -379,7 +379,7 @@ resource "aws_ecs_task_definition" "prometheus" {
     {
       name      = "init-config-sync"
       image     = "amazon/aws-cli:2.17.9"
-      essential = true
+      essential = false
 
       command = [
         "s3",
