@@ -251,6 +251,8 @@ resource "aws_iam_policy" "prometheus_s3_config_access" {
 
 # CloudWatch log group for Prometheus container logs
 resource "aws_cloudwatch_log_group" "prometheus" {
+  count = var.enable_prometheus_efs ? 1 : 0
+
   name              = "/ecs/${local.name_prefix}/prometheus"
   retention_in_days = var.log_retention_days
 
@@ -283,6 +285,8 @@ data "aws_iam_policy_document" "prometheus_task_execution_assume" {
 }
 
 resource "aws_iam_role" "prometheus_task_execution" {
+  count = var.enable_prometheus_efs ? 1 : 0
+
   name_prefix        = "${local.name_prefix}-prometheus-exec-"
   assume_role_policy = data.aws_iam_policy_document.prometheus_task_execution_assume.json
 
@@ -296,7 +300,9 @@ resource "aws_iam_role" "prometheus_task_execution" {
 
 # Attach AWS-managed policy for ECS task execution (ECR, CloudWatch Logs)
 resource "aws_iam_role_policy_attachment" "prometheus_task_execution" {
-  role       = aws_iam_role.prometheus_task_execution.name
+  count = var.enable_prometheus_efs ? 1 : 0
+
+  role       = aws_iam_role.prometheus_task_execution[0].name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
@@ -316,6 +322,8 @@ data "aws_iam_policy_document" "prometheus_task_assume" {
 }
 
 resource "aws_iam_role" "prometheus_task" {
+  count = var.enable_prometheus_efs ? 1 : 0
+
   name_prefix        = "${local.name_prefix}-prometheus-task-"
   assume_role_policy = data.aws_iam_policy_document.prometheus_task_assume.json
 
@@ -329,7 +337,9 @@ resource "aws_iam_role" "prometheus_task" {
 
 # Attach S3 config access policy to task role
 resource "aws_iam_role_policy_attachment" "prometheus_s3_config" {
-  role       = aws_iam_role.prometheus_task.name
+  count = var.enable_prometheus_efs ? 1 : 0
+
+  role       = aws_iam_role.prometheus_task[0].name
   policy_arn = aws_iam_policy.prometheus_s3_config_access.arn
 }
 
@@ -348,8 +358,8 @@ resource "aws_ecs_task_definition" "prometheus" {
   requires_compatibilities = ["FARGATE"]
   cpu                      = var.prometheus_task_cpu
   memory                   = var.prometheus_task_memory
-  execution_role_arn       = aws_iam_role.prometheus_task_execution.arn
-  task_role_arn            = aws_iam_role.prometheus_task.arn
+  execution_role_arn       = aws_iam_role.prometheus_task_execution[0].arn
+  task_role_arn            = aws_iam_role.prometheus_task[0].arn
 
   # EFS volume for Prometheus data and config
   volume {
@@ -368,7 +378,7 @@ resource "aws_ecs_task_definition" "prometheus" {
     # Init container: Sync S3 config to EFS
     {
       name      = "init-config-sync"
-      image     = "amazon/aws-cli:latest"
+      image     = "amazon/aws-cli:2.17.9"
       essential = true
 
       command = [
@@ -389,7 +399,7 @@ resource "aws_ecs_task_definition" "prometheus" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.prometheus.name
+          "awslogs-group"         = aws_cloudwatch_log_group.prometheus[0].name
           "awslogs-region"        = var.aws_region
           "awslogs-stream-prefix" = "init"
         }
@@ -429,7 +439,7 @@ resource "aws_ecs_task_definition" "prometheus" {
       ]
 
       healthCheck = {
-        command     = ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+        command     = ["CMD-SHELL", "promtool check config /prometheus/prometheus.yml && nc -z 127.0.0.1 9090 || exit 1"]
         interval    = 30
         timeout     = 5
         retries     = 3
@@ -439,7 +449,7 @@ resource "aws_ecs_task_definition" "prometheus" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.prometheus.name
+          "awslogs-group"         = aws_cloudwatch_log_group.prometheus[0].name
           "awslogs-region"        = var.aws_region
           "awslogs-stream-prefix" = "prometheus"
         }

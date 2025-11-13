@@ -110,12 +110,12 @@ output "prometheus_efs_mount_path" {
 
 output "prometheus_task_execution_role_arn" {
   description = "ARN of the Prometheus task execution role"
-  value       = aws_iam_role.prometheus_task_execution.arn
+  value       = var.enable_prometheus_efs ? aws_iam_role.prometheus_task_execution[0].arn : null
 }
 
 output "prometheus_task_role_arn" {
   description = "ARN of the Prometheus task role"
-  value       = aws_iam_role.prometheus_task.arn
+  value       = var.enable_prometheus_efs ? aws_iam_role.prometheus_task[0].arn : null
 }
 
 output "prometheus_task_definition_arn" {
@@ -135,10 +135,10 @@ output "prometheus_service_id" {
 
 output "prometheus_log_group_name" {
   description = "Name of the CloudWatch log group for Prometheus"
-  value       = aws_cloudwatch_log_group.prometheus.name
+  value       = var.enable_prometheus_efs ? aws_cloudwatch_log_group.prometheus[0].name : null
 }
 
 output "prometheus_log_group_arn" {
   description = "ARN of the CloudWatch log group for Prometheus"
-  value       = aws_cloudwatch_log_group.prometheus.arn
+  value       = var.enable_prometheus_efs ? aws_cloudwatch_log_group.prometheus[0].arn : null
 }
