@@ -401,11 +401,10 @@ resource "aws_ecs_task_definition" "prometheus" {
       image     = "amazon/aws-cli:2.17.9"
       essential = false
 
+      # Create data directory and sync config from S3 to EFS
+      entryPoint = ["/bin/sh", "-c"]
       command = [
-        "s3",
-        "cp",
-        "s3://${aws_s3_bucket.prometheus_config.id}/${var.prometheus_config_s3_key}",
-        "/prometheus/prometheus.yml"
+        "mkdir -p /prometheus/data && aws s3 cp s3://${aws_s3_bucket.prometheus_config.id}/${var.prometheus_config_s3_key} /prometheus/prometheus.yml"
       ]
 
       mountPoints = [
