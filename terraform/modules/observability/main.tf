@@ -18,7 +18,10 @@
 # 4. EFS provides persistent storage across task restarts
 
 locals {
-  name_prefix = "${var.environment}-${var.project_name}"
+  name_prefix        = "${var.environment}-${var.project_name}"
+  prometheus_port    = 9090
+  nfs_port           = 2049    # Standard NFS/EFS mount port
+  prometheus_user_id = "65534" # UID for 'nobody' user - standard Prometheus non-root user
 
   common_tags = merge(
     var.tags,
@@ -183,14 +186,34 @@ resource "aws_vpc_security_group_ingress_rule" "efs_nfs_from_prometheus" {
   security_group_id            = aws_security_group.efs[0].id
   description                  = "Allow NFS from Prometheus ECS tasks"
   referenced_security_group_id = var.prometheus_security_group_id
-  from_port                    = 2049
-  to_port                      = 2049
+  from_port                    = local.nfs_port
+  to_port                      = local.nfs_port
   ip_protocol                  = "tcp"
 
   tags = merge(
     local.common_tags,
     {
       Name = "efs-nfs-from-prometheus"
+    }
+  )
+}
+
+# Egress rule: Allow Prometheus to connect to EFS on NFS port
+# Required for Fargate tasks to mount EFS volumes
+resource "aws_vpc_security_group_egress_rule" "prometheus_to_efs" {
+  count = var.enable_prometheus_efs ? 1 : 0
+
+  security_group_id            = var.prometheus_security_group_id
+  description                  = "Allow NFS to EFS mount targets"
+  referenced_security_group_id = aws_security_group.efs[0].id
+  from_port                    = local.nfs_port
+  to_port                      = local.nfs_port
+  ip_protocol                  = "tcp"
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "prometheus-to-efs-nfs"
     }
   )
 }
@@ -379,13 +402,16 @@ resource "aws_ecs_task_definition" "prometheus" {
     {
       name      = "init-config-sync"
       image     = "amazon/aws-cli:2.17.9"
-      essential = true
+      essential = false
 
+      # Create data directory, set ownership for Prometheus user (65534), and sync config from S3 to EFS
+      entryPoint = ["/bin/sh", "-c"]
       command = [
-        "s3",
-        "cp",
-        "s3://${aws_s3_bucket.prometheus_config.id}/${var.prometheus_config_s3_key}",
-        "/prometheus/prometheus.yml"
+        join(" && ", [
+          "mkdir -p /prometheus/data",
+          "chown -R ${local.prometheus_user_id}:${local.prometheus_user_id} /prometheus",
+          "aws s3 cp s3://${aws_s3_bucket.prometheus_config.id}/${var.prometheus_config_s3_key} /prometheus/prometheus.yml"
+        ])
       ]
 
       mountPoints = [
@@ -405,8 +431,8 @@ resource "aws_ecs_task_definition" "prometheus" {
         }
       }
 
-      # Run as non-root user (UID 65534 = nobody)
-      user = "65534"
+      # Note: Init container runs as root (default) to have write permissions to EFS
+      # Prometheus container runs as UID 65534 for security
     },
     # Main Prometheus container
     {
@@ -416,7 +442,7 @@ resource "aws_ecs_task_definition" "prometheus" {
 
       portMappings = [
         {
-          containerPort = 9090
+          containerPort = local.prometheus_port
           protocol      = "tcp"
         }
       ]
@@ -439,7 +465,7 @@ resource "aws_ecs_task_definition" "prometheus" {
       ]
 
       healthCheck = {
-        command     = ["CMD-SHELL", "promtool check config /prometheus/prometheus.yml && nc -z 127.0.0.1 9090 || exit 1"]
+        command     = ["CMD-SHELL", "promtool check config /prometheus/prometheus.yml && nc -z 127.0.0.1 ${local.prometheus_port} || exit 1"]
         interval    = 30
         timeout     = 5
         retries     = 3
@@ -456,7 +482,7 @@ resource "aws_ecs_task_definition" "prometheus" {
       }
 
       # Run as non-root user (UID 65534 = nobody, standard Prometheus user)
-      user = "65534"
+      user = local.prometheus_user_id
 
       # Container dependencies - wait for init container
       dependsOn = [
@@ -498,7 +524,9 @@ resource "aws_ecs_service" "prometheus" {
 
   # Service discovery registration
   service_registries {
-    registry_arn = var.prometheus_service_registry_arn
+    registry_arn   = var.prometheus_service_registry_arn
+    container_name = "prometheus"
+    container_port = local.prometheus_port
   }
 
   # Health check grace period for container startup
