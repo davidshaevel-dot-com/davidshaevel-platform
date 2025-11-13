@@ -101,6 +101,28 @@ variable "frontend_port" {
   }
 }
 
+variable "prometheus_service_name" {
+  description = "Name for the prometheus service in Cloud Map"
+  type        = string
+  default     = "prometheus"
+
+  validation {
+    condition     = can(regex("^[a-z0-9-]+$", var.prometheus_service_name))
+    error_message = "Prometheus service name must contain only lowercase letters, numbers, and hyphens."
+  }
+}
+
+variable "prometheus_port" {
+  description = "Port number for the prometheus service"
+  type        = number
+  default     = 9090
+
+  validation {
+    condition     = var.prometheus_port > 0 && var.prometheus_port <= 65535
+    error_message = "Prometheus port must be between 1 and 65535."
+  }
+}
+
 variable "tags" {
   description = "Additional tags to apply to all resources"
   type        = map(string)

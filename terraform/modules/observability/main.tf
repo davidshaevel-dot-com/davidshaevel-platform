@@ -244,3 +244,272 @@ resource "aws_iam_policy" "prometheus_s3_config_access" {
     }
   )
 }
+
+# ==============================================================================
+# CloudWatch Log Group for Prometheus
+# ==============================================================================
+
+# CloudWatch log group for Prometheus container logs
+resource "aws_cloudwatch_log_group" "prometheus" {
+  name              = "/ecs/${local.name_prefix}/prometheus"
+  retention_in_days = var.log_retention_days
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name        = "${local.name_prefix}-prometheus-logs"
+      Application = "prometheus"
+    }
+  )
+}
+
+# ==============================================================================
+# IAM Roles for Prometheus ECS Task
+# ==============================================================================
+
+# Task Execution Role - Allows ECS to pull images and write logs
+# This role is used by the ECS service to manage the task lifecycle
+data "aws_iam_policy_document" "prometheus_task_execution_assume" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["ecs-tasks.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+resource "aws_iam_role" "prometheus_task_execution" {
+  name_prefix        = "${local.name_prefix}-prometheus-exec-"
+  assume_role_policy = data.aws_iam_policy_document.prometheus_task_execution_assume.json
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-prometheus-execution-role"
+    }
+  )
+}
+
+# Attach AWS-managed policy for ECS task execution (ECR, CloudWatch Logs)
+resource "aws_iam_role_policy_attachment" "prometheus_task_execution" {
+  role       = aws_iam_role.prometheus_task_execution.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+# Task Role - Allows Prometheus containers to access AWS services (S3 config)
+# This role is used by the containers themselves during runtime
+data "aws_iam_policy_document" "prometheus_task_assume" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["ecs-tasks.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+resource "aws_iam_role" "prometheus_task" {
+  name_prefix        = "${local.name_prefix}-prometheus-task-"
+  assume_role_policy = data.aws_iam_policy_document.prometheus_task_assume.json
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-prometheus-task-role"
+    }
+  )
+}
+
+# Attach S3 config access policy to task role
+resource "aws_iam_role_policy_attachment" "prometheus_s3_config" {
+  role       = aws_iam_role.prometheus_task.name
+  policy_arn = aws_iam_policy.prometheus_s3_config_access.arn
+}
+
+# ==============================================================================
+# ECS Task Definition for Prometheus
+# ==============================================================================
+
+# Prometheus task definition with init container pattern:
+# 1. Init container syncs S3 config → EFS (runs once at startup)
+# 2. Prometheus container reads config from EFS, writes data to EFS
+resource "aws_ecs_task_definition" "prometheus" {
+  count = var.enable_prometheus_efs ? 1 : 0
+
+  family                   = "${local.name_prefix}-prometheus"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = var.prometheus_task_cpu
+  memory                   = var.prometheus_task_memory
+  execution_role_arn       = aws_iam_role.prometheus_task_execution.arn
+  task_role_arn            = aws_iam_role.prometheus_task.arn
+
+  # EFS volume for Prometheus data and config
+  volume {
+    name = "prometheus-data"
+
+    efs_volume_configuration {
+      file_system_id     = aws_efs_file_system.prometheus[0].id
+      transit_encryption = "ENABLED"
+      authorization_config {
+        iam = "DISABLED"
+      }
+    }
+  }
+
+  container_definitions = jsonencode([
+    # Init container: Sync S3 config to EFS
+    {
+      name      = "init-config-sync"
+      image     = "amazon/aws-cli:latest"
+      essential = true
+
+      command = [
+        "s3",
+        "cp",
+        "s3://${aws_s3_bucket.prometheus_config.id}/${var.prometheus_config_s3_key}",
+        "/prometheus/prometheus.yml"
+      ]
+
+      mountPoints = [
+        {
+          sourceVolume  = "prometheus-data"
+          containerPath = "/prometheus"
+          readOnly      = false
+        }
+      ]
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.prometheus.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "init"
+        }
+      }
+
+      # Run as non-root user (UID 65534 = nobody)
+      user = "65534"
+    },
+    # Main Prometheus container
+    {
+      name      = "prometheus"
+      image     = var.prometheus_image
+      essential = true
+
+      portMappings = [
+        {
+          containerPort = 9090
+          protocol      = "tcp"
+        }
+      ]
+
+      mountPoints = [
+        {
+          sourceVolume  = "prometheus-data"
+          containerPath = "/prometheus"
+          readOnly      = false
+        }
+      ]
+
+      command = [
+        "--config.file=/prometheus/prometheus.yml",
+        "--storage.tsdb.path=/prometheus/data",
+        "--storage.tsdb.retention.time=${var.prometheus_retention_time}",
+        "--web.console.libraries=/usr/share/prometheus/console_libraries",
+        "--web.console.templates=/usr/share/prometheus/consoles",
+        "--web.enable-lifecycle"
+      ]
+
+      healthCheck = {
+        command     = ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+        interval    = 30
+        timeout     = 5
+        retries     = 3
+        startPeriod = 60
+      }
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.prometheus.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "prometheus"
+        }
+      }
+
+      # Run as non-root user (UID 65534 = nobody, standard Prometheus user)
+      user = "65534"
+
+      # Container dependencies - wait for init container
+      dependsOn = [
+        {
+          containerName = "init-config-sync"
+          condition     = "SUCCESS"
+        }
+      ]
+    }
+  ])
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-prometheus-task"
+    }
+  )
+}
+
+# ==============================================================================
+# ECS Service for Prometheus
+# ==============================================================================
+
+# Prometheus ECS service with service discovery
+resource "aws_ecs_service" "prometheus" {
+  count = var.enable_prometheus_efs ? 1 : 0
+
+  name            = "${local.name_prefix}-prometheus"
+  cluster         = var.ecs_cluster_id
+  task_definition = aws_ecs_task_definition.prometheus[0].arn
+  desired_count   = var.prometheus_desired_count
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = var.private_app_subnet_ids
+    security_groups  = [var.prometheus_security_group_id]
+    assign_public_ip = false
+  }
+
+  # Service discovery registration
+  service_registries {
+    registry_arn = var.prometheus_service_registry_arn
+  }
+
+  # Health check grace period for container startup
+  health_check_grace_period_seconds = 60
+
+  # Deployment configuration
+  deployment_maximum_percent         = 200
+  deployment_minimum_healthy_percent = 100
+
+  # Enable ECS Exec for debugging (optional)
+  enable_execute_command = var.enable_ecs_exec
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-prometheus-service"
+    }
+  )
+
+  # Wait for EFS mount targets to be available
+  depends_on = [
+    aws_efs_mount_target.prometheus
+  ]
+}

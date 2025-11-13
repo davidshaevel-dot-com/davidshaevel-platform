@@ -103,3 +103,42 @@ output "prometheus_efs_mount_path" {
   description = "Suggested container mount path for Prometheus EFS volume"
   value       = "/prometheus"
 }
+
+# ------------------------------------------------------------------------------
+# Prometheus ECS Service Outputs (Phase 5 - TT-25)
+# ------------------------------------------------------------------------------
+
+output "prometheus_task_execution_role_arn" {
+  description = "ARN of the Prometheus task execution role"
+  value       = aws_iam_role.prometheus_task_execution.arn
+}
+
+output "prometheus_task_role_arn" {
+  description = "ARN of the Prometheus task role"
+  value       = aws_iam_role.prometheus_task.arn
+}
+
+output "prometheus_task_definition_arn" {
+  description = "ARN of the Prometheus ECS task definition"
+  value       = var.enable_prometheus_efs ? aws_ecs_task_definition.prometheus[0].arn : null
+}
+
+output "prometheus_service_name" {
+  description = "Name of the Prometheus ECS service"
+  value       = var.enable_prometheus_efs ? aws_ecs_service.prometheus[0].name : null
+}
+
+output "prometheus_service_id" {
+  description = "ID of the Prometheus ECS service"
+  value       = var.enable_prometheus_efs ? aws_ecs_service.prometheus[0].id : null
+}
+
+output "prometheus_log_group_name" {
+  description = "Name of the CloudWatch log group for Prometheus"
+  value       = aws_cloudwatch_log_group.prometheus.name
+}
+
+output "prometheus_log_group_arn" {
+  description = "ARN of the CloudWatch log group for Prometheus"
+  value       = aws_cloudwatch_log_group.prometheus.arn
+}
