@@ -195,6 +195,26 @@ resource "aws_vpc_security_group_ingress_rule" "efs_nfs_from_prometheus" {
   )
 }
 
+# Egress rule: Allow Prometheus to connect to EFS on NFS port
+# Required for Fargate tasks to mount EFS volumes
+resource "aws_vpc_security_group_egress_rule" "prometheus_to_efs" {
+  count = var.enable_prometheus_efs ? 1 : 0
+
+  security_group_id            = var.prometheus_security_group_id
+  description                  = "Allow NFS to EFS mount targets"
+  referenced_security_group_id = aws_security_group.efs[0].id
+  from_port                    = 2049
+  to_port                      = 2049
+  ip_protocol                  = "tcp"
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "prometheus-to-efs-nfs"
+    }
+  )
+}
+
 # ==============================================================================
 # IAM Policy for S3 Config Access
 # ==============================================================================
