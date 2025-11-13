@@ -21,8 +21,9 @@ locals {
 
   # Map of service ports for Prometheus configuration
   service_ports = {
-    backend  = var.backend_port
-    frontend = var.frontend_port
+    backend    = var.backend_port
+    frontend   = var.frontend_port
+    prometheus = var.prometheus_port
   }
 
   common_tags = merge(
@@ -60,13 +61,14 @@ resource "aws_service_discovery_private_dns_namespace" "main" {
 # Service Discovery for Applications
 # ==============================================================================
 
-# Service discovery for backend and frontend applications
+# Service discovery for backend, frontend, and prometheus applications
 # Enables automatic DNS registration and health checking
 # Prometheus will discover instances via SRV records
 resource "aws_service_discovery_service" "app_service" {
   for_each = {
-    backend  = var.backend_service_name
-    frontend = var.frontend_service_name
+    backend    = var.backend_service_name
+    frontend   = var.frontend_service_name
+    prometheus = var.prometheus_service_name
   }
 
   name = each.value

@@ -81,6 +81,30 @@ output "frontend_dns_name" {
 }
 
 # ------------------------------------------------------------------------------
+# Prometheus Service Discovery Outputs
+# ------------------------------------------------------------------------------
+
+output "prometheus_service_id" {
+  description = "ID of the prometheus service discovery service"
+  value       = aws_service_discovery_service.app_service["prometheus"].id
+}
+
+output "prometheus_service_arn" {
+  description = "ARN of the prometheus service discovery service"
+  value       = aws_service_discovery_service.app_service["prometheus"].arn
+}
+
+output "prometheus_service_name" {
+  description = "Name of the prometheus service in Cloud Map"
+  value       = aws_service_discovery_service.app_service["prometheus"].name
+}
+
+output "prometheus_dns_name" {
+  description = "Fully qualified DNS name for prometheus service"
+  value       = "${aws_service_discovery_service.app_service["prometheus"].name}.${aws_service_discovery_private_dns_namespace.main.name}"
+}
+
+# ------------------------------------------------------------------------------
 # Consolidated Service Map Output
 # ------------------------------------------------------------------------------
 

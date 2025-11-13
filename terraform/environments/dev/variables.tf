@@ -305,3 +305,55 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+# -----------------------------------------------------------------------------
+# Prometheus Configuration (TT-25 Phase 5)
+# -----------------------------------------------------------------------------
+
+variable "prometheus_image" {
+  description = "Docker image for Prometheus (e.g., prom/prometheus:v2.45.0)"
+  type        = string
+  default     = "prom/prometheus:v2.45.0"
+}
+
+variable "prometheus_task_cpu" {
+  description = "CPU units for Prometheus task (256 = 0.25 vCPU, 512 = 0.5 vCPU, 1024 = 1 vCPU)"
+  type        = number
+  default     = 512
+}
+
+variable "prometheus_task_memory" {
+  description = "Memory (MB) for Prometheus task"
+  type        = number
+  default     = 1024
+}
+
+variable "prometheus_desired_count" {
+  description = "Desired number of Prometheus tasks to run"
+  type        = number
+  default     = 1
+}
+
+variable "prometheus_retention_time" {
+  description = "How long to retain metrics in Prometheus TSDB (e.g., 15d, 30d, 90d)"
+  type        = string
+  default     = "15d"
+}
+
+variable "prometheus_config_s3_key" {
+  description = "S3 key path for Prometheus configuration file"
+  type        = string
+  default     = "observability/prometheus/prometheus.yml"
+}
+
+variable "prometheus_log_retention_days" {
+  description = "CloudWatch Logs retention period in days for Prometheus"
+  type        = number
+  default     = 7
+}
+
+variable "enable_prometheus_ecs_exec" {
+  description = "Enable ECS Exec for debugging Prometheus tasks"
+  type        = bool
+  default     = false
+}

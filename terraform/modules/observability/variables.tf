@@ -130,3 +130,100 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+# ------------------------------------------------------------------------------
+# Prometheus ECS Service Variables (Phase 5 - TT-25)
+# ------------------------------------------------------------------------------
+
+variable "aws_region" {
+  description = "AWS region for CloudWatch Logs configuration"
+  type        = string
+}
+
+variable "ecs_cluster_id" {
+  description = "ID of the ECS cluster where Prometheus will run"
+  type        = string
+}
+
+variable "prometheus_service_registry_arn" {
+  description = "ARN of the service discovery registry for Prometheus"
+  type        = string
+}
+
+variable "prometheus_image" {
+  description = "Docker image for Prometheus (e.g., prom/prometheus:v2.45.0)"
+  type        = string
+  default     = "prom/prometheus:v2.45.0"
+
+  validation {
+    condition     = can(regex("^[a-z0-9/_-]+:[a-z0-9._-]+$", var.prometheus_image))
+    error_message = "Prometheus image must be a valid Docker image reference (repository:tag)."
+  }
+}
+
+variable "prometheus_task_cpu" {
+  description = "CPU units for Prometheus task (256 = 0.25 vCPU, 512 = 0.5 vCPU, 1024 = 1 vCPU)"
+  type        = number
+  default     = 512
+
+  validation {
+    condition     = contains([256, 512, 1024, 2048, 4096], var.prometheus_task_cpu)
+    error_message = "Prometheus task CPU must be one of: 256, 512, 1024, 2048, 4096."
+  }
+}
+
+variable "prometheus_task_memory" {
+  description = "Memory (MB) for Prometheus task (must be valid for selected CPU)"
+  type        = number
+  default     = 1024
+
+  validation {
+    condition     = var.prometheus_task_memory >= 512 && var.prometheus_task_memory <= 30720
+    error_message = "Prometheus task memory must be between 512 and 30720 MB."
+  }
+}
+
+variable "prometheus_desired_count" {
+  description = "Desired number of Prometheus tasks to run"
+  type        = number
+  default     = 1
+
+  validation {
+    condition     = var.prometheus_desired_count >= 0 && var.prometheus_desired_count <= 10
+    error_message = "Prometheus desired count must be between 0 and 10."
+  }
+}
+
+variable "prometheus_retention_time" {
+  description = "How long to retain metrics in Prometheus TSDB (e.g., 15d, 30d, 90d)"
+  type        = string
+  default     = "15d"
+
+  validation {
+    condition     = can(regex("^[0-9]+[smhdwy]$", var.prometheus_retention_time))
+    error_message = "Retention time must be a valid duration (e.g., 15d, 30d, 90d)."
+  }
+}
+
+variable "prometheus_config_s3_key" {
+  description = "S3 key path for Prometheus configuration file"
+  type        = string
+  default     = "observability/prometheus/prometheus.yml"
+}
+
+variable "log_retention_days" {
+  description = "CloudWatch Logs retention period in days"
+  type        = number
+  default     = 7
+
+  validation {
+    condition     = contains([1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653], var.log_retention_days)
+    error_message = "Log retention days must be a valid CloudWatch Logs retention period."
+  }
+}
+
+variable "enable_ecs_exec" {
+  description = "Enable ECS Exec for debugging Prometheus tasks"
+  type        = bool
+  default     = false
+}

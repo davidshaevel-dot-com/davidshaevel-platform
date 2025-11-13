@@ -254,17 +254,68 @@ module "observability" {
   enable_prometheus_efs           = true
   prometheus_efs_performance_mode = "generalPurpose"
   prometheus_efs_throughput_mode  = "bursting"
-  efs_transition_to_ia_days       = 14  # Changed from 15 to comply with AWS EFS constraints
+  efs_transition_to_ia_days       = 14 # Changed from 15 to comply with AWS EFS constraints
   enable_efs_encryption           = true
 
   # S3 configuration
   enable_config_bucket_versioning = true
   config_bucket_lifecycle_days    = 90
 
+  # Prometheus ECS Service configuration (Phase 5 - TT-25)
+  aws_region                      = var.aws_region
+  ecs_cluster_id                  = module.compute.ecs_cluster_id
+  prometheus_service_registry_arn = module.service_discovery.prometheus_service_arn
+  prometheus_image                = var.prometheus_image
+  prometheus_task_cpu             = var.prometheus_task_cpu
+  prometheus_task_memory          = var.prometheus_task_memory
+  prometheus_desired_count        = var.prometheus_desired_count
+  prometheus_retention_time       = var.prometheus_retention_time
+  prometheus_config_s3_key        = var.prometheus_config_s3_key
+  log_retention_days              = var.prometheus_log_retention_days
+  enable_ecs_exec                 = var.enable_prometheus_ecs_exec
+
   tags = {
     CostCenter = "Platform Engineering"
     Owner      = "David Shaevel"
   }
+}
+
+# ==============================================================================
+# Prometheus Configuration Upload to S3
+# ==============================================================================
+
+# Render Prometheus configuration from template
+# Template variables are substituted with actual values from service discovery
+locals {
+  prometheus_config_rendered = templatefile("../../../observability/prometheus/prometheus.yml.tpl", {
+    environment      = var.environment
+    service_prefix   = "${var.environment}-${var.project_name}"
+    platform_name    = var.project_name
+    private_dns_zone = var.private_dns_namespace
+  })
+}
+
+# Upload rendered Prometheus config to S3
+# Init container will sync this to EFS on task startup
+resource "aws_s3_object" "prometheus_config" {
+  bucket  = module.observability.prometheus_config_bucket_id
+  key     = var.prometheus_config_s3_key
+  content = local.prometheus_config_rendered
+
+  # Content type for YAML files
+  content_type = "application/x-yaml"
+
+  # ETag forces update when content changes
+  etag = md5(local.prometheus_config_rendered)
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name        = "prometheus-config"
+      Application = "prometheus"
+      Purpose     = "Prometheus scrape configuration"
+    }
+  )
 }
 
 # ==============================================================================
