@@ -425,8 +425,8 @@ resource "aws_ecs_task_definition" "prometheus" {
         }
       }
 
-      # Run as non-root user (UID 65534 = nobody)
-      user = "65534"
+      # Note: Init container runs as root (default) to have write permissions to EFS
+      # Prometheus container runs as UID 65534 for security
     },
     # Main Prometheus container
     {
