@@ -91,9 +91,9 @@ resource "aws_service_discovery_service" "app_service" {
     routing_policy = "MULTIVALUE"
   }
 
-  # Health check configuration - ECS will manage health checks
-  # failure_threshold is deprecated and always set to 1 by AWS
-  health_check_custom_config {}
+  # Note: health_check_custom_config block removed as AWS does not support
+  # empty configuration blocks. ECS manages health checks automatically
+  # without requiring explicit service discovery health check configuration.
 
   tags = merge(
     local.common_tags,
