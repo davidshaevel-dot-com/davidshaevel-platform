@@ -18,8 +18,10 @@
 # 4. EFS provides persistent storage across task restarts
 
 locals {
-  name_prefix     = "${var.environment}-${var.project_name}"
-  prometheus_port = 9090
+  name_prefix        = "${var.environment}-${var.project_name}"
+  prometheus_port    = 9090
+  nfs_port           = 2049    # Standard NFS/EFS mount port
+  prometheus_user_id = "65534" # UID for 'nobody' user - standard Prometheus non-root user
 
   common_tags = merge(
     var.tags,
@@ -184,8 +186,8 @@ resource "aws_vpc_security_group_ingress_rule" "efs_nfs_from_prometheus" {
   security_group_id            = aws_security_group.efs[0].id
   description                  = "Allow NFS from Prometheus ECS tasks"
   referenced_security_group_id = var.prometheus_security_group_id
-  from_port                    = 2049
-  to_port                      = 2049
+  from_port                    = local.nfs_port
+  to_port                      = local.nfs_port
   ip_protocol                  = "tcp"
 
   tags = merge(
@@ -204,8 +206,8 @@ resource "aws_vpc_security_group_egress_rule" "prometheus_to_efs" {
   security_group_id            = var.prometheus_security_group_id
   description                  = "Allow NFS to EFS mount targets"
   referenced_security_group_id = aws_security_group.efs[0].id
-  from_port                    = 2049
-  to_port                      = 2049
+  from_port                    = local.nfs_port
+  to_port                      = local.nfs_port
   ip_protocol                  = "tcp"
 
   tags = merge(
@@ -407,7 +409,7 @@ resource "aws_ecs_task_definition" "prometheus" {
       command = [
         join(" && ", [
           "mkdir -p /prometheus/data",
-          "chown -R 65534:65534 /prometheus",
+          "chown -R ${local.prometheus_user_id}:${local.prometheus_user_id} /prometheus",
           "aws s3 cp s3://${aws_s3_bucket.prometheus_config.id}/${var.prometheus_config_s3_key} /prometheus/prometheus.yml"
         ])
       ]
@@ -480,7 +482,7 @@ resource "aws_ecs_task_definition" "prometheus" {
       }
 
       # Run as non-root user (UID 65534 = nobody, standard Prometheus user)
-      user = "65534"
+      user = local.prometheus_user_id
 
       # Container dependencies - wait for init container
       dependsOn = [
