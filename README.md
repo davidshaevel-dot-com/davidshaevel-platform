@@ -275,7 +275,8 @@ terraform output  # View all outputs
 - [Database Module](terraform/modules/database/README.md) - 276 lines
 - [Compute Module](terraform/modules/compute/README.md) - 533 lines
 - [CDN Module](terraform/modules/cdn/README.md) - 555 lines
-- [Observability Module](terraform/modules/observability/README.md) - 251 lines (new - TT-25 Phase 3)
+- [Observability Module](terraform/modules/observability/README.md) - 340 lines (new - TT-25 Phase 3)
+- Service Discovery Module - 350+ lines (new - TT-25 Phase 4, README pending)
 
 ## 🛠️ Technology Stack
 
@@ -388,14 +389,19 @@ terraform output  # View all outputs
 **TT-25: Observability with Grafana/Prometheus** (8-10 hours) - Priority 3 [IN PROGRESS]
 - ✅ Phase 1: Docker configurations (PR #32 - Complete Nov 7)
 - ✅ Phase 2: Prometheus templating system (PR #33 - Complete Nov 9)
-- ✅ Phase 3: EFS file systems and observability module (PR #37 - Complete Nov 11)
+- ✅ Phase 3: EFS file systems and observability module (PR #37, #38, #39 - Complete Nov 11-12)
   - New Terraform module: `terraform/modules/observability/` (840 lines)
   - EFS for Prometheus TSDB data persistence with encryption
   - S3 bucket for config storage with versioning
   - Multi-AZ deployment, security groups, IAM policies
+  - EFS lifecycle fix (AWS API compliance)
   - 16 AWS resources, ~$1.10/month cost
-- ⏳ Phase 4: AWS Cloud Map service discovery (2-3 hours)
-- ⏳ Phase 5-6: ECS services and ALB integration
+- ✅ Phase 4: AWS Cloud Map service discovery (PR #41 - Complete Nov 12)
+  - New Terraform module: `terraform/modules/service-discovery/` (350+ lines)
+  - Private DNS namespace (davidshaevel.local) for internal service resolution
+  - Service discovery for backend and frontend with A and SRV records
+  - for_each patterns, dynamic blocks, and consolidated outputs for maintainability
+- ⏳ Phase 5-6: ECS services and ALB integration (4-6 hours)
 - ⏳ Phase 7-8: Enhanced metrics endpoints (backend + frontend)
 - ⏳ Phase 9-10: Dashboards, deployment, and verification
 
@@ -674,7 +680,7 @@ Austin, Texas
 - PR Feedback & Security Fixes: October 31, 2025 (Complete)
 
 **Status:** ✅ PRODUCTION DEPLOYMENT COMPLETE
-**Last Updated:** November 2, 2025
+**Last Updated:** November 12, 2025
 
 ## 🤖 AI Agent Sessions
 
