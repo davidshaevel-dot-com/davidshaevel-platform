@@ -498,7 +498,9 @@ resource "aws_ecs_service" "prometheus" {
 
   # Service discovery registration
   service_registries {
-    registry_arn = var.prometheus_service_registry_arn
+    registry_arn   = var.prometheus_service_registry_arn
+    container_name = "prometheus"
+    container_port = 9090
   }
 
   # Health check grace period for container startup
