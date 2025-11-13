@@ -18,7 +18,8 @@
 # 4. EFS provides persistent storage across task restarts
 
 locals {
-  name_prefix = "${var.environment}-${var.project_name}"
+  name_prefix     = "${var.environment}-${var.project_name}"
+  prometheus_port = 9090
 
   common_tags = merge(
     var.tags,
@@ -404,7 +405,11 @@ resource "aws_ecs_task_definition" "prometheus" {
       # Create data directory, set ownership for Prometheus user (65534), and sync config from S3 to EFS
       entryPoint = ["/bin/sh", "-c"]
       command = [
-        "mkdir -p /prometheus/data && chown -R 65534:65534 /prometheus && aws s3 cp s3://${aws_s3_bucket.prometheus_config.id}/${var.prometheus_config_s3_key} /prometheus/prometheus.yml"
+        join(" && ", [
+          "mkdir -p /prometheus/data",
+          "chown -R 65534:65534 /prometheus",
+          "aws s3 cp s3://${aws_s3_bucket.prometheus_config.id}/${var.prometheus_config_s3_key} /prometheus/prometheus.yml"
+        ])
       ]
 
       mountPoints = [
@@ -435,7 +440,7 @@ resource "aws_ecs_task_definition" "prometheus" {
 
       portMappings = [
         {
-          containerPort = 9090
+          containerPort = local.prometheus_port
           protocol      = "tcp"
         }
       ]
@@ -458,7 +463,7 @@ resource "aws_ecs_task_definition" "prometheus" {
       ]
 
       healthCheck = {
-        command     = ["CMD-SHELL", "promtool check config /prometheus/prometheus.yml && nc -z 127.0.0.1 9090 || exit 1"]
+        command     = ["CMD-SHELL", "promtool check config /prometheus/prometheus.yml && nc -z 127.0.0.1 ${local.prometheus_port} || exit 1"]
         interval    = 30
         timeout     = 5
         retries     = 3
@@ -519,7 +524,7 @@ resource "aws_ecs_service" "prometheus" {
   service_registries {
     registry_arn   = var.prometheus_service_registry_arn
     container_name = "prometheus"
-    container_port = 9090
+    container_port = local.prometheus_port
   }
 
   # Health check grace period for container startup
