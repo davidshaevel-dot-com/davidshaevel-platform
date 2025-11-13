@@ -275,8 +275,8 @@ terraform output  # View all outputs
 - [Database Module](terraform/modules/database/README.md) - 276 lines
 - [Compute Module](terraform/modules/compute/README.md) - 533 lines
 - [CDN Module](terraform/modules/cdn/README.md) - 555 lines
-- [Observability Module](terraform/modules/observability/README.md) - 340 lines (TT-25 Phase 3)
-- [Service Discovery Module](terraform/modules/service-discovery/README.md) - (TT-25 Phase 4 - NEW)
+- [Observability Module](terraform/modules/observability/README.md) - 340 lines (new - TT-25 Phase 3)
+- Service Discovery Module - 350+ lines (new - TT-25 Phase 4, README pending)
 
 ## 🛠️ Technology Stack
 
@@ -400,8 +400,7 @@ terraform output  # View all outputs
   - New Terraform module: `terraform/modules/service-discovery/` (350+ lines)
   - Private DNS namespace (davidshaevel.local) for internal service resolution
   - Service discovery for backend and frontend with A and SRV records
-  - Integrated with dev environment for Prometheus metrics scraping
-  - 4 rounds of Gemini Code Assist reviews with thoughtful architectural decisions
+  - for_each patterns, dynamic blocks, and consolidated outputs for maintainability
 - ⏳ Phase 5-6: ECS services and ALB integration (4-6 hours)
 - ⏳ Phase 7-8: Enhanced metrics endpoints (backend + frontend)
 - ⏳ Phase 9-10: Dashboards, deployment, and verification
