@@ -23,6 +23,9 @@ out/
 **/terraform.tfvars
 **/*.tfvars
 !**/terraform.tfvars.example
+**/terraform.tfvars.bak
+**/terraform.tfvars.*
+!**/terraform.tfvars.example
 **/.terraformrc
 **/crash.log
 **/override.tf

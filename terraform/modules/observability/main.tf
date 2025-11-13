@@ -366,6 +366,14 @@ resource "aws_iam_role_policy_attachment" "prometheus_s3_config" {
   policy_arn = aws_iam_policy.prometheus_s3_config_access.arn
 }
 
+# Attach SSM policy for ECS Exec (when enabled)
+resource "aws_iam_role_policy_attachment" "prometheus_ecs_exec" {
+  count = var.enable_prometheus_efs && var.enable_ecs_exec ? 1 : 0
+
+  role       = aws_iam_role.prometheus_task[0].name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
 # ==============================================================================
 # ECS Task Definition for Prometheus
 # ==============================================================================
