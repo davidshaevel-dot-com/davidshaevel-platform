@@ -548,9 +548,14 @@ resource "aws_ecs_service" "prometheus" {
   # - This releases the EFS lock before new task starts
   # - Trade-off: 60-90 seconds downtime during deployments (acceptable for dev)
   # - Alternative: Rolling updates cause deadlock (new task can't get lock, old won't stop)
-  # - maximum_percent = 200 required by AWS AZ rebalancing (can't be <= 100)
   deployment_minimum_healthy_percent = 0    # Allow old task to stop first (releases EFS lock)
-  deployment_maximum_percent         = 200  # AWS AZ rebalancing requires > 100
+
+  # AWS ECS enables AZ rebalancing by default for services deployed across multiple AZs.
+  # When AZ rebalancing is enabled, maximum_percent must be > 100 to allow temporary
+  # over-provisioning during rebalancing operations. Attempting to set this to 100
+  # results in: "InvalidParameterException: Availability Zone Rebalancing does not
+  # support maximumPercent <= 100". Using the AWS default value of 200.
+  deployment_maximum_percent         = 200
 
   deployment_circuit_breaker {
     enable   = true   # Automatically rollback failed deployments
