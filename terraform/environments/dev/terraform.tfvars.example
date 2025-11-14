@@ -54,6 +54,20 @@ db_deletion_protection = false  # Set to true for production
 # Example: 123456789012.dkr.ecr.us-east-1.amazonaws.com/myproject/backend:f00ba12
 backend_container_image = "123456789012.dkr.ecr.us-east-1.amazonaws.com/myproject/backend:abc1234"
 
+# Frontend container image (must specify explicit tag, not :latest)
+# Format: <account-id>.dkr.ecr.<region>.amazonaws.com/<project-name>/frontend:<git-sha>
+frontend_container_image = "123456789012.dkr.ecr.us-east-1.amazonaws.com/myproject/frontend:abc1234"
+
+# -----------------------------------------------------------------------------
+# Prometheus Observability Configuration
+# -----------------------------------------------------------------------------
+
+# Enable ECS Exec for debugging Prometheus tasks (allows shell access via AWS CLI)
+# WARNING: Only enable this in development environments for debugging purposes
+# Requires AWS Session Manager plugin installed locally
+# Set to false for production environments
+enable_prometheus_ecs_exec = false
+
 # -----------------------------------------------------------------------------
 # Additional Tags (Optional)
 # -----------------------------------------------------------------------------

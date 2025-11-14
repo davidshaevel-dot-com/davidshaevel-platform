@@ -22,6 +22,7 @@ out/
 **/terraform.tfstate.backup
 **/terraform.tfvars
 **/*.tfvars
+**/terraform.tfvars.*
 !**/terraform.tfvars.example
 **/.terraformrc
 **/crash.log

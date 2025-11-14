@@ -366,6 +366,14 @@ resource "aws_iam_role_policy_attachment" "prometheus_s3_config" {
   policy_arn = aws_iam_policy.prometheus_s3_config_access.arn
 }
 
+# Attach SSM policy for ECS Exec (when enabled)
+resource "aws_iam_role_policy_attachment" "prometheus_ecs_exec" {
+  count = var.enable_prometheus_efs && var.enable_ecs_exec ? 1 : 0
+
+  role       = aws_iam_role.prometheus_task[0].name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
 # ==============================================================================
 # ECS Task Definition for Prometheus
 # ==============================================================================
@@ -532,9 +540,27 @@ resource "aws_ecs_service" "prometheus" {
   # Health check grace period for container startup
   health_check_grace_period_seconds = 60
 
-  # Deployment configuration
+  # Deployment configuration for Prometheus with EFS
+  # Uses "recreate" strategy to avoid EFS database locking conflicts:
+  # - Prometheus TSDB requires exclusive file lock on EFS volume
+  # - Only one task can hold the lock at a time
+  # - Setting deployment_minimum_healthy_percent = 0 allows old task to stop FIRST
+  # - This releases the EFS lock before new task starts
+  # - Trade-off: 60-90 seconds downtime during deployments (acceptable for dev)
+  # - Alternative: Rolling updates cause deadlock (new task can't get lock, old won't stop)
+  deployment_minimum_healthy_percent = 0    # Allow old task to stop first (releases EFS lock)
+
+  # AWS ECS enables AZ rebalancing by default for services deployed across multiple AZs.
+  # When AZ rebalancing is enabled, maximum_percent must be > 100 to allow temporary
+  # over-provisioning during rebalancing operations. Attempting to set this to 100
+  # results in: "InvalidParameterException: Availability Zone Rebalancing does not
+  # support maximumPercent <= 100". Using the AWS default value of 200.
   deployment_maximum_percent         = 200
-  deployment_minimum_healthy_percent = 100
+
+  deployment_circuit_breaker {
+    enable   = true   # Automatically rollback failed deployments
+    rollback = true
+  }
 
   # Enable ECS Exec for debugging (optional)
   enable_execute_command = var.enable_ecs_exec
