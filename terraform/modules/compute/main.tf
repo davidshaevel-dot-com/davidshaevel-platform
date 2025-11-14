@@ -195,6 +195,18 @@ resource "aws_iam_role" "backend_task" {
 # Database credentials are injected as environment variables by the task execution role.
 # Add application-specific permissions here as needed (e.g., S3, DynamoDB, etc.)
 
+# Attach SSM policy for ECS Exec for enabled services
+# Using for_each pattern for DRY principle and better scalability
+resource "aws_iam_role_policy_attachment" "ecs_exec" {
+  for_each = { for k, v in {
+    backend  = { enable = var.enable_backend_ecs_exec, role = aws_iam_role.backend_task.name },
+    frontend = { enable = var.enable_frontend_ecs_exec, role = aws_iam_role.frontend_task.name }
+  } : k => v if v.enable }
+
+  role       = each.value.role
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
 # ------------------------------------------------------------------------------
 # Application Load Balancer (Step 8)
 # ------------------------------------------------------------------------------
@@ -538,6 +550,9 @@ resource "aws_ecs_service" "frontend" {
 
   health_check_grace_period_seconds = var.health_check_grace_period
 
+  # Enable ECS Exec for debugging (when enabled via variable)
+  enable_execute_command = var.enable_frontend_ecs_exec
+
   # ------------------------------------------------------------------------------
   # Lifecycle: Ignore Task Definition Changes
   # ------------------------------------------------------------------------------
@@ -615,6 +630,9 @@ resource "aws_ecs_service" "backend" {
   }
 
   health_check_grace_period_seconds = var.health_check_grace_period
+
+  # Enable ECS Exec for debugging (when enabled via variable)
+  enable_execute_command = var.enable_backend_ecs_exec
 
   # ------------------------------------------------------------------------------
   # Lifecycle: Ignore Task Definition Changes
