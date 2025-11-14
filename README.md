@@ -401,7 +401,15 @@ terraform output  # View all outputs
   - Private DNS namespace (davidshaevel.local) for internal service resolution
   - Service discovery for backend and frontend with A and SRV records
   - for_each patterns, dynamic blocks, and consolidated outputs for maintainability
-- ⏳ Phase 5-6: ECS services and ALB integration (4-6 hours)
+- ✅ Phase 5: Prometheus ECS deployment (PR #44, #45 - Complete Nov 13)
+  - Prometheus ECS service deployed with EFS persistence
+  - ECS Exec enabled for debugging and endpoint testing
+  - "Recreate" deployment strategy implemented to solve EFS locking
+  - Deployment circuit breaker with automatic rollback
+  - Comprehensive test script (6 tests validating service health)
+  - All core functionality operational: health checks, metrics, targets
+  - ~90 second deployment time, no manual intervention required
+- ⏳ Phase 6: Test script fixes and ALB integration (2-3 hours) - TT-52
 - ⏳ Phase 7-8: Enhanced metrics endpoints (backend + frontend)
 - ⏳ Phase 9-10: Dashboards, deployment, and verification
 
