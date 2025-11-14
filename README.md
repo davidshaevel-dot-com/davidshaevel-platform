@@ -409,7 +409,12 @@ terraform output  # View all outputs
   - Comprehensive test script (6 tests validating service health)
   - All core functionality operational: health checks, metrics, targets
   - ~90 second deployment time, no manual intervention required
-- ⏳ Phase 6: Test script fixes and ALB integration (2-3 hours) - TT-52
+- ✅ Phase 6: Test script fixes and ECS Exec expansion (PR #46, #47 - Complete Nov 14)
+  - Fixed 4 critical issues in test-prometheus-deployment.sh script (TT-52)
+  - ECS Exec enabled for backend and frontend containers
+  - Refactored IAM policy attachments using for_each pattern (DRY principle)
+  - All 6 tests passing with ECS Exec validation working
+  - Gemini code review feedback implemented (31% code reduction)
 - ⏳ Phase 7-8: Enhanced metrics endpoints (backend + frontend)
 - ⏳ Phase 9-10: Dashboards, deployment, and verification
 
