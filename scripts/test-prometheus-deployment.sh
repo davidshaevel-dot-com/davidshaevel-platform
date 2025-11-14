@@ -243,7 +243,7 @@ test_cloudwatch_logs() {
         --log-stream-name "$PROMETHEUS_STREAM" \
         --region "$AWS_REGION" \
         --query 'events[*].message' \
-        --output text | grep -c "Server is ready to receive web requests" || echo "0")
+        --output text | grep -c "Server is ready to receive web requests" | tr -d '\n' || echo "0")
 
     # Check for errors
     ERROR_COUNT=$(aws logs get-log-events \
@@ -251,7 +251,7 @@ test_cloudwatch_logs() {
         --log-stream-name "$PROMETHEUS_STREAM" \
         --region "$AWS_REGION" \
         --query 'events[*].message' \
-        --output text | grep -c "level=error" || echo "0")
+        --output text | grep -c "level=error" | tr -d '\n' || echo "0")
 
     log_info "Startup messages found: $STARTUP_MSG"
     log_info "Error messages found: $ERROR_COUNT"
@@ -344,10 +344,10 @@ test_http_endpoints() {
         --task "$TASK_ARN" \
         --container prometheus \
         --interactive \
-        --command "wget -qO- http://localhost:$PROMETHEUS_PORT/-/healthy 2>&1" \
+        --command "wget -qO- http://localhost:$PROMETHEUS_PORT/-/healthy" \
         --region "$AWS_REGION" 2>&1 || echo "FAILED")
 
-    if echo "$HEALTH_RESPONSE" | grep -q "Prometheus is Healthy"; then
+    if echo "$HEALTH_RESPONSE" | grep -q "Prometheus.*is.*Healthy"; then
         log_success "Health endpoint responding: Prometheus is Healthy"
     elif echo "$HEALTH_RESPONSE" | grep -q "FAILED"; then
         log_error "Failed to test health endpoint (ECS Exec may not be enabled)"
@@ -364,10 +364,10 @@ test_http_endpoints() {
         --task "$TASK_ARN" \
         --container prometheus \
         --interactive \
-        --command "wget -qO- http://localhost:$PROMETHEUS_PORT/-/ready 2>&1" \
+        --command "wget -qO- http://localhost:$PROMETHEUS_PORT/-/ready" \
         --region "$AWS_REGION" 2>&1 || echo "FAILED")
 
-    if echo "$READY_RESPONSE" | grep -q "Prometheus is Ready"; then
+    if echo "$READY_RESPONSE" | grep -q "Prometheus.*is.*Ready"; then
         log_success "Ready endpoint responding: Prometheus is Ready"
     else
         log_warning "Ready endpoint check inconclusive"
@@ -380,7 +380,7 @@ test_http_endpoints() {
         --task "$TASK_ARN" \
         --container prometheus \
         --interactive \
-        --command "wget -qO- http://localhost:$PROMETHEUS_PORT/api/v1/targets 2>&1" \
+        --command "wget -qO- http://localhost:$PROMETHEUS_PORT/api/v1/targets" \
         --region "$AWS_REGION" 2>&1 || echo "FAILED")
 
     if echo "$TARGETS_RESPONSE" | grep -q '"status":"success"'; then
@@ -418,13 +418,27 @@ test_dns_resolution() {
 
     log_info "Backend Task: $(basename "$BACKEND_TASK")"
 
+    # Check if backend has ECS Exec enabled
+    BACKEND_EXEC_ENABLED=$(aws ecs describe-tasks \
+        --cluster "$CLUSTER_NAME" \
+        --tasks "$BACKEND_TASK" \
+        --region "$AWS_REGION" \
+        --query 'tasks[0].enableExecuteCommand' \
+        --output text)
+
+    if [[ "$BACKEND_EXEC_ENABLED" != "True" ]]; then
+        log_warning "Backend container does not have ECS Exec enabled - skipping DNS test"
+        log_info "To enable ECS Exec for backend, set enable_execute_command = true in terraform"
+        return 0
+    fi
+
     # Try to resolve DNS from backend
     DNS_RESPONSE=$(aws ecs execute-command \
         --cluster "$CLUSTER_NAME" \
         --task "$BACKEND_TASK" \
         --container backend \
         --interactive \
-        --command "nslookup $DNS_NAME 2>&1" \
+        --command "nslookup $DNS_NAME" \
         --region "$AWS_REGION" 2>&1 || echo "FAILED")
 
     if echo "$DNS_RESPONSE" | grep -q "Address:"; then
@@ -443,7 +457,7 @@ test_dns_resolution() {
         --task "$BACKEND_TASK" \
         --container backend \
         --interactive \
-        --command "curl -s -o /dev/null -w '%{http_code}' http://$DNS_NAME:$PROMETHEUS_PORT/-/healthy 2>&1" \
+        --command "curl -s -o /dev/null -w '%{http_code}' http://$DNS_NAME:$PROMETHEUS_PORT/-/healthy" \
         --region "$AWS_REGION" 2>&1 || echo "FAILED")
 
     if echo "$CURL_RESPONSE" | grep -q "200"; then
