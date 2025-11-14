@@ -243,7 +243,7 @@ test_cloudwatch_logs() {
         --log-stream-name "$PROMETHEUS_STREAM" \
         --region "$AWS_REGION" \
         --query 'events[*].message' \
-        --output text | grep -c "Server is ready to receive web requests" || echo "0")
+        --output text | grep -c "Server is ready to receive web requests" | tr -d '\n' || echo "0")
 
     # Check for errors
     ERROR_COUNT=$(aws logs get-log-events \
@@ -426,7 +426,7 @@ test_dns_resolution() {
         --query 'tasks[0].enableExecuteCommand' \
         --output text)
 
-    if [ "$BACKEND_EXEC_ENABLED" != "True" ]; then
+    if [[ "$BACKEND_EXEC_ENABLED" != "True" ]]; then
         log_warning "Backend container does not have ECS Exec enabled - skipping DNS test"
         log_info "To enable ECS Exec for backend, set enable_execute_command = true in terraform"
         return 0
