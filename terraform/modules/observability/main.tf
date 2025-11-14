@@ -540,9 +540,22 @@ resource "aws_ecs_service" "prometheus" {
   # Health check grace period for container startup
   health_check_grace_period_seconds = 60
 
-  # Deployment configuration
-  deployment_maximum_percent         = 200
-  deployment_minimum_healthy_percent = 100
+  # Deployment configuration for Prometheus with EFS
+  # Uses "recreate" strategy to avoid EFS database locking conflicts:
+  # - Prometheus TSDB requires exclusive file lock on EFS volume
+  # - Only one task can hold the lock at a time
+  # - Setting deployment_minimum_healthy_percent = 0 allows old task to stop FIRST
+  # - This releases the EFS lock before new task starts
+  # - Trade-off: 60-90 seconds downtime during deployments (acceptable for dev)
+  # - Alternative: Rolling updates cause deadlock (new task can't get lock, old won't stop)
+  # - maximum_percent = 200 required by AWS AZ rebalancing (can't be <= 100)
+  deployment_minimum_healthy_percent = 0    # Allow old task to stop first (releases EFS lock)
+  deployment_maximum_percent         = 200  # AWS AZ rebalancing requires > 100
+
+  deployment_circuit_breaker {
+    enable   = true   # Automatically rollback failed deployments
+    rollback = true
+  }
 
   # Enable ECS Exec for debugging (optional)
   enable_execute_command = var.enable_ecs_exec
