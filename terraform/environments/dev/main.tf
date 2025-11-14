@@ -178,6 +178,10 @@ module "compute" {
   log_retention_days        = var.ecs_log_retention_days
   enable_container_insights = var.enable_container_insights
 
+  # ECS Exec configuration
+  enable_backend_ecs_exec  = var.enable_backend_ecs_exec
+  enable_frontend_ecs_exec = var.enable_frontend_ecs_exec
+
   # Tags
   common_tags = {
     Environment = var.environment

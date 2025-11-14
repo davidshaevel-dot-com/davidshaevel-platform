@@ -69,6 +69,23 @@ frontend_container_image = "123456789012.dkr.ecr.us-east-1.amazonaws.com/myproje
 enable_prometheus_ecs_exec = false
 
 # -----------------------------------------------------------------------------
+# Backend/Frontend ECS Exec Configuration
+# -----------------------------------------------------------------------------
+
+# Enable ECS Exec for debugging backend tasks (allows shell access via AWS CLI)
+# Useful for testing service discovery DNS resolution, network connectivity, etc.
+# WARNING: Only enable in development environments for debugging purposes
+# Requires AWS Session Manager plugin installed locally
+# Set to false for production environments
+enable_backend_ecs_exec = false
+
+# Enable ECS Exec for debugging frontend tasks (allows shell access via AWS CLI)
+# WARNING: Only enable in development environments for debugging purposes
+# Requires AWS Session Manager plugin installed locally
+# Set to false for production environments
+enable_frontend_ecs_exec = false
+
+# -----------------------------------------------------------------------------
 # Additional Tags (Optional)
 # -----------------------------------------------------------------------------
 

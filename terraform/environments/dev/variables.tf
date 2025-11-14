@@ -256,6 +256,18 @@ variable "enable_container_insights" {
   default     = true
 }
 
+variable "enable_backend_ecs_exec" {
+  description = "Enable ECS Exec for debugging backend tasks (allows shell access via AWS CLI)"
+  type        = bool
+  default     = false
+}
+
+variable "enable_frontend_ecs_exec" {
+  description = "Enable ECS Exec for debugging frontend tasks (allows shell access via AWS CLI)"
+  type        = bool
+  default     = false
+}
+
 # -----------------------------------------------------------------------------
 # CDN Configuration (CloudFront)
 # -----------------------------------------------------------------------------
