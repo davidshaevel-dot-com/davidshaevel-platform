@@ -458,35 +458,42 @@ test_dns_resolution() {
         --command "nslookup $DNS_NAME" \
         --region "$AWS_REGION" 2>&1 || echo "FAILED")
 
+    # Check DNS resolution result
+    DNS_PASSED=false
     if echo "$DNS_RESPONSE" | grep -q "Address:"; then
         log_success "DNS resolution successful from backend container"
         echo "$DNS_RESPONSE" | grep "Address:" | while read -r line; do
             log_info "$line"
         done
+        DNS_PASSED=true
     else
-        log_warning "DNS resolution test inconclusive"
+        log_warning "DNS resolution failed"
+        TEST_6_RESULT="✗"
     fi
 
-    # Try to wget Prometheus from backend (wget is available in node:alpine)
-    log_info "Testing HTTP request from backend to Prometheus..."
-    WGET_RESPONSE=$(aws ecs execute-command \
-        --cluster "$CLUSTER_NAME" \
-        --task "$BACKEND_TASK" \
-        --container backend \
-        --interactive \
-        --command "wget -qO- --timeout=10 http://$DNS_NAME:$PROMETHEUS_PORT/-/healthy" \
-        --region "$AWS_REGION" 2>&1 || echo "FAILED")
+    # Only test HTTP if DNS passed
+    if [ "$DNS_PASSED" = true ]; then
+        # Try to wget Prometheus from backend (wget is available in node:alpine)
+        log_info "Testing HTTP request from backend to Prometheus..."
+        WGET_RESPONSE=$(aws ecs execute-command \
+            --cluster "$CLUSTER_NAME" \
+            --task "$BACKEND_TASK" \
+            --container backend \
+            --interactive \
+            --command "wget -qO- --timeout=10 http://$DNS_NAME:$PROMETHEUS_PORT/-/healthy" \
+            --region "$AWS_REGION" 2>&1 || echo "FAILED")
 
-    if HEALTH_LINE=$(echo "$WGET_RESPONSE" | grep "Prometheus.*is.*Healthy"); then
-        log_success "HTTP request successful: $(echo "$HEALTH_LINE" | head -1)"
-        TEST_6_RESULT="✓"
-    elif echo "$WGET_RESPONSE" | grep -q "timed out\|Cannot\|FAILED"; then
-        log_warning "HTTP request failed - possible network/security group issue"
-        log_info "This may be expected if backend→prometheus traffic is not allowed"
-        TEST_6_RESULT="✗"
-    else
-        log_warning "HTTP request test inconclusive: $WGET_RESPONSE"
-        TEST_6_RESULT="⚠"
+        if HEALTH_LINE=$(echo "$WGET_RESPONSE" | grep "Prometheus.*is.*Healthy"); then
+            log_success "HTTP request successful: $(echo "$HEALTH_LINE" | head -1)"
+            TEST_6_RESULT="✓"
+        elif echo "$WGET_RESPONSE" | grep -q "timed out\|Cannot\|FAILED"; then
+            log_warning "HTTP request failed - possible network/security group issue"
+            log_info "This may be expected if backend→prometheus traffic is not allowed"
+            TEST_6_RESULT="✗"
+        else
+            log_warning "HTTP request test inconclusive: $WGET_RESPONSE"
+            TEST_6_RESULT="⚠"
+        fi
     fi
 }
 
@@ -509,8 +516,8 @@ generate_summary() {
     echo "  [✓] Task Health Status"
     echo "  [✓] CloudWatch Logs"
     echo "  [✓] Service Discovery"
-    echo "  [$TEST_5_RESULT] HTTP Endpoints"
-    echo "  [$TEST_6_RESULT] DNS Resolution"
+    echo "  [${TEST_5_RESULT}] HTTP Endpoints"
+    echo "  [${TEST_6_RESULT}] DNS Resolution"
     echo ""
 
     if [ "${TASK_IP:-}" ]; then
