@@ -31,6 +31,10 @@ AWS_REGION="${AWS_REGION:-us-east-1}"
 DNS_NAME="prometheus.davidshaevel.local"
 PROMETHEUS_PORT="9090"
 
+# Test result tracking
+TEST_5_RESULT="?"  # HTTP Endpoints
+TEST_6_RESULT="?"  # DNS Resolution
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -304,19 +308,24 @@ test_service_discovery() {
 
     log_info "Service ID: $SERVICE_ID"
 
-    # Get service details
-    SERVICE_DETAILS=$(aws servicediscovery get-service \
-        --id "$SERVICE_ID" \
+    # Get actual registered instances (not just the InstanceCount field which may not be updated)
+    INSTANCES=$(aws servicediscovery list-instances \
+        --service-id "$SERVICE_ID" \
         --region "$AWS_REGION" \
-        --query 'Service' \
+        --query 'Instances' \
         --output json)
 
-    INSTANCE_COUNT=$(echo "$SERVICE_DETAILS" | jq -r '.InstanceCount // 0')
+    INSTANCE_COUNT=$(echo "$INSTANCES" | jq 'length')
 
     log_info "Registered Instances: $INSTANCE_COUNT"
 
     if [ "$INSTANCE_COUNT" -gt 0 ]; then
-        log_success "Service discovery configured with instances"
+        log_success "Service discovery configured with $INSTANCE_COUNT instance(s)"
+
+        # Log instance details
+        echo "$INSTANCES" | jq -r '.[] | "  Instance ID: \(.Id) | IP: \(.Attributes.AWS_INSTANCE_IPV4)"' | while read -r line; do
+            log_info "$line"
+        done
     else
         log_warning "Service discovery configured but no instances registered yet (may take 30-60s)"
     fi
@@ -352,9 +361,11 @@ test_http_endpoints() {
     elif echo "$HEALTH_RESPONSE" | grep -q "FAILED"; then
         log_error "Failed to test health endpoint (ECS Exec may not be enabled)"
         log_info "To enable ECS Exec, set enable_ecs_exec = true in terraform variables"
+        TEST_5_RESULT="✗"
         return 1
     else
         log_warning "Unexpected health response: $HEALTH_RESPONSE"
+        TEST_5_RESULT="⚠"
     fi
 
     # Test ready endpoint
@@ -389,8 +400,12 @@ test_http_endpoints() {
         # Count active targets
         ACTIVE_TARGETS=$(echo "$TARGETS_RESPONSE" | grep -o '"health":"up"' | wc -l || echo "0")
         log_info "Active targets found: $ACTIVE_TARGETS"
+
+        # All 3 endpoints passed
+        TEST_5_RESULT="✓"
     else
         log_warning "Targets API check inconclusive"
+        TEST_5_RESULT="⚠"
     fi
 }
 
@@ -413,6 +428,7 @@ test_dns_resolution() {
 
     if [ -z "$BACKEND_TASK" ] || [ "$BACKEND_TASK" == "None" ]; then
         log_warning "No backend task running - skipping DNS test"
+        TEST_6_RESULT="⚠"
         return 0
     fi
 
@@ -429,6 +445,7 @@ test_dns_resolution() {
     if [[ "$BACKEND_EXEC_ENABLED" != "True" ]]; then
         log_warning "Backend container does not have ECS Exec enabled - skipping DNS test"
         log_info "To enable ECS Exec for backend, set enable_execute_command = true in terraform"
+        TEST_6_RESULT="⚠"
         return 0
     fi
 
@@ -462,11 +479,14 @@ test_dns_resolution() {
 
     if HEALTH_LINE=$(echo "$WGET_RESPONSE" | grep "Prometheus.*is.*Healthy"); then
         log_success "HTTP request successful: $(echo "$HEALTH_LINE" | head -1)"
+        TEST_6_RESULT="✓"
     elif echo "$WGET_RESPONSE" | grep -q "timed out\|Cannot\|FAILED"; then
         log_warning "HTTP request failed - possible network/security group issue"
         log_info "This may be expected if backend→prometheus traffic is not allowed"
+        TEST_6_RESULT="✗"
     else
         log_warning "HTTP request test inconclusive: $WGET_RESPONSE"
+        TEST_6_RESULT="⚠"
     fi
 }
 
@@ -489,8 +509,8 @@ generate_summary() {
     echo "  [✓] Task Health Status"
     echo "  [✓] CloudWatch Logs"
     echo "  [✓] Service Discovery"
-    echo "  [?] HTTP Endpoints (requires ECS Exec enabled)"
-    echo "  [?] DNS Resolution (requires backend container)"
+    echo "  [$TEST_5_RESULT] HTTP Endpoints"
+    echo "  [$TEST_6_RESULT] DNS Resolution"
     echo ""
 
     if [ "${TASK_IP:-}" ]; then
