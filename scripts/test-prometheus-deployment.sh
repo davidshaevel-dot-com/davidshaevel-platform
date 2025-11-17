@@ -31,6 +31,10 @@ AWS_REGION="${AWS_REGION:-us-east-1}"
 DNS_NAME="prometheus.davidshaevel.local"
 PROMETHEUS_PORT="9090"
 
+# Test result tracking
+TEST_5_RESULT="?"  # HTTP Endpoints
+TEST_6_RESULT="?"  # DNS Resolution
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -304,19 +308,24 @@ test_service_discovery() {
 
     log_info "Service ID: $SERVICE_ID"
 
-    # Get service details
-    SERVICE_DETAILS=$(aws servicediscovery get-service \
-        --id "$SERVICE_ID" \
+    # Get actual registered instances (not just the InstanceCount field which may not be updated)
+    INSTANCES=$(aws servicediscovery list-instances \
+        --service-id "$SERVICE_ID" \
         --region "$AWS_REGION" \
-        --query 'Service' \
+        --query 'Instances' \
         --output json)
 
-    INSTANCE_COUNT=$(echo "$SERVICE_DETAILS" | jq -r '.InstanceCount // 0')
+    INSTANCE_COUNT=$(echo "$INSTANCES" | jq 'length')
 
     log_info "Registered Instances: $INSTANCE_COUNT"
 
     if [ "$INSTANCE_COUNT" -gt 0 ]; then
-        log_success "Service discovery configured with instances"
+        log_success "Service discovery configured with $INSTANCE_COUNT instance(s)"
+
+        # Log instance details
+        echo "$INSTANCES" | jq -r '.[] | "  Instance ID: \(.Id) | IP: \(.Attributes.AWS_INSTANCE_IPV4)"' | while read -r line; do
+            log_info "$line"
+        done
     else
         log_warning "Service discovery configured but no instances registered yet (may take 30-60s)"
     fi
@@ -352,9 +361,11 @@ test_http_endpoints() {
     elif echo "$HEALTH_RESPONSE" | grep -q "FAILED"; then
         log_error "Failed to test health endpoint (ECS Exec may not be enabled)"
         log_info "To enable ECS Exec, set enable_ecs_exec = true in terraform variables"
+        TEST_5_RESULT="✗"
         return 1
     else
         log_warning "Unexpected health response: $HEALTH_RESPONSE"
+        TEST_5_RESULT="⚠"
     fi
 
     # Test ready endpoint
@@ -389,8 +400,12 @@ test_http_endpoints() {
         # Count active targets
         ACTIVE_TARGETS=$(echo "$TARGETS_RESPONSE" | grep -o '"health":"up"' | wc -l || echo "0")
         log_info "Active targets found: $ACTIVE_TARGETS"
+
+        # All 3 endpoints passed
+        TEST_5_RESULT="✓"
     else
         log_warning "Targets API check inconclusive"
+        TEST_5_RESULT="⚠"
     fi
 }
 
@@ -413,6 +428,7 @@ test_dns_resolution() {
 
     if [ -z "$BACKEND_TASK" ] || [ "$BACKEND_TASK" == "None" ]; then
         log_warning "No backend task running - skipping DNS test"
+        TEST_6_RESULT="⚠"
         return 0
     fi
 
@@ -429,6 +445,7 @@ test_dns_resolution() {
     if [[ "$BACKEND_EXEC_ENABLED" != "True" ]]; then
         log_warning "Backend container does not have ECS Exec enabled - skipping DNS test"
         log_info "To enable ECS Exec for backend, set enable_execute_command = true in terraform"
+        TEST_6_RESULT="⚠"
         return 0
     fi
 
@@ -441,32 +458,42 @@ test_dns_resolution() {
         --command "nslookup $DNS_NAME" \
         --region "$AWS_REGION" 2>&1 || echo "FAILED")
 
+    # Check DNS resolution result
+    DNS_PASSED=false
     if echo "$DNS_RESPONSE" | grep -q "Address:"; then
         log_success "DNS resolution successful from backend container"
         echo "$DNS_RESPONSE" | grep "Address:" | while read -r line; do
             log_info "$line"
         done
+        DNS_PASSED=true
     else
-        log_warning "DNS resolution test inconclusive"
+        log_warning "DNS resolution failed"
+        TEST_6_RESULT="✗"
     fi
 
-    # Try to wget Prometheus from backend (wget is available in node:alpine)
-    log_info "Testing HTTP request from backend to Prometheus..."
-    WGET_RESPONSE=$(aws ecs execute-command \
-        --cluster "$CLUSTER_NAME" \
-        --task "$BACKEND_TASK" \
-        --container backend \
-        --interactive \
-        --command "wget -qO- --timeout=10 http://$DNS_NAME:$PROMETHEUS_PORT/-/healthy" \
-        --region "$AWS_REGION" 2>&1 || echo "FAILED")
+    # Only test HTTP if DNS passed
+    if [ "$DNS_PASSED" = true ]; then
+        # Try to wget Prometheus from backend (wget is available in node:alpine)
+        log_info "Testing HTTP request from backend to Prometheus..."
+        WGET_RESPONSE=$(aws ecs execute-command \
+            --cluster "$CLUSTER_NAME" \
+            --task "$BACKEND_TASK" \
+            --container backend \
+            --interactive \
+            --command "wget -qO- --timeout=10 http://$DNS_NAME:$PROMETHEUS_PORT/-/healthy" \
+            --region "$AWS_REGION" 2>&1 || echo "FAILED")
 
-    if HEALTH_LINE=$(echo "$WGET_RESPONSE" | grep "Prometheus.*is.*Healthy"); then
-        log_success "HTTP request successful: $(echo "$HEALTH_LINE" | head -1)"
-    elif echo "$WGET_RESPONSE" | grep -q "timed out\|Cannot\|FAILED"; then
-        log_warning "HTTP request failed - possible network/security group issue"
-        log_info "This may be expected if backend→prometheus traffic is not allowed"
-    else
-        log_warning "HTTP request test inconclusive: $WGET_RESPONSE"
+        if HEALTH_LINE=$(echo "$WGET_RESPONSE" | grep "Prometheus.*is.*Healthy"); then
+            log_success "HTTP request successful: $(echo "$HEALTH_LINE" | head -1)"
+            TEST_6_RESULT="✓"
+        elif echo "$WGET_RESPONSE" | grep -q "timed out\|Cannot\|FAILED"; then
+            log_warning "HTTP request failed - possible network/security group issue"
+            log_info "This may be expected if backend→prometheus traffic is not allowed"
+            TEST_6_RESULT="✗"
+        else
+            log_warning "HTTP request test inconclusive: $WGET_RESPONSE"
+            TEST_6_RESULT="⚠"
+        fi
     fi
 }
 
@@ -489,8 +516,8 @@ generate_summary() {
     echo "  [✓] Task Health Status"
     echo "  [✓] CloudWatch Logs"
     echo "  [✓] Service Discovery"
-    echo "  [?] HTTP Endpoints (requires ECS Exec enabled)"
-    echo "  [?] DNS Resolution (requires backend container)"
+    echo "  [${TEST_5_RESULT}] HTTP Endpoints"
+    echo "  [${TEST_6_RESULT}] DNS Resolution"
     echo ""
 
     if [ "${TASK_IP:-}" ]; then
