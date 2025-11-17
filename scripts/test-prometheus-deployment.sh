@@ -460,8 +460,8 @@ test_dns_resolution() {
         --command "wget -qO- --timeout=10 http://$DNS_NAME:$PROMETHEUS_PORT/-/healthy" \
         --region "$AWS_REGION" 2>&1 || echo "FAILED")
 
-    if echo "$WGET_RESPONSE" | grep -q "Prometheus.*is.*Healthy"; then
-        log_success "HTTP request successful: $(echo "$WGET_RESPONSE" | grep "Prometheus" | head -1)"
+    if HEALTH_LINE=$(echo "$WGET_RESPONSE" | grep "Prometheus.*is.*Healthy"); then
+        log_success "HTTP request successful: $(echo "$HEALTH_LINE" | head -1)"
     elif echo "$WGET_RESPONSE" | grep -q "timed out\|Cannot\|FAILED"; then
         log_warning "HTTP request failed - possible network/security group issue"
         log_info "This may be expected if backend→prometheus traffic is not allowed"

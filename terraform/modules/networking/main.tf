@@ -533,7 +533,7 @@ resource "aws_vpc_security_group_egress_rule" "backend_to_internet" {
 resource "aws_vpc_security_group_egress_rule" "backend_to_prometheus" {
   security_group_id = aws_security_group.app_backend.id
 
-  description                  = "Allow traffic to Prometheus for service discovery testing"
+  description                  = "Allow outbound traffic from Backend to Prometheus for service discovery testing and health checks"
   from_port                    = 9090
   to_port                      = 9090
   ip_protocol                  = "tcp"
@@ -659,7 +659,7 @@ resource "aws_vpc_security_group_egress_rule" "prometheus_to_internet" {
 resource "aws_vpc_security_group_ingress_rule" "prometheus_from_backend" {
   security_group_id = aws_security_group.prometheus.id
 
-  description                  = "Allow backend to access Prometheus for service discovery testing"
+  description                  = "Allow inbound traffic from the backend for service discovery testing and health checks"
   from_port                    = 9090
   to_port                      = 9090
   ip_protocol                  = "tcp"
