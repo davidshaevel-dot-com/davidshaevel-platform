@@ -529,6 +529,21 @@ resource "aws_vpc_security_group_egress_rule" "backend_to_internet" {
   })
 }
 
+# Allow outbound to Prometheus (for service discovery testing and metrics)
+resource "aws_vpc_security_group_egress_rule" "backend_to_prometheus" {
+  security_group_id = aws_security_group.app_backend.id
+
+  description                  = "Allow outbound traffic from Backend to Prometheus for service discovery testing and health checks"
+  from_port                    = 9090
+  to_port                      = 9090
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.prometheus.id
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-${var.project_name}-backend-to-prometheus-egress"
+  })
+}
+
 # ------------------------------------------------------------------------------
 # Database Tier Security Group
 # ------------------------------------------------------------------------------
@@ -637,6 +652,21 @@ resource "aws_vpc_security_group_egress_rule" "prometheus_to_internet" {
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-${var.project_name}-prometheus-to-internet-egress"
+  })
+}
+
+# Allow inbound from backend (for service discovery testing and health checks)
+resource "aws_vpc_security_group_ingress_rule" "prometheus_from_backend" {
+  security_group_id = aws_security_group.prometheus.id
+
+  description                  = "Allow inbound traffic from the backend for service discovery testing and health checks"
+  from_port                    = 9090
+  to_port                      = 9090
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.app_backend.id
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-${var.project_name}-prometheus-from-backend-ingress"
   })
 }
 

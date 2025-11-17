@@ -450,20 +450,23 @@ test_dns_resolution() {
         log_warning "DNS resolution test inconclusive"
     fi
 
-    # Try to curl Prometheus from backend
+    # Try to wget Prometheus from backend (wget is available in node:alpine)
     log_info "Testing HTTP request from backend to Prometheus..."
-    CURL_RESPONSE=$(aws ecs execute-command \
+    WGET_RESPONSE=$(aws ecs execute-command \
         --cluster "$CLUSTER_NAME" \
         --task "$BACKEND_TASK" \
         --container backend \
         --interactive \
-        --command "curl -s -o /dev/null -w '%{http_code}' http://$DNS_NAME:$PROMETHEUS_PORT/-/healthy" \
+        --command "wget -qO- --timeout=10 http://$DNS_NAME:$PROMETHEUS_PORT/-/healthy" \
         --region "$AWS_REGION" 2>&1 || echo "FAILED")
 
-    if echo "$CURL_RESPONSE" | grep -q "200"; then
-        log_success "HTTP request successful from backend (Status: 200)"
+    if HEALTH_LINE=$(echo "$WGET_RESPONSE" | grep "Prometheus.*is.*Healthy"); then
+        log_success "HTTP request successful: $(echo "$HEALTH_LINE" | head -1)"
+    elif echo "$WGET_RESPONSE" | grep -q "timed out\|Cannot\|FAILED"; then
+        log_warning "HTTP request failed - possible network/security group issue"
+        log_info "This may be expected if backend→prometheus traffic is not allowed"
     else
-        log_warning "HTTP request test inconclusive: $CURL_RESPONSE"
+        log_warning "HTTP request test inconclusive: $WGET_RESPONSE"
     fi
 }
 
