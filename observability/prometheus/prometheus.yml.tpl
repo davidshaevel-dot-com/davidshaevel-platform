@@ -16,7 +16,7 @@ global:
 
 # Scrape configuration for all services
 scrape_configs:
-  # Backend API metrics
+  # Backend API metrics (NestJS + prom-client)
   - job_name: 'backend'
     metrics_path: '/api/metrics'
     dns_sd_configs:
@@ -28,12 +28,12 @@ scrape_configs:
         target_label: service
     metric_relabel_configs:
       - source_labels: [__name__]
-        regex: 'nodejs_.*|backend_.*'
+        regex: 'nodejs_.*|backend_.*|process_.*|http_request.*|db_query.*'
         action: keep
 
-  # Frontend application metrics
+  # Frontend application metrics (Next.js + prom-client)
   - job_name: 'frontend'
-    metrics_path: '/metrics'
+    metrics_path: '/api/metrics'
     dns_sd_configs:
       - names:
           - '${service_prefix}-frontend.${private_dns_zone}'
@@ -43,7 +43,7 @@ scrape_configs:
         target_label: service
     metric_relabel_configs:
       - source_labels: [__name__]
-        regex: 'nodejs_.*|frontend_.*'
+        regex: 'nodejs_.*|frontend_.*|process_.*'
         action: keep
 
   # Prometheus self-monitoring
