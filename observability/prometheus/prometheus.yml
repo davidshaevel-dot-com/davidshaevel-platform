@@ -18,7 +18,7 @@ scrape_configs:
     metrics_path: '/api/metrics'
     dns_sd_configs:
       - names:
-          - 'dev-davidshaevel-backend.davidshaevel.local'
+          - 'backend.davidshaevel.local'
         type: 'SRV'
     relabel_configs:
       - source_labels: [job]
@@ -33,7 +33,7 @@ scrape_configs:
     metrics_path: '/api/metrics'
     dns_sd_configs:
       - names:
-          - 'dev-davidshaevel-frontend.davidshaevel.local'
+          - 'frontend.davidshaevel.local'
         type: 'SRV'
     relabel_configs:
       - source_labels: [job]

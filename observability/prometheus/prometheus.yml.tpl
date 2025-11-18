@@ -21,7 +21,7 @@ scrape_configs:
     metrics_path: '/api/metrics'
     dns_sd_configs:
       - names:
-          - '${service_prefix}-backend.${private_dns_zone}'
+          - 'backend.${private_dns_zone}'
         type: 'SRV'
     relabel_configs:
       - source_labels: [job]
@@ -36,7 +36,7 @@ scrape_configs:
     metrics_path: '/api/metrics'
     dns_sd_configs:
       - names:
-          - '${service_prefix}-frontend.${private_dns_zone}'
+          - 'frontend.${private_dns_zone}'
         type: 'SRV'
     relabel_configs:
       - source_labels: [job]
