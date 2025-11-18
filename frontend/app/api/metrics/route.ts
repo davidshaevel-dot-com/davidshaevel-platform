@@ -1,29 +1,24 @@
 import { NextResponse } from 'next/server';
+import { getMetrics } from '@/lib/metrics';
 
 /**
  * Prometheus Metrics Endpoint
- * 
- * Returns basic Prometheus-compatible metrics for monitoring.
+ *
+ * Returns Prometheus-compatible metrics for monitoring using prom-client.
  * This endpoint will be scraped by Prometheus for observability.
- * 
+ *
+ * Metrics included:
+ * - Default Node.js metrics (CPU, memory, event loop, etc.)
+ * - frontend_page_views_total: Page view counter
+ * - frontend_api_calls_total: Backend API call counter
+ * - frontend_api_call_duration_seconds: API call latency histogram
+ * - frontend_info: Application version and environment
+ * - frontend_uptime_seconds: Application uptime
+ *
  * @returns 200 OK with Prometheus metrics in text format
  */
 export async function GET() {
-  const metrics = `# HELP frontend_uptime_seconds Application uptime in seconds
-# TYPE frontend_uptime_seconds counter
-frontend_uptime_seconds ${process.uptime()}
-
-# HELP frontend_info Frontend application information
-# TYPE frontend_info gauge
-frontend_info{version="${process.env.npm_package_version || '1.0.0'}",environment="${process.env.NODE_ENV || 'development'}"} 1
-
-# HELP nodejs_memory_usage_bytes Node.js memory usage in bytes
-# TYPE nodejs_memory_usage_bytes gauge
-nodejs_memory_usage_bytes{type="rss"} ${process.memoryUsage().rss}
-nodejs_memory_usage_bytes{type="heapTotal"} ${process.memoryUsage().heapTotal}
-nodejs_memory_usage_bytes{type="heapUsed"} ${process.memoryUsage().heapUsed}
-nodejs_memory_usage_bytes{type="external"} ${process.memoryUsage().external}
-`;
+  const metrics = await getMetrics();
 
   return new NextResponse(metrics, {
     status: 200,
@@ -32,4 +27,3 @@ nodejs_memory_usage_bytes{type="external"} ${process.memoryUsage().external}
     },
   });
 }
-
