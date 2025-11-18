@@ -20,7 +20,7 @@ export class MetricsInterceptor implements NestInterceptor {
     const route = routePath || request.url;
 
     // Skip recording metrics for the /api/metrics endpoint itself
-    if (typeof route === 'string' && route.includes('/metrics')) {
+    if (route.includes('/metrics')) {
       return next.handle();
     }
 
