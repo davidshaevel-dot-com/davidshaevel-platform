@@ -182,6 +182,10 @@ module "compute" {
   enable_backend_ecs_exec  = var.enable_backend_ecs_exec
   enable_frontend_ecs_exec = var.enable_frontend_ecs_exec
 
+  # Service Discovery (AWS Cloud Map) - from service_discovery module
+  backend_service_registry_arn  = module.service_discovery.backend_service_arn
+  frontend_service_registry_arn = module.service_discovery.frontend_service_arn
+
   # Tags
   common_tags = {
     Environment = var.environment

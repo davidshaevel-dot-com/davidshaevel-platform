@@ -548,6 +548,18 @@ resource "aws_ecs_service" "frontend" {
     container_port   = local.frontend_port
   }
 
+  # Cloud Map service discovery registration
+  # Registers frontend tasks with AWS Cloud Map for DNS-based service discovery
+  # Enables Prometheus to discover frontend instances via DNS SRV records
+  dynamic "service_registries" {
+    for_each = var.frontend_service_registry_arn != "" ? [1] : []
+    content {
+      registry_arn   = var.frontend_service_registry_arn
+      container_name = "frontend"
+      container_port = local.frontend_port
+    }
+  }
+
   health_check_grace_period_seconds = var.health_check_grace_period
 
   # Enable ECS Exec for debugging (when enabled via variable)
@@ -627,6 +639,18 @@ resource "aws_ecs_service" "backend" {
     target_group_arn = aws_lb_target_group.backend.arn
     container_name   = "backend"
     container_port   = local.backend_port
+  }
+
+  # Cloud Map service discovery registration
+  # Registers backend tasks with AWS Cloud Map for DNS-based service discovery
+  # Enables Prometheus to discover backend instances via DNS SRV records
+  dynamic "service_registries" {
+    for_each = var.backend_service_registry_arn != "" ? [1] : []
+    content {
+      registry_arn   = var.backend_service_registry_arn
+      container_name = "backend"
+      container_port = local.backend_port
+    }
   }
 
   health_check_grace_period_seconds = var.health_check_grace_period

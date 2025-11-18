@@ -356,6 +356,22 @@ variable "enable_frontend_ecs_exec" {
 }
 
 # ------------------------------------------------------------------------------
+# Service Discovery Configuration (AWS Cloud Map)
+# ------------------------------------------------------------------------------
+
+variable "backend_service_registry_arn" {
+  description = "ARN of the Cloud Map service registry for backend service discovery"
+  type        = string
+  default     = ""
+}
+
+variable "frontend_service_registry_arn" {
+  description = "ARN of the Cloud Map service registry for frontend service discovery"
+  type        = string
+  default     = ""
+}
+
+# ------------------------------------------------------------------------------
 # Tags
 # ------------------------------------------------------------------------------
 
