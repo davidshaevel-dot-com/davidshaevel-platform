@@ -292,10 +292,12 @@ module "observability" {
 # Template variables are substituted with actual values from service discovery
 locals {
   prometheus_config_rendered = templatefile("../../../observability/prometheus/prometheus.yml.tpl", {
-    environment      = var.environment
-    service_prefix   = "${var.environment}-${var.project_name}"
-    platform_name    = var.project_name
-    private_dns_zone = var.private_dns_namespace
+    environment           = var.environment
+    service_prefix        = "${var.environment}-${var.project_name}"
+    platform_name         = var.project_name
+    private_dns_zone      = var.private_dns_namespace
+    backend_service_name  = module.service_discovery.backend_service_name
+    frontend_service_name = module.service_discovery.frontend_service_name
   })
 }
 

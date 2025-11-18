@@ -54,10 +54,10 @@ The observability stack provides real-time monitoring and visualization of appli
 │  ┌──────────────────────────────────────────────────────────┐ │
 │  │         Service Discovery (AWS Cloud Map)                 │ │
 │  │  Namespace: davidshaevel.local                           │ │
-│  │  - dev-davidshaevel-backend.davidshaevel.local → Backend tasks            │ │
-│  │  - dev-davidshaevel-frontend.davidshaevel.local → Frontend tasks          │ │
-│  │  - dev-davidshaevel-prometheus.davidshaevel.local → Prometheus task       │ │
-│  │  - dev-davidshaevel-grafana.davidshaevel.local → Grafana task             │ │
+│  │  - backend.davidshaevel.local → Backend tasks            │ │
+│  │  - frontend.davidshaevel.local → Frontend tasks          │ │
+│  │  - prometheus.davidshaevel.local → Prometheus task       │ │
+│  │  - grafana.davidshaevel.local → Grafana task             │ │
 │  └──────────────────────────────────────────────────────────┘ │
 │                                                                │
 │  ┌──────────────────────────────────────────────────────────┐ │
@@ -78,8 +78,8 @@ The observability stack provides real-time monitoring and visualization of appli
 ### Metrics Collection (Prometheus)
 
 1. **Scraping:** Prometheus scrapes metrics endpoints every 15 seconds
-   - Backend: `http://dev-davidshaevel-backend.davidshaevel.local:3001/api/metrics`
-   - Frontend: `http://dev-davidshaevel-frontend.davidshaevel.local:3000/metrics`
+   - Backend: `http://backend.davidshaevel.local:3000/api/metrics`
+   - Frontend: `http://frontend.davidshaevel.local:3000/api/metrics`
    - Self: `http://localhost:9090/metrics`
 
 2. **Storage:** Metrics are stored in TSDB format on EFS
@@ -94,7 +94,7 @@ The observability stack provides real-time monitoring and visualization of appli
 ### Visualization (Grafana)
 
 1. **Datasource:** Grafana queries Prometheus via service discovery
-   - URL: `http://dev-davidshaevel-prometheus.davidshaevel.local:9090`
+   - URL: `http://prometheus.davidshaevel.local:9090`
    - Query type: PromQL (Prometheus Query Language)
 
 2. **Dashboards:** Pre-configured dashboards auto-load on startup
