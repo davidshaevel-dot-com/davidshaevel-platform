@@ -30,6 +30,10 @@ locals {
   frontend_port = 3000
   backend_port  = 3001
 
+  # Container names
+  frontend_container_name = "frontend"
+  backend_container_name  = "backend"
+
   # Common tags for all resources
   common_tags = merge(var.common_tags, {
     Module = "compute"
@@ -383,7 +387,7 @@ resource "aws_ecs_task_definition" "frontend" {
 
   container_definitions = jsonencode([
     {
-      name      = "frontend"
+      name      = local.frontend_container_name
       image     = var.frontend_image
       essential = true
 
@@ -451,7 +455,7 @@ resource "aws_ecs_task_definition" "backend" {
 
   container_definitions = jsonencode([
     {
-      name      = "backend"
+      name      = local.backend_container_name
       image     = var.backend_image
       essential = true
 
@@ -544,7 +548,7 @@ resource "aws_ecs_service" "frontend" {
 
   load_balancer {
     target_group_arn = aws_lb_target_group.frontend.arn
-    container_name   = "frontend"
+    container_name   = local.frontend_container_name
     container_port   = local.frontend_port
   }
 
@@ -552,10 +556,10 @@ resource "aws_ecs_service" "frontend" {
   # Registers frontend tasks with AWS Cloud Map for DNS-based service discovery
   # Enables Prometheus to discover frontend instances via DNS SRV records
   dynamic "service_registries" {
-    for_each = var.frontend_service_registry_arn != "" ? [1] : []
+    for_each = var.frontend_service_registry_arn != "" ? { enabled = true } : {}
     content {
       registry_arn   = var.frontend_service_registry_arn
-      container_name = "frontend"
+      container_name = local.frontend_container_name
       container_port = local.frontend_port
     }
   }
@@ -637,7 +641,7 @@ resource "aws_ecs_service" "backend" {
 
   load_balancer {
     target_group_arn = aws_lb_target_group.backend.arn
-    container_name   = "backend"
+    container_name   = local.backend_container_name
     container_port   = local.backend_port
   }
 
@@ -645,10 +649,10 @@ resource "aws_ecs_service" "backend" {
   # Registers backend tasks with AWS Cloud Map for DNS-based service discovery
   # Enables Prometheus to discover backend instances via DNS SRV records
   dynamic "service_registries" {
-    for_each = var.backend_service_registry_arn != "" ? [1] : []
+    for_each = var.backend_service_registry_arn != "" ? { enabled = true } : {}
     content {
       registry_arn   = var.backend_service_registry_arn
-      container_name = "backend"
+      container_name = local.backend_container_name
       container_port = local.backend_port
     }
   }
