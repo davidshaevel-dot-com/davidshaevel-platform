@@ -219,6 +219,70 @@ resource "aws_vpc_security_group_egress_rule" "prometheus_to_efs" {
 }
 
 # ==============================================================================
+# Security Group Rules for Metrics Scraping
+# ==============================================================================
+
+# Ingress rule: Allow Prometheus to scrape backend metrics on port 3001
+resource "aws_vpc_security_group_ingress_rule" "backend_from_prometheus" {
+  security_group_id = var.backend_security_group_id
+
+  description                  = "Allow Prometheus to scrape backend metrics"
+  from_port                    = 3001
+  to_port                      = 3001
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = var.prometheus_security_group_id
+
+  tags = merge(local.common_tags, {
+    Name = "${var.environment}-${var.project_name}-backend-from-prometheus-ingress"
+  })
+}
+
+# Egress rule: Allow Prometheus to connect to backend on port 3001
+resource "aws_vpc_security_group_egress_rule" "prometheus_to_backend" {
+  security_group_id = var.prometheus_security_group_id
+
+  description                  = "Allow Prometheus to scrape backend metrics"
+  from_port                    = 3001
+  to_port                      = 3001
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = var.backend_security_group_id
+
+  tags = merge(local.common_tags, {
+    Name = "${var.environment}-${var.project_name}-prometheus-to-backend-egress"
+  })
+}
+
+# Ingress rule: Allow Prometheus to scrape frontend metrics on port 3000
+resource "aws_vpc_security_group_ingress_rule" "frontend_from_prometheus" {
+  security_group_id = var.frontend_security_group_id
+
+  description                  = "Allow Prometheus to scrape frontend metrics"
+  from_port                    = 3000
+  to_port                      = 3000
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = var.prometheus_security_group_id
+
+  tags = merge(local.common_tags, {
+    Name = "${var.environment}-${var.project_name}-frontend-from-prometheus-ingress"
+  })
+}
+
+# Egress rule: Allow Prometheus to connect to frontend on port 3000
+resource "aws_vpc_security_group_egress_rule" "prometheus_to_frontend" {
+  security_group_id = var.prometheus_security_group_id
+
+  description                  = "Allow Prometheus to scrape frontend metrics"
+  from_port                    = 3000
+  to_port                      = 3000
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = var.frontend_security_group_id
+
+  tags = merge(local.common_tags, {
+    Name = "${var.environment}-${var.project_name}-prometheus-to-frontend-egress"
+  })
+}
+
+# ==============================================================================
 # IAM Policy for S3 Config Access
 # ==============================================================================
 

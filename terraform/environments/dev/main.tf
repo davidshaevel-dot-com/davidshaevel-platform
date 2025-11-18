@@ -257,6 +257,8 @@ module "observability" {
   vpc_id                       = module.networking.vpc_id
   private_app_subnet_ids       = module.networking.private_app_subnet_ids
   prometheus_security_group_id = module.networking.prometheus_security_group_id
+  backend_security_group_id    = module.networking.app_backend_security_group_id
+  frontend_security_group_id   = module.networking.app_frontend_security_group_id
 
   # EFS configuration
   enable_prometheus_efs           = true

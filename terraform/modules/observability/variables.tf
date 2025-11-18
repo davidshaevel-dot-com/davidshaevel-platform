@@ -227,3 +227,17 @@ variable "enable_ecs_exec" {
   type        = bool
   default     = false
 }
+
+# ------------------------------------------------------------------------------
+# Application Security Groups for Metrics Scraping
+# ------------------------------------------------------------------------------
+
+variable "backend_security_group_id" {
+  description = "Security group ID for backend containers (for Prometheus to scrape /api/metrics)"
+  type        = string
+}
+
+variable "frontend_security_group_id" {
+  description = "Security group ID for frontend containers (for Prometheus to scrape /api/metrics)"
+  type        = string
+}
