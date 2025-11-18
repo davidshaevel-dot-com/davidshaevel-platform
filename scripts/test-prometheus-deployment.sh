@@ -288,7 +288,7 @@ test_cloudwatch_logs() {
 test_service_discovery() {
     section_header "Test 4: Service Discovery Configuration"
 
-    log_info "Checking service discovery for: $DNS_NAME"
+    log_info "Checking service discovery for: $PROMETHEUS_DNS"
 
     # Get service discovery namespace
     NAMESPACE_ID=$(aws servicediscovery list-namespaces \
@@ -463,7 +463,7 @@ test_dns_resolution() {
         --task "$BACKEND_TASK" \
         --container backend \
         --interactive \
-        --command "nslookup $DNS_NAME" \
+        --command "nslookup $PROMETHEUS_DNS" \
         --region "$AWS_REGION" 2>&1 || echo "FAILED")
 
     # Check DNS resolution result
@@ -488,7 +488,7 @@ test_dns_resolution() {
             --task "$BACKEND_TASK" \
             --container backend \
             --interactive \
-            --command "wget -qO- --timeout=10 http://$DNS_NAME:$PROMETHEUS_PORT/-/healthy" \
+            --command "wget -qO- --timeout=10 http://$PROMETHEUS_DNS:$PROMETHEUS_PORT/-/healthy" \
             --region "$AWS_REGION" 2>&1 || echo "FAILED")
 
         if HEALTH_LINE=$(echo "$WGET_RESPONSE" | grep "Prometheus.*is.*Healthy"); then
