@@ -26,14 +26,22 @@ set -u  # Exit on undefined variable
 # ==============================================================================
 
 CLUSTER_NAME="${CLUSTER_NAME:-dev-davidshaevel-cluster}"
-SERVICE_NAME="${SERVICE_NAME:-dev-davidshaevel-prometheus}"
+PROMETHEUS_SERVICE="${PROMETHEUS_SERVICE:-dev-davidshaevel-prometheus}"
+BACKEND_SERVICE="${BACKEND_SERVICE:-dev-davidshaevel-backend}"
+FRONTEND_SERVICE="${FRONTEND_SERVICE:-dev-davidshaevel-frontend}"
 AWS_REGION="${AWS_REGION:-us-east-1}"
-DNS_NAME="prometheus.davidshaevel.local"
+PROMETHEUS_DNS="prometheus.davidshaevel.local"
+BACKEND_DNS="backend.davidshaevel.local"
+FRONTEND_DNS="frontend.davidshaevel.local"
 PROMETHEUS_PORT="9090"
+BACKEND_PORT="3001"
+FRONTEND_PORT="3000"
 
 # Test result tracking
-TEST_5_RESULT="?"  # HTTP Endpoints
-TEST_6_RESULT="?"  # DNS Resolution
+TEST_5_RESULT="?"  # Prometheus HTTP Endpoints
+TEST_6_RESULT="?"  # Prometheus DNS Resolution
+TEST_7_RESULT="?"  # Backend Metrics Endpoint
+TEST_8_RESULT="?"  # Frontend Metrics Endpoint
 
 # Colors for output
 RED='\033[0;31m'
@@ -113,21 +121,21 @@ preflight_checks() {
 # ==============================================================================
 
 test_ecs_service_status() {
-    section_header "Test 1: ECS Service Status"
+    section_header "Test 1: Prometheus ECS Service Status"
 
-    log_info "Checking ECS service: $SERVICE_NAME"
+    log_info "Checking ECS service: $PROMETHEUS_SERVICE"
 
     # Get service details
     SERVICE_JSON=$(aws ecs describe-services \
         --cluster "$CLUSTER_NAME" \
-        --services "$SERVICE_NAME" \
+        --services "$PROMETHEUS_SERVICE" \
         --region "$AWS_REGION" \
         --query 'services[0]' \
         --output json)
 
     # Check service exists
     if [ "$(echo "$SERVICE_JSON" | jq -r '.serviceName')" == "null" ]; then
-        log_error "Service not found: $SERVICE_NAME"
+        log_error "Service not found: $PROMETHEUS_SERVICE"
         return 1
     fi
 
@@ -154,14 +162,14 @@ test_ecs_service_status() {
 # ==============================================================================
 
 test_task_health() {
-    section_header "Test 2: Task Health Status"
+    section_header "Test 2: Prometheus Task Health Status"
 
     log_info "Getting Prometheus task details"
 
     # Get task ARN
     TASK_ARN=$(aws ecs list-tasks \
         --cluster "$CLUSTER_NAME" \
-        --service-name "$SERVICE_NAME" \
+        --service-name "$PROMETHEUS_SERVICE" \
         --region "$AWS_REGION" \
         --query 'taskArns[0]' \
         --output text)
@@ -498,39 +506,193 @@ test_dns_resolution() {
 }
 
 # ==============================================================================
+# Test 7: Backend Metrics Endpoint
+# ==============================================================================
+
+test_backend_metrics() {
+    section_header "Test 7: Backend Metrics Endpoint"
+
+    log_info "Testing backend /api/metrics endpoint"
+
+    # Get backend task
+    BACKEND_TASK=$(aws ecs list-tasks \
+        --cluster "$CLUSTER_NAME" \
+        --service-name "$BACKEND_SERVICE" \
+        --region "$AWS_REGION" \
+        --query 'taskArns[0]' \
+        --output text)
+
+    if [ -z "$BACKEND_TASK" ] || [ "$BACKEND_TASK" == "None" ]; then
+        log_warning "No backend tasks running - skipping test"
+        TEST_7_RESULT="⚠"
+        return 0
+    fi
+
+    log_info "Backend task found: $(basename "$BACKEND_TASK")"
+
+    # Check if ECS Exec is enabled on the task
+    BACKEND_EXEC_ENABLED=$(aws ecs describe-tasks \
+        --cluster "$CLUSTER_NAME" \
+        --tasks "$BACKEND_TASK" \
+        --region "$AWS_REGION" \
+        --query 'tasks[0].enableExecuteCommand' \
+        --output text)
+
+    if [[ "$BACKEND_EXEC_ENABLED" != "True" ]]; then
+        log_warning "ECS Exec not enabled on backend task - skipping test"
+        TEST_7_RESULT="⚠"
+        return 0
+    fi
+
+    # Try to curl the metrics endpoint from within the backend container
+    log_info "Fetching metrics from http://localhost:$BACKEND_PORT/api/metrics"
+
+    METRICS_RESPONSE=$(aws ecs execute-command \
+        --cluster "$CLUSTER_NAME" \
+        --task "$BACKEND_TASK" \
+        --container backend \
+        --interactive \
+        --command "curl -s --max-time 5 http://localhost:$BACKEND_PORT/api/metrics" \
+        --region "$AWS_REGION" 2>&1 || echo "FAILED")
+
+    # Check for specific metrics
+    if echo "$METRICS_RESPONSE" | grep -q "backend_uptime_seconds\|http_requests_total"; then
+        log_success "Backend metrics endpoint responding"
+
+        # Check for enhanced metrics from prom-client
+        if echo "$METRICS_RESPONSE" | grep -q "http_request_duration_seconds"; then
+            log_success "Enhanced metrics detected (prom-client)"
+        fi
+
+        # Sample a few metrics
+        echo "$METRICS_RESPONSE" | grep "^backend_info\|^backend_uptime\|^http_request" | head -5 | while read -r line; do
+            log_info "  $line"
+        done
+
+        TEST_7_RESULT="✓"
+    else
+        log_error "Backend metrics endpoint not responding correctly"
+        TEST_7_RESULT="✗"
+    fi
+}
+
+# ==============================================================================
+# Test 8: Frontend Metrics Endpoint
+# ==============================================================================
+
+test_frontend_metrics() {
+    section_header "Test 8: Frontend Metrics Endpoint"
+
+    log_info "Testing frontend /api/metrics endpoint"
+
+    # Get frontend task
+    FRONTEND_TASK=$(aws ecs list-tasks \
+        --cluster "$CLUSTER_NAME" \
+        --service-name "$FRONTEND_SERVICE" \
+        --region "$AWS_REGION" \
+        --query 'taskArns[0]' \
+        --output text)
+
+    if [ -z "$FRONTEND_TASK" ] || [ "$FRONTEND_TASK" == "None" ]; then
+        log_warning "No frontend tasks running - skipping test"
+        TEST_8_RESULT="⚠"
+        return 0
+    fi
+
+    log_info "Frontend task found: $(basename "$FRONTEND_TASK")"
+
+    # Check if ECS Exec is enabled on the task
+    FRONTEND_EXEC_ENABLED=$(aws ecs describe-tasks \
+        --cluster "$CLUSTER_NAME" \
+        --tasks "$FRONTEND_TASK" \
+        --region "$AWS_REGION" \
+        --query 'tasks[0].enableExecuteCommand' \
+        --output text)
+
+    if [[ "$FRONTEND_EXEC_ENABLED" != "True" ]]; then
+        log_warning "ECS Exec not enabled on frontend task - skipping test"
+        TEST_8_RESULT="⚠"
+        return 0
+    fi
+
+    # Try to curl the metrics endpoint from within the frontend container
+    log_info "Fetching metrics from http://localhost:$FRONTEND_PORT/api/metrics"
+
+    METRICS_RESPONSE=$(aws ecs execute-command \
+        --cluster "$CLUSTER_NAME" \
+        --task "$FRONTEND_TASK" \
+        --container frontend \
+        --interactive \
+        --command "curl -s --max-time 5 http://localhost:$FRONTEND_PORT/api/metrics" \
+        --region "$AWS_REGION" 2>&1 || echo "FAILED")
+
+    # Check for specific metrics
+    if echo "$METRICS_RESPONSE" | grep -q "frontend_uptime_seconds\|frontend_info"; then
+        log_success "Frontend metrics endpoint responding"
+
+        # Check for enhanced metrics from prom-client
+        if echo "$METRICS_RESPONSE" | grep -q "frontend_page_views_total"; then
+            log_success "Enhanced metrics detected (prom-client)"
+        fi
+
+        # Sample a few metrics
+        echo "$METRICS_RESPONSE" | grep "^frontend_info\|^frontend_uptime\|^frontend_page" | head -5 | while read -r line; do
+            log_info "  $line"
+        done
+
+        TEST_8_RESULT="✓"
+    else
+        log_error "Frontend metrics endpoint not responding correctly"
+        TEST_8_RESULT="✗"
+    fi
+}
+
+# ==============================================================================
 # Summary Report
 # ==============================================================================
 
 generate_summary() {
     section_header "Test Summary"
 
-    echo "Prometheus ECS Deployment Test Results:"
+    echo "ECS Deployment Test Results:"
     echo ""
-    echo "  Service: $SERVICE_NAME"
     echo "  Cluster: $CLUSTER_NAME"
     echo "  Region: $AWS_REGION"
-    echo "  DNS Name: $DNS_NAME:$PROMETHEUS_PORT"
+    echo ""
+    echo "Services:"
+    echo "  Prometheus: $PROMETHEUS_SERVICE ($PROMETHEUS_DNS:$PROMETHEUS_PORT)"
+    echo "  Backend:    $BACKEND_SERVICE ($BACKEND_DNS:$BACKEND_PORT)"
+    echo "  Frontend:   $FRONTEND_SERVICE ($FRONTEND_DNS:$FRONTEND_PORT)"
     echo ""
     echo "Test Results:"
-    echo "  [✓] ECS Service Status"
-    echo "  [✓] Task Health Status"
-    echo "  [✓] CloudWatch Logs"
-    echo "  [✓] Service Discovery"
-    echo "  [${TEST_5_RESULT}] HTTP Endpoints"
-    echo "  [${TEST_6_RESULT}] DNS Resolution"
+    echo "  [✓] Prometheus Service Status"
+    echo "  [✓] Prometheus Task Health"
+    echo "  [✓] Prometheus CloudWatch Logs"
+    echo "  [✓] Prometheus Service Discovery"
+    echo "  [${TEST_5_RESULT}] Prometheus HTTP Endpoints"
+    echo "  [${TEST_6_RESULT}] Prometheus DNS Resolution"
+    echo "  [${TEST_7_RESULT}] Backend Metrics Endpoint"
+    echo "  [${TEST_8_RESULT}] Frontend Metrics Endpoint"
     echo ""
 
     if [ "${TASK_IP:-}" ]; then
-        echo "Direct Access (from VPC):"
+        echo "Prometheus Direct Access (from VPC):"
         echo "  curl http://$TASK_IP:$PROMETHEUS_PORT/-/healthy"
         echo "  curl http://$TASK_IP:$PROMETHEUS_PORT/api/v1/targets"
         echo ""
     fi
 
     echo "Service Discovery Access (from VPC):"
-    echo "  curl http://$DNS_NAME:$PROMETHEUS_PORT/-/healthy"
-    echo "  curl http://$DNS_NAME:$PROMETHEUS_PORT/metrics"
-    echo "  curl http://$DNS_NAME:$PROMETHEUS_PORT/api/v1/targets"
+    echo "  Prometheus:"
+    echo "    curl http://$PROMETHEUS_DNS:$PROMETHEUS_PORT/-/healthy"
+    echo "    curl http://$PROMETHEUS_DNS:$PROMETHEUS_PORT/metrics"
+    echo "    curl http://$PROMETHEUS_DNS:$PROMETHEUS_PORT/api/v1/targets"
+    echo "  Backend:"
+    echo "    curl http://$BACKEND_DNS:$BACKEND_PORT/health"
+    echo "    curl http://$BACKEND_DNS:$BACKEND_PORT/api/metrics"
+    echo "  Frontend:"
+    echo "    curl http://$FRONTEND_DNS:$FRONTEND_PORT/health"
+    echo "    curl http://$FRONTEND_DNS:$FRONTEND_PORT/api/metrics"
     echo ""
 }
 
@@ -540,19 +702,24 @@ generate_summary() {
 
 main() {
     echo "=============================================================================="
-    echo "Prometheus ECS Deployment Test Suite"
+    echo "ECS Deployment Test Suite (Prometheus + Applications)"
     echo "=============================================================================="
     echo ""
 
     # Run all tests
     preflight_checks
 
+    # Prometheus tests
     test_ecs_service_status || true
     test_task_health || true
     test_cloudwatch_logs || true
     test_service_discovery || true
     test_http_endpoints || true
     test_dns_resolution || true
+
+    # Application metrics tests
+    test_backend_metrics || true
+    test_frontend_metrics || true
 
     generate_summary
 
