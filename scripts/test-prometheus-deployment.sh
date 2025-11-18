@@ -544,7 +544,8 @@ test_backend_metrics() {
         return 0
     fi
 
-    # Try to curl the metrics endpoint from within the backend container
+    # Fetch metrics endpoint from within the backend container
+    # Note: Alpine Linux (node:20-alpine) doesn't have curl, use wget instead
     log_info "Fetching metrics from http://localhost:$BACKEND_PORT/api/metrics"
 
     METRICS_RESPONSE=$(aws ecs execute-command \
@@ -552,7 +553,7 @@ test_backend_metrics() {
         --task "$BACKEND_TASK" \
         --container backend \
         --interactive \
-        --command "curl -s --max-time 5 http://localhost:$BACKEND_PORT/api/metrics" \
+        --command "wget -qO- http://localhost:$BACKEND_PORT/api/metrics" \
         --region "$AWS_REGION" 2>&1 || echo "FAILED")
 
     # Check for specific metrics
@@ -615,7 +616,8 @@ test_frontend_metrics() {
         return 0
     fi
 
-    # Try to curl the metrics endpoint from within the frontend container
+    # Fetch metrics endpoint from within the frontend container
+    # Note: Alpine Linux (node:20-alpine) doesn't have curl, use wget instead
     log_info "Fetching metrics from http://localhost:$FRONTEND_PORT/api/metrics"
 
     METRICS_RESPONSE=$(aws ecs execute-command \
@@ -623,7 +625,7 @@ test_frontend_metrics() {
         --task "$FRONTEND_TASK" \
         --container frontend \
         --interactive \
-        --command "curl -s --max-time 5 http://localhost:$FRONTEND_PORT/api/metrics" \
+        --command "wget -qO- http://localhost:$FRONTEND_PORT/api/metrics" \
         --region "$AWS_REGION" 2>&1 || echo "FAILED")
 
     # Check for specific metrics
