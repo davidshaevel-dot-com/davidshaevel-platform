@@ -241,3 +241,13 @@ variable "frontend_security_group_id" {
   description = "Security group ID for frontend containers (for Prometheus to scrape /api/metrics)"
   type        = string
 }
+
+variable "backend_metrics_port" {
+  description = "Port number for backend metrics endpoint (passed from compute module)"
+  type        = number
+}
+
+variable "frontend_metrics_port" {
+  description = "Port number for frontend metrics endpoint (passed from compute module)"
+  type        = number
+}

@@ -56,11 +56,11 @@ variable "frontend_service_registry_arn" {
 **B. Backend ECS Service** (`terraform/modules/compute/main.tf`)
 ```hcl
 dynamic "service_registries" {
-  for_each = var.backend_service_registry_arn != "" ? [1] : []
+  for_each = var.backend_service_registry_arn != "" ? { enabled = true } : {}
   content {
     registry_arn   = var.backend_service_registry_arn
-    container_name = "backend"
-    container_port = 3001
+    container_name = local.backend_container_name
+    container_port = local.backend_port
   }
 }
 ```
@@ -68,11 +68,11 @@ dynamic "service_registries" {
 **C. Frontend ECS Service** (`terraform/modules/compute/main.tf`)
 ```hcl
 dynamic "service_registries" {
-  for_each = var.frontend_service_registry_arn != "" ? [1] : []
+  for_each = var.frontend_service_registry_arn != "" ? { enabled = true } : {}
   content {
     registry_arn   = var.frontend_service_registry_arn
-    container_name = "frontend"
-    container_port = 3000
+    container_name = local.frontend_container_name
+    container_port = local.frontend_port
   }
 }
 ```

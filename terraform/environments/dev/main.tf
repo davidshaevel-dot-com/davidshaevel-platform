@@ -90,6 +90,10 @@ module "networking" {
   enable_flow_logs         = true
   flow_logs_retention_days = 7
 
+  # Container ports (from compute module)
+  backend_metrics_port  = module.compute.backend_port
+  frontend_metrics_port = module.compute.frontend_port
+
   common_tags = {
     Environment = var.environment
     Project     = var.project_name
@@ -259,6 +263,10 @@ module "observability" {
   prometheus_security_group_id = module.networking.prometheus_security_group_id
   backend_security_group_id    = module.networking.app_backend_security_group_id
   frontend_security_group_id   = module.networking.app_frontend_security_group_id
+
+  # Container ports (from compute module)
+  backend_metrics_port  = module.compute.backend_port
+  frontend_metrics_port = module.compute.frontend_port
 
   # EFS configuration
   enable_prometheus_efs           = true
