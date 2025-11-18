@@ -9,7 +9,6 @@ let pageViews: Counter<string> | null = null;
 let apiCalls: Counter<string> | null = null;
 let apiDuration: Histogram<string> | null = null;
 let frontendInfo: Gauge<string> | null = null;
-let uptimeGauge: Gauge<string> | null = null;
 
 /**
  * Initialize or get the metrics registry
@@ -69,8 +68,8 @@ export function getMetricsRegistry(): Registry {
     1
   );
 
-  // Frontend uptime gauge
-  uptimeGauge = new Gauge({
+  // Frontend uptime gauge - using direct instantiation with method syntax
+  new Gauge({
     name: 'frontend_uptime_seconds',
     help: 'Application uptime in seconds',
     registers: [registry],
