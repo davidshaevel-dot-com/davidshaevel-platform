@@ -74,10 +74,10 @@ export function getMetricsRegistry(): Registry {
     name: 'frontend_uptime_seconds',
     help: 'Application uptime in seconds',
     registers: [registry],
-    collect: () => {
-      if (startTime && uptimeGauge) {
+    collect() {
+      if (startTime) {
         const uptime = (Date.now() - startTime) / 1000;
-        uptimeGauge.set(uptime);
+        this.set(uptime);
       }
     },
   });
