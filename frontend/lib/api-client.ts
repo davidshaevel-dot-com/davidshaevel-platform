@@ -38,8 +38,8 @@ export async function fetchWithMetrics(
     const urlObj = new URL(url, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
     endpoint = urlObj.pathname;
   } catch {
-    // If URL parsing fails, use the raw URL
-    endpoint = url;
+    // If URL parsing fails, use a static placeholder to avoid cardinality issues.
+    endpoint = '/invalid-url-format';
   }
 
   try {

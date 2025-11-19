@@ -84,7 +84,7 @@ import { MetricsProvider } from '@/components/MetricsProvider';
 // Wraps app in layout.tsx
 
 // API calls tracked when using wrapper
-import { fetchWithMetrics } from '@/lib/metrics';
+import { fetchWithMetrics } from '@/lib/api-client';
 const response = await fetchWithMetrics('/api/projects');
 ```
 

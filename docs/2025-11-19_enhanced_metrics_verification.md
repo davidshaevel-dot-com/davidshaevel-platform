@@ -309,20 +309,26 @@ export async function fetchWithMetrics(url: string, options?: RequestInit) {
   const startTime = Date.now();
   const method = options?.method || 'GET';
 
+  // Extract endpoint path from URL BEFORE fetch
+  let endpoint: string;
+  try {
+    const urlObj = new URL(url, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+    endpoint = urlObj.pathname;
+  } catch {
+    // If URL parsing fails, use a static placeholder to avoid cardinality issues.
+    endpoint = '/invalid-url-format';
+  }
+
   try {
     const response = await fetch(url, options);
     const duration = (Date.now() - startTime) / 1000;
-
-    // Extract endpoint path from URL
-    const urlObj = new URL(url, window.location.origin);
-    const endpoint = urlObj.pathname;
 
     recordApiCall(endpoint, method, response.status, duration);
 
     return response;
   } catch (error) {
     const duration = (Date.now() - startTime) / 1000;
-    recordApiCall(url, method, 0, duration); // 0 = network error
+    recordApiCall(endpoint, method, 0, duration); // 0 = network error
     throw error;
   }
 }
