@@ -70,6 +70,7 @@ export function getMetricsRegistry(): Registry {
   );
 
   // Frontend uptime gauge - self-updating via collect() function
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   uptimeGauge = new Gauge({
     name: 'frontend_uptime_seconds',
     help: 'Application uptime in seconds',
