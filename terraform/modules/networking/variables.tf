@@ -145,3 +145,17 @@ variable "flow_logs_retention_days" {
   }
 }
 
+# ------------------------------------------------------------------------------
+# Application Container Ports (for Prometheus Scraping)
+# ------------------------------------------------------------------------------
+
+variable "backend_metrics_port" {
+  description = "Port number for backend metrics endpoint (passed from compute module)"
+  type        = number
+}
+
+variable "frontend_metrics_port" {
+  description = "Port number for frontend metrics endpoint (passed from compute module)"
+  type        = number
+}
+

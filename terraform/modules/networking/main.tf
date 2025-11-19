@@ -610,13 +610,13 @@ resource "aws_security_group" "prometheus" {
   }
 }
 
-# Allow outbound to backend metrics endpoint (port 3001)
+# Allow outbound to backend metrics endpoint
 resource "aws_vpc_security_group_egress_rule" "prometheus_to_backend" {
   security_group_id = aws_security_group.prometheus.id
 
   description                  = "Allow Prometheus to scrape backend metrics"
-  from_port                    = 3001
-  to_port                      = 3001
+  from_port                    = var.backend_metrics_port
+  to_port                      = var.backend_metrics_port
   ip_protocol                  = "tcp"
   referenced_security_group_id = aws_security_group.app_backend.id
 
@@ -625,13 +625,13 @@ resource "aws_vpc_security_group_egress_rule" "prometheus_to_backend" {
   })
 }
 
-# Allow outbound to frontend metrics endpoint (port 3000)
+# Allow outbound to frontend metrics endpoint
 resource "aws_vpc_security_group_egress_rule" "prometheus_to_frontend" {
   security_group_id = aws_security_group.prometheus.id
 
   description                  = "Allow Prometheus to scrape frontend metrics"
-  from_port                    = 3000
-  to_port                      = 3000
+  from_port                    = var.frontend_metrics_port
+  to_port                      = var.frontend_metrics_port
   ip_protocol                  = "tcp"
   referenced_security_group_id = aws_security_group.app_frontend.id
 

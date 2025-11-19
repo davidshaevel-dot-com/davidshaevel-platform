@@ -219,6 +219,42 @@ resource "aws_vpc_security_group_egress_rule" "prometheus_to_efs" {
 }
 
 # ==============================================================================
+# Security Group Rules for Metrics Scraping
+# ==============================================================================
+
+# Ingress rule: Allow Prometheus to scrape backend metrics
+# Note: Egress rules for Prometheus are managed in the networking module
+resource "aws_vpc_security_group_ingress_rule" "backend_from_prometheus" {
+  security_group_id = var.backend_security_group_id
+
+  description                  = "Allow Prometheus to scrape backend metrics"
+  from_port                    = var.backend_metrics_port
+  to_port                      = var.backend_metrics_port
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = var.prometheus_security_group_id
+
+  tags = merge(local.common_tags, {
+    Name = "${var.environment}-${var.project_name}-backend-from-prometheus-ingress"
+  })
+}
+
+# Ingress rule: Allow Prometheus to scrape frontend metrics
+# Note: Egress rules for Prometheus are managed in the networking module
+resource "aws_vpc_security_group_ingress_rule" "frontend_from_prometheus" {
+  security_group_id = var.frontend_security_group_id
+
+  description                  = "Allow Prometheus to scrape frontend metrics"
+  from_port                    = var.frontend_metrics_port
+  to_port                      = var.frontend_metrics_port
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = var.prometheus_security_group_id
+
+  tags = merge(local.common_tags, {
+    Name = "${var.environment}-${var.project_name}-frontend-from-prometheus-ingress"
+  })
+}
+
+# ==============================================================================
 # IAM Policy for S3 Config Access
 # ==============================================================================
 

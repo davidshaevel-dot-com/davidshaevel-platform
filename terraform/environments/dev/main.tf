@@ -90,6 +90,10 @@ module "networking" {
   enable_flow_logs         = true
   flow_logs_retention_days = 7
 
+  # Container ports (from compute module)
+  backend_metrics_port  = module.compute.backend_port
+  frontend_metrics_port = module.compute.frontend_port
+
   common_tags = {
     Environment = var.environment
     Project     = var.project_name
@@ -182,6 +186,10 @@ module "compute" {
   enable_backend_ecs_exec  = var.enable_backend_ecs_exec
   enable_frontend_ecs_exec = var.enable_frontend_ecs_exec
 
+  # Service Discovery (AWS Cloud Map) - from service_discovery module
+  backend_service_registry_arn  = module.service_discovery.backend_service_arn
+  frontend_service_registry_arn = module.service_discovery.frontend_service_arn
+
   # Tags
   common_tags = {
     Environment = var.environment
@@ -253,6 +261,12 @@ module "observability" {
   vpc_id                       = module.networking.vpc_id
   private_app_subnet_ids       = module.networking.private_app_subnet_ids
   prometheus_security_group_id = module.networking.prometheus_security_group_id
+  backend_security_group_id    = module.networking.app_backend_security_group_id
+  frontend_security_group_id   = module.networking.app_frontend_security_group_id
+
+  # Container ports (from compute module)
+  backend_metrics_port  = module.compute.backend_port
+  frontend_metrics_port = module.compute.frontend_port
 
   # EFS configuration
   enable_prometheus_efs           = true

@@ -213,3 +213,17 @@ output "backend_url" {
   description = "URL to access the backend API via ALB"
   value       = "http://${aws_lb.main.dns_name}/api"
 }
+
+# ------------------------------------------------------------------------------
+# Container Port Outputs
+# ------------------------------------------------------------------------------
+
+output "frontend_port" {
+  description = "Port number for frontend container"
+  value       = local.frontend_port
+}
+
+output "backend_port" {
+  description = "Port number for backend container"
+  value       = local.backend_port
+}
