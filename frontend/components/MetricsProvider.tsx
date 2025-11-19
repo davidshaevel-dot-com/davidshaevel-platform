@@ -2,7 +2,6 @@
 
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
-import { recordPageView } from '@/lib/metrics';
 
 /**
  * MetricsProvider
@@ -18,7 +17,15 @@ export function MetricsProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Record page view whenever the pathname changes
     if (pathname) {
-      recordPageView(pathname, 'GET');
+      // Call server-side API route to record page view
+      // Fire and forget - don't await, don't block rendering
+      fetch('/api/metrics/page-view', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ page: pathname, method: 'GET' }),
+      }).catch(() => {
+        // Silently fail - metrics recording should not break the app
+      });
     }
   }, [pathname]);
 
