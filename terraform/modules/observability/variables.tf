@@ -229,6 +229,52 @@ variable "enable_ecs_exec" {
 }
 
 # ------------------------------------------------------------------------------
+# Grafana ECS Service Variables (Phase 10 - TT-25)
+# ------------------------------------------------------------------------------
+
+variable "grafana_image" {
+  description = "Docker image for Grafana"
+  type        = string
+  default     = "grafana/grafana:10.4.2"
+}
+
+variable "grafana_task_cpu" {
+  description = "CPU units for Grafana task"
+  type        = number
+  default     = 512
+}
+
+variable "grafana_task_memory" {
+  description = "Memory (MB) for Grafana task"
+  type        = number
+  default     = 1024
+}
+
+variable "grafana_desired_count" {
+  description = "Desired number of Grafana tasks to run"
+  type        = number
+  default     = 1
+}
+
+variable "grafana_service_registry_arn" {
+  description = "ARN of the service discovery registry for Grafana"
+  type        = string
+}
+
+variable "grafana_admin_password" {
+  description = "Initial admin password for Grafana (stored in Secrets Manager)"
+  type        = string
+  default     = "" # If empty, a random password will be generated
+  sensitive   = true
+}
+
+variable "grafana_security_group_id" {
+  description = "Security group ID for Grafana ECS tasks"
+  type        = string
+  default     = "" # If empty, a new security group will be created
+}
+
+# ------------------------------------------------------------------------------
 # Application Security Groups for Metrics Scraping
 # ------------------------------------------------------------------------------
 

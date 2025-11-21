@@ -292,6 +292,10 @@ module "observability" {
   log_retention_days              = var.prometheus_log_retention_days
   enable_ecs_exec                 = var.enable_prometheus_ecs_exec
 
+  # Grafana ECS Service configuration (Phase 10 - TT-25)
+  grafana_service_registry_arn = module.service_discovery.grafana_service_arn
+  # Using defaults for image, cpu, memory, desired_count, and admin_password (generated)
+
   tags = {
     CostCenter = "Platform Engineering"
     Owner      = "David Shaevel"
