@@ -350,7 +350,7 @@ resource "random_password" "grafana_admin" {
 resource "aws_secretsmanager_secret" "grafana_admin" {
   name_prefix = "${local.name_prefix}-grafana-admin-password-"
   description = "Grafana admin password"
-  
+
   # Force deletion allows easier cleanup for dev environments
   recovery_window_in_days = 0
 
@@ -553,7 +553,7 @@ resource "aws_iam_role_policy_attachment" "grafana_task_execution" {
 resource "aws_iam_policy" "grafana_secrets" {
   name_prefix = "${local.name_prefix}-grafana-secrets-"
   description = "Allow Grafana to access secrets"
-  
+
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -807,7 +807,7 @@ resource "aws_ecs_task_definition" "grafana" {
       essential = false
       # Fix ownership of the mounted EFS volume to match Grafana user (uid 472)
       # EFS mounts as root by default, which Grafana cannot write to
-      command   = ["chown", "-R", "472:472", "/var/lib/grafana"]
+      command = ["chown", "-R", "472:472", "/var/lib/grafana"]
       mountPoints = [
         {
           sourceVolume  = "grafana-data"
@@ -918,17 +918,17 @@ resource "aws_ecs_service" "prometheus" {
   # - This releases the EFS lock before new task starts
   # - Trade-off: 60-90 seconds downtime during deployments (acceptable for dev)
   # - Alternative: Rolling updates cause deadlock (new task can't get lock, old won't stop)
-  deployment_minimum_healthy_percent = 0    # Allow old task to stop first (releases EFS lock)
+  deployment_minimum_healthy_percent = 0 # Allow old task to stop first (releases EFS lock)
 
   # AWS ECS enables AZ rebalancing by default for services deployed across multiple AZs.
   # When AZ rebalancing is enabled, maximum_percent must be > 100 to allow temporary
   # over-provisioning during rebalancing operations. Attempting to set this to 100
   # results in: "InvalidParameterException: Availability Zone Rebalancing does not
   # support maximumPercent <= 100". Using the AWS default value of 200.
-  deployment_maximum_percent         = 200
+  deployment_maximum_percent = 200
 
   deployment_circuit_breaker {
-    enable   = true   # Automatically rollback failed deployments
+    enable   = true # Automatically rollback failed deployments
     rollback = true
   }
 
@@ -974,7 +974,7 @@ resource "aws_ecs_service" "grafana" {
   # Uses "recreate" strategy (minimum_healthy_percent = 0) because SQLite on EFS
   # requires exclusive file locking. A rolling update (min=100, max=200) would
   # cause a new task to start while the old one still holds the lock, leading to database errors.
-  health_check_grace_period_seconds = 60
+  health_check_grace_period_seconds  = 60
   deployment_minimum_healthy_percent = 0 # Allows old task to stop before new one starts
   deployment_maximum_percent         = 200
 
