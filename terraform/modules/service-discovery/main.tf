@@ -4,14 +4,15 @@
 #
 # This module provisions AWS Cloud Map service discovery infrastructure:
 # - Private DNS namespace for internal service communication
-# - Service discovery services for backend and frontend applications
+# - Service discovery services for backend, frontend, and observability applications
 # - SRV records for Prometheus service discovery and scraping
 #
 # Phase 4 of TT-25: AWS Cloud Map service discovery for observability
+# Phase 10 of TT-25: Grafana service discovery
 #
 # Architecture:
 # 1. Private DNS namespace (davidshaevel.local) for internal service resolution
-# 2. Service registry for each ECS service (backend, frontend)
+# 2. Service registry for each ECS service (backend, frontend, prometheus, grafana)
 # 3. Automatic DNS registration when ECS tasks start/stop
 # 4. SRV records enable Prometheus to discover and scrape metrics endpoints
 #

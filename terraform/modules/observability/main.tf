@@ -141,11 +141,14 @@ resource "aws_efs_file_system" "prometheus" {
 }
 
 # EFS File System for Grafana Data (Phase 10)
+# Stores Grafana internal database (sqlite3), plugins, and image rendering artifacts
+# Persistent storage is critical to retain users, dashboards, and alert rules across restarts
 resource "aws_efs_file_system" "grafana" {
   # Encryption at rest with AWS-managed KMS key
   encrypted = var.enable_efs_encryption
 
-  # EFS Lifecycle policies
+  # EFS Lifecycle policies to optimize storage costs
+  # Grafana data is accessed frequently, but old logs/artifacts might be cold
   lifecycle_policy {
     transition_to_ia = "AFTER_30_DAYS"
   }
@@ -252,6 +255,8 @@ resource "aws_vpc_security_group_egress_rule" "prometheus_to_efs" {
 # Grafana Security Group
 # ==============================================================================
 
+# Security group for Grafana ECS tasks
+# Controls network access to/from Grafana containers
 resource "aws_security_group" "grafana" {
   count = var.grafana_security_group_id == "" ? 1 : 0
 
@@ -275,7 +280,8 @@ locals {
   grafana_sg_id = var.grafana_security_group_id != "" ? var.grafana_security_group_id : aws_security_group.grafana[0].id
 }
 
-# Allow Grafana to access EFS
+# Allow Grafana to access EFS on NFS port (2049)
+# Required for mounting the persistent storage volume
 resource "aws_vpc_security_group_ingress_rule" "efs_nfs_from_grafana" {
   security_group_id            = aws_security_group.efs[0].id
   description                  = "Allow NFS from Grafana ECS tasks"
@@ -295,6 +301,7 @@ resource "aws_vpc_security_group_egress_rule" "grafana_to_efs" {
 }
 
 # Allow Grafana to access Prometheus (port 9090)
+# Grafana queries Prometheus as a datasource to visualize metrics
 resource "aws_vpc_security_group_ingress_rule" "prometheus_from_grafana" {
   security_group_id            = var.prometheus_security_group_id
   description                  = "Allow Grafana to query Prometheus"
@@ -313,7 +320,12 @@ resource "aws_vpc_security_group_egress_rule" "grafana_to_prometheus" {
   ip_protocol                  = "tcp"
 }
 
-# Allow outbound internet access for Grafana (e.g. for plugins, updates)
+# Allow outbound internet access for Grafana
+# Needed for:
+# 1. Installing plugins at runtime (if not baked into image)
+# 2. Checking for version updates
+# 3. Configuring external datasources (e.g. CloudWatch)
+# 4. Configuring external authentication (e.g. OAuth)
 resource "aws_vpc_security_group_egress_rule" "grafana_to_internet" {
   security_group_id = local.grafana_sg_id
   description       = "Allow outbound internet access"
@@ -325,13 +337,16 @@ resource "aws_vpc_security_group_egress_rule" "grafana_to_internet" {
 # Secrets Manager for Grafana Admin Password
 # ==============================================================================
 
-# Generate a random password if one isn't provided
+# Generate a random password if one isn't provided via variables
+# This ensures secure default authentication for the admin user
 resource "random_password" "grafana_admin" {
   length           = 16
   special          = true
   override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
+# Store the admin password in Secrets Manager
+# ECS task definition will inject this as an environment variable (GF_SECURITY_ADMIN_PASSWORD)
 resource "aws_secretsmanager_secret" "grafana_admin" {
   name_prefix = "${local.name_prefix}-grafana-admin-password-"
   description = "Grafana admin password"
@@ -459,6 +474,7 @@ resource "aws_cloudwatch_log_group" "prometheus" {
 }
 
 # CloudWatch log group for Grafana container logs
+# Centralizes logs for troubleshooting dashboard loading or auth issues
 resource "aws_cloudwatch_log_group" "grafana" {
   name              = "/ecs/${local.name_prefix}/grafana"
   retention_in_days = var.log_retention_days
@@ -514,6 +530,7 @@ resource "aws_iam_role_policy_attachment" "prometheus_task_execution" {
 }
 
 # Grafana Task Execution Role
+# Allows ECS agent to pull images, push logs to CloudWatch, and access secrets
 resource "aws_iam_role" "grafana_task_execution" {
   name_prefix        = "${local.name_prefix}-grafana-exec-"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_execution_assume.json
@@ -532,6 +549,7 @@ resource "aws_iam_role_policy_attachment" "grafana_task_execution" {
 }
 
 # Allow Grafana Execution Role to access Secrets Manager (for admin password)
+# This permission is required for ECS to inject the secret as an environment variable
 resource "aws_iam_policy" "grafana_secrets" {
   name_prefix = "${local.name_prefix}-grafana-secrets-"
   description = "Allow Grafana to access secrets"
@@ -614,6 +632,7 @@ resource "aws_iam_role" "grafana_task" {
   )
 }
 
+# Attach SSM policy for ECS Exec debugging
 resource "aws_iam_role_policy_attachment" "grafana_ecs_exec" {
   count = var.enable_ecs_exec ? 1 : 0
 
@@ -756,6 +775,9 @@ resource "aws_ecs_task_definition" "prometheus" {
 }
 
 # Grafana Task Definition
+# Includes two containers:
+# 1. init-chown: Sidecar to fix EFS permission issues (sets ownership to uid 472)
+# 2. grafana: Main application container
 resource "aws_ecs_task_definition" "grafana" {
   family                   = "${local.name_prefix}-grafana"
   network_mode             = "awsvpc"
@@ -765,6 +787,7 @@ resource "aws_ecs_task_definition" "grafana" {
   execution_role_arn       = aws_iam_role.grafana_task_execution.arn
   task_role_arn            = aws_iam_role.grafana_task.arn
 
+  # Mount EFS volume for persistent data storage
   volume {
     name = "grafana-data"
 
@@ -782,6 +805,8 @@ resource "aws_ecs_task_definition" "grafana" {
       name      = "init-chown"
       image     = "busybox" # Lightweight image to change ownership
       essential = false
+      # Fix ownership of the mounted EFS volume to match Grafana user (uid 472)
+      # EFS mounts as root by default, which Grafana cannot write to
       command   = ["chown", "-R", "472:472", "/var/lib/grafana"]
       mountPoints = [
         {
@@ -924,6 +949,7 @@ resource "aws_ecs_service" "prometheus" {
 }
 
 # Grafana Service
+# Manages the running ECS tasks for Grafana
 resource "aws_ecs_service" "grafana" {
   name            = "${local.name_prefix}-grafana"
   cluster         = var.ecs_cluster_id
@@ -937,14 +963,19 @@ resource "aws_ecs_service" "grafana" {
     assign_public_ip = false
   }
 
+  # Register with AWS Cloud Map for service discovery
   service_registries {
     registry_arn   = var.grafana_service_registry_arn
     container_name = "grafana"
     container_port = local.grafana_port
   }
 
+  # Deployment configuration for EFS-backed service
+  # Uses "recreate" strategy (minimum_healthy_percent = 0) because SQLite on EFS
+  # requires exclusive file locking. A rolling update (min=100, max=200) would
+  # cause a new task to start while the old one still holds the lock, leading to database errors.
   health_check_grace_period_seconds = 60
-  deployment_minimum_healthy_percent = 0 # Safe for EFS locking
+  deployment_minimum_healthy_percent = 0 # Allows old task to stop before new one starts
   deployment_maximum_percent         = 200
 
   deployment_circuit_breaker {
