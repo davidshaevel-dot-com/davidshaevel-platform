@@ -2,7 +2,7 @@
 # Grafana image with pre-configured dashboards and provisioning
 
 # Use official Grafana base image
-FROM grafana/grafana:10.2.3
+FROM grafana/grafana:10.4.2
 
 # Add metadata labels
 LABEL maintainer="David Shaevel <david@davidshaevel.com>"
