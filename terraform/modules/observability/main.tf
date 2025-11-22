@@ -153,6 +153,10 @@ resource "aws_efs_file_system" "grafana" {
     transition_to_ia = "AFTER_30_DAYS"
   }
 
+  lifecycle_policy {
+    transition_to_primary_storage_class = "AFTER_1_ACCESS"
+  }
+
   tags = merge(
     local.common_tags,
     {
@@ -807,7 +811,7 @@ resource "aws_ecs_task_definition" "grafana" {
       essential = false
       # Fix ownership of the mounted EFS volume to match Grafana user (uid 472)
       # EFS mounts as root by default, which Grafana cannot write to
-      command = ["chown", "-R", "472:472", "/var/lib/grafana"]
+      command = ["chown", "-R", "${local.grafana_user_id}:${local.grafana_user_id}", "/var/lib/grafana"]
       mountPoints = [
         {
           sourceVolume  = "grafana-data"
