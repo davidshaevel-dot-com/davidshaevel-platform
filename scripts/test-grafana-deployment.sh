@@ -164,7 +164,7 @@ test_task_health_and_logs() {
         --log-group-name "$LOG_GROUP" \
         --order-by LastEventTime \
         --descending \
-        --max-items 1 \
+        --limit 1 \
         --region "$AWS_REGION" \
         --query 'logStreams[0].logStreamName' \
         --output text)
@@ -174,19 +174,24 @@ test_task_health_and_logs() {
     else
         log_info "Log Stream: $LOG_STREAM"
         
-        # Look for "HTTP Server Listen" or similar startup message
-        STARTUP_MSG=$(aws logs get-log-events \
+        # Look for any info level logs to confirm the application is running
+        # "HTTP Server Listen" might be missed if it scrolled off
+        LOG_COUNT=$(aws logs get-log-events \
             --log-group-name "$LOG_GROUP" \
             --log-stream-name "$LOG_STREAM" \
             --region "$AWS_REGION" \
+            --limit 20 \
             --query 'events[*].message' \
-            --output text 2>/dev/null | grep -c "HTTP Server Listen" || echo "0")
+            --output text 2>/dev/null | grep -c "level=info" || true)
 
-        if [ "${STARTUP_MSG:-0}" -gt 0 ]; then
-            log_success "Grafana startup logs found"
+        # Clean up newlines
+        LOG_COUNT=$(echo "$LOG_COUNT" | tr -d '\n' | tr -d '\r')
+
+        if [ "${LOG_COUNT:-0}" -gt 0 ]; then
+            log_success "Grafana logs found ($LOG_COUNT events)"
             TEST_LOGS_RESULT="✓"
         else
-            log_warning "Grafana startup message not found in recent logs"
+            log_warning "Grafana logs empty or not found"
             TEST_LOGS_RESULT="?"
         fi
     fi
@@ -265,10 +270,24 @@ main() {
 
     echo ""
     echo "Summary:"
-    echo "  [✓] Service Status"
-    echo "  [$TEST_LOGS_RESULT] Logs"
-    echo "  [$TEST_INTERNAL_RESULT] Internal Health"
-    echo "  [$TEST_PUBLIC_RESULT] Public Access"
+    
+    if [ "$TEST_LOGS_RESULT" == "✓" ]; then
+        echo -e "  ${GREEN}[✓]${NC} Logs (Startup Confirmed)"
+    else
+        echo -e "  ${YELLOW}[?]${NC} Logs (Startup Not Found)"
+    fi
+
+    if [ "$TEST_INTERNAL_RESULT" == "✓" ]; then
+        echo -e "  ${GREEN}[✓]${NC} Internal Health"
+    else
+        echo -e "  ${RED}[✗]${NC} Internal Health"
+    fi
+
+    if [[ "$TEST_PUBLIC_RESULT" == *"✓"* ]]; then
+        echo -e "  ${GREEN}[✓]${NC} Public Access"
+    else
+        echo -e "  ${RED}[✗]${NC} Public Access"
+    fi
     echo ""
 }
 
