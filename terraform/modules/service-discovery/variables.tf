@@ -123,6 +123,28 @@ variable "prometheus_port" {
   }
 }
 
+variable "grafana_service_name" {
+  description = "Name for the grafana service in Cloud Map"
+  type        = string
+  default     = "grafana"
+
+  validation {
+    condition     = can(regex("^[a-z0-9-]+$", var.grafana_service_name))
+    error_message = "Grafana service name must contain only lowercase letters, numbers, and hyphens."
+  }
+}
+
+variable "grafana_port" {
+  description = "Port number for the grafana service"
+  type        = number
+  default     = 3000
+
+  validation {
+    condition     = var.grafana_port > 0 && var.grafana_port <= 65535
+    error_message = "Grafana port must be between 1 and 65535."
+  }
+}
+
 variable "tags" {
   description = "Additional tags to apply to all resources"
   type        = map(string)

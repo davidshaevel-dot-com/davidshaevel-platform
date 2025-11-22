@@ -105,6 +105,30 @@ output "prometheus_dns_name" {
 }
 
 # ------------------------------------------------------------------------------
+# Grafana Service Discovery Outputs
+# ------------------------------------------------------------------------------
+
+output "grafana_service_id" {
+  description = "ID of the grafana service discovery service"
+  value       = aws_service_discovery_service.app_service["grafana"].id
+}
+
+output "grafana_service_arn" {
+  description = "ARN of the grafana service discovery service"
+  value       = aws_service_discovery_service.app_service["grafana"].arn
+}
+
+output "grafana_service_name" {
+  description = "Name of the grafana service in Cloud Map"
+  value       = aws_service_discovery_service.app_service["grafana"].name
+}
+
+output "grafana_dns_name" {
+  description = "Fully qualified DNS name for grafana service"
+  value       = "${aws_service_discovery_service.app_service["grafana"].name}.${aws_service_discovery_private_dns_namespace.main.name}"
+}
+
+# ------------------------------------------------------------------------------
 # Consolidated Service Map Output
 # ------------------------------------------------------------------------------
 

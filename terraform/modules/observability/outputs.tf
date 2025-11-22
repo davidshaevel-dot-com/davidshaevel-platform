@@ -142,3 +142,27 @@ output "prometheus_log_group_arn" {
   description = "ARN of the CloudWatch log group for Prometheus"
   value       = var.enable_prometheus_efs ? aws_cloudwatch_log_group.prometheus[0].arn : null
 }
+
+# ------------------------------------------------------------------------------
+# Grafana Outputs
+# ------------------------------------------------------------------------------
+
+output "grafana_efs_id" {
+  description = "ID of the Grafana EFS file system"
+  value       = var.enable_grafana ? aws_efs_file_system.grafana[0].id : null
+}
+
+output "grafana_log_group_name" {
+  description = "Name of the Grafana CloudWatch log group"
+  value       = var.enable_grafana ? aws_cloudwatch_log_group.grafana[0].name : null
+}
+
+output "grafana_security_group_id" {
+  description = "ID of the Grafana security group"
+  value       = var.enable_grafana ? local.grafana_sg_id : null
+}
+
+output "grafana_admin_secret_arn" {
+  description = "ARN of the Grafana admin password secret"
+  value       = var.enable_grafana ? aws_secretsmanager_secret.grafana_admin[0].arn : null
+}

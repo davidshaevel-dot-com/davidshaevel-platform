@@ -50,7 +50,8 @@ resource "aws_iam_policy" "github_actions_deployment" {
         ]
         Resource = [
           "arn:aws:ecr:${var.aws_region}:${var.aws_account_id}:repository/${var.project_name}/backend",
-          "arn:aws:ecr:${var.aws_region}:${var.aws_account_id}:repository/${var.project_name}/frontend"
+          "arn:aws:ecr:${var.aws_region}:${var.aws_account_id}:repository/${var.project_name}/frontend",
+          "arn:aws:ecr:${var.aws_region}:${var.aws_account_id}:repository/${var.project_name}/grafana"
         ]
       },
       # ECS: Task definition operations must use "*" (ARNs unknown before creation)

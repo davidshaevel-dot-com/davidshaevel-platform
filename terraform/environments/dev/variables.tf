@@ -369,3 +369,38 @@ variable "enable_prometheus_ecs_exec" {
   type        = bool
   default     = false
 }
+
+# -----------------------------------------------------------------------------
+# Grafana Configuration (TT-25 Phase 10)
+# -----------------------------------------------------------------------------
+
+variable "grafana_image" {
+  description = "Docker image for Grafana"
+  type        = string
+  default     = "grafana/grafana:10.4.2"
+}
+
+variable "grafana_task_cpu" {
+  description = "CPU units for Grafana task"
+  type        = number
+  default     = 512
+}
+
+variable "grafana_task_memory" {
+  description = "Memory (MB) for Grafana task"
+  type        = number
+  default     = 1024
+}
+
+variable "grafana_desired_count" {
+  description = "Desired number of Grafana tasks to run"
+  type        = number
+  default     = 1
+}
+
+variable "grafana_admin_password" {
+  description = "Initial admin password for Grafana (stored in Secrets Manager)"
+  type        = string
+  default     = "" # If empty, a random password will be generated
+  sensitive   = true
+}
