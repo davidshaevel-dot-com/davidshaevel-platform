@@ -30,10 +30,14 @@ Successfully verified internal Grafana access, configured public access via ALB,
 *   ✅ **Result:** All checks passed (Public access accessible via ALB, waiting on DNS propagation).
 *   **Script Polish:** Improved output formatting, error handling, and log verification robustness.
 
-### 4. Next Steps
-*   **DNS Update:** User needs to add a CNAME record in Cloudflare:
-    *   Name: `grafana`
-    *   Content: `dev-davidshaevel-alb-85034469.us-east-1.elb.amazonaws.com` (or the CloudFront domain if proxied, but currently pointing directly to ALB for verification).
+### 4. Troubleshooting & Fixes
+*   **Redirect Loop Fix:** Resolved issue where Grafana redirected to `localhost:3000` when accessed via public URL.
+    *   Updated `GF_SERVER_ROOT_URL` to use `https://${var.grafana_domain_name}/` when configured.
+    *   Updated `GF_SERVER_DOMAIN` to match the public domain.
+    *   Disabled `GF_SERVER_SERVE_FROM_SUB_PATH` to correctly serve from root.
+    *   **Result:** Login page loads correctly (`200 OK`) via public endpoint.
+
+### 5. Next Steps
 *   **Login:** Access `https://grafana.davidshaevel.com` and login with admin credentials (retrievable from Secrets Manager).
 
 ## 📝 Git Activity

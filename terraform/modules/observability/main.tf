@@ -911,11 +911,11 @@ resource "aws_ecs_task_definition" "grafana" {
       environment = [
         {
           name  = "GF_SERVER_ROOT_URL"
-          value = "%(protocol)s://%(domain)s:%(http_port)s/grafana/"
+          value = var.grafana_domain_name != "" ? "https://${var.grafana_domain_name}/" : "%(protocol)s://%(domain)s:%(http_port)s/"
         },
         {
-          name  = "GF_SERVER_SERVE_FROM_SUB_PATH"
-          value = "true"
+          name  = "GF_SERVER_DOMAIN"
+          value = var.grafana_domain_name != "" ? var.grafana_domain_name : "localhost"
         }
       ]
       secrets = [
