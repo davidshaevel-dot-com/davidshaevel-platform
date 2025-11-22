@@ -293,8 +293,14 @@ module "observability" {
   enable_ecs_exec                 = var.enable_prometheus_ecs_exec
 
   # Grafana ECS Service configuration (Phase 10 - TT-25)
+  enable_grafana               = true
+  grafana_image                = var.grafana_image
+  grafana_task_cpu             = var.grafana_task_cpu
+  grafana_task_memory          = var.grafana_task_memory
+  grafana_desired_count        = var.grafana_desired_count
   grafana_service_registry_arn = module.service_discovery.grafana_service_arn
-  # Using defaults for image, cpu, memory, desired_count, and admin_password (generated)
+  grafana_admin_password       = var.grafana_admin_password
+  # grafana_security_group_id is optional. If not provided, the observability module creates a dedicated SG.
 
   tags = {
     CostCenter = "Platform Engineering"

@@ -144,6 +144,8 @@ resource "aws_efs_file_system" "prometheus" {
 # Stores Grafana internal database (sqlite3), plugins, and image rendering artifacts
 # Persistent storage is critical to retain users, dashboards, and alert rules across restarts
 resource "aws_efs_file_system" "grafana" {
+  count = var.enable_grafana ? 1 : 0
+
   # Encryption at rest with AWS-managed KMS key
   encrypted = var.enable_efs_encryption
 
@@ -182,9 +184,9 @@ resource "aws_efs_mount_target" "prometheus" {
 
 # Grafana Mount Targets
 resource "aws_efs_mount_target" "grafana" {
-  count = length(var.private_app_subnet_ids)
+  count = var.enable_grafana ? length(var.private_app_subnet_ids) : 0
 
-  file_system_id  = aws_efs_file_system.grafana.id
+  file_system_id  = aws_efs_file_system.grafana[0].id
   subnet_id       = var.private_app_subnet_ids[count.index]
   security_groups = [aws_security_group.efs[0].id]
 }
@@ -262,7 +264,7 @@ resource "aws_vpc_security_group_egress_rule" "prometheus_to_efs" {
 # Security group for Grafana ECS tasks
 # Controls network access to/from Grafana containers
 resource "aws_security_group" "grafana" {
-  count = var.grafana_security_group_id == "" ? 1 : 0
+  count = var.enable_grafana && var.grafana_security_group_id == "" ? 1 : 0
 
   name_prefix = "${local.name_prefix}-grafana-"
   description = "Security group for Grafana ECS tasks"
@@ -281,12 +283,14 @@ resource "aws_security_group" "grafana" {
 }
 
 locals {
-  grafana_sg_id = var.grafana_security_group_id != "" ? var.grafana_security_group_id : aws_security_group.grafana[0].id
+  grafana_sg_id = var.enable_grafana ? (var.grafana_security_group_id != "" ? var.grafana_security_group_id : aws_security_group.grafana[0].id) : ""
 }
 
 # Allow Grafana to access EFS on NFS port (2049)
 # Required for mounting the persistent storage volume
 resource "aws_vpc_security_group_ingress_rule" "efs_nfs_from_grafana" {
+  count = var.enable_grafana ? 1 : 0
+
   security_group_id            = aws_security_group.efs[0].id
   description                  = "Allow NFS from Grafana ECS tasks"
   referenced_security_group_id = local.grafana_sg_id
@@ -296,6 +300,8 @@ resource "aws_vpc_security_group_ingress_rule" "efs_nfs_from_grafana" {
 }
 
 resource "aws_vpc_security_group_egress_rule" "grafana_to_efs" {
+  count = var.enable_grafana ? 1 : 0
+
   security_group_id            = local.grafana_sg_id
   description                  = "Allow NFS to EFS mount targets"
   referenced_security_group_id = aws_security_group.efs[0].id
@@ -307,6 +313,8 @@ resource "aws_vpc_security_group_egress_rule" "grafana_to_efs" {
 # Allow Grafana to access Prometheus (port 9090)
 # Grafana queries Prometheus as a datasource to visualize metrics
 resource "aws_vpc_security_group_ingress_rule" "prometheus_from_grafana" {
+  count = var.enable_grafana ? 1 : 0
+
   security_group_id            = var.prometheus_security_group_id
   description                  = "Allow Grafana to query Prometheus"
   referenced_security_group_id = local.grafana_sg_id
@@ -316,6 +324,8 @@ resource "aws_vpc_security_group_ingress_rule" "prometheus_from_grafana" {
 }
 
 resource "aws_vpc_security_group_egress_rule" "grafana_to_prometheus" {
+  count = var.enable_grafana ? 1 : 0
+
   security_group_id            = local.grafana_sg_id
   description                  = "Allow Grafana to query Prometheus"
   referenced_security_group_id = var.prometheus_security_group_id
@@ -330,7 +340,12 @@ resource "aws_vpc_security_group_egress_rule" "grafana_to_prometheus" {
 # 2. Checking for version updates
 # 3. Configuring external datasources (e.g. CloudWatch)
 # 4. Configuring external authentication (e.g. OAuth)
+# NOTE: This rule is permissive (all ports) to allow Grafana to connect to diverse datasources
+# (e.g. Postgres on 5432, MySQL on 3306, external APIs on 443/80).
+# Restricting this would require predicting every future integration.
 resource "aws_vpc_security_group_egress_rule" "grafana_to_internet" {
+  count = var.enable_grafana ? 1 : 0
+
   security_group_id = local.grafana_sg_id
   description       = "Allow outbound internet access"
   cidr_ipv4         = "0.0.0.0/0"
@@ -344,6 +359,8 @@ resource "aws_vpc_security_group_egress_rule" "grafana_to_internet" {
 # Generate a random password if one isn't provided via variables
 # This ensures secure default authentication for the admin user
 resource "random_password" "grafana_admin" {
+  count = var.enable_grafana ? 1 : 0
+
   length           = 16
   special          = true
   override_special = "!#$%&*()-_=+[]{}<>:?"
@@ -352,11 +369,14 @@ resource "random_password" "grafana_admin" {
 # Store the admin password in Secrets Manager
 # ECS task definition will inject this as an environment variable (GF_SECURITY_ADMIN_PASSWORD)
 resource "aws_secretsmanager_secret" "grafana_admin" {
+  count = var.enable_grafana ? 1 : 0
+
   name_prefix = "${local.name_prefix}-grafana-admin-password-"
   description = "Grafana admin password"
 
   # Force deletion allows easier cleanup for dev environments
-  recovery_window_in_days = 0
+  # Use 0 (immediate) for dev to allow rapid destroy/apply cycles, 7 days for other envs safety
+  recovery_window_in_days = var.environment == "dev" ? 0 : 7
 
   tags = merge(
     local.common_tags,
@@ -367,8 +387,10 @@ resource "aws_secretsmanager_secret" "grafana_admin" {
 }
 
 resource "aws_secretsmanager_secret_version" "grafana_admin" {
-  secret_id     = aws_secretsmanager_secret.grafana_admin.id
-  secret_string = var.grafana_admin_password != "" ? var.grafana_admin_password : random_password.grafana_admin.result
+  count = var.enable_grafana ? 1 : 0
+
+  secret_id     = aws_secretsmanager_secret.grafana_admin[0].id
+  secret_string = var.grafana_admin_password != "" ? var.grafana_admin_password : random_password.grafana_admin[0].result
 }
 
 # ==============================================================================
@@ -480,6 +502,8 @@ resource "aws_cloudwatch_log_group" "prometheus" {
 # CloudWatch log group for Grafana container logs
 # Centralizes logs for troubleshooting dashboard loading or auth issues
 resource "aws_cloudwatch_log_group" "grafana" {
+  count = var.enable_grafana ? 1 : 0
+
   name              = "/ecs/${local.name_prefix}/grafana"
   retention_in_days = var.log_retention_days
 
@@ -536,6 +560,8 @@ resource "aws_iam_role_policy_attachment" "prometheus_task_execution" {
 # Grafana Task Execution Role
 # Allows ECS agent to pull images, push logs to CloudWatch, and access secrets
 resource "aws_iam_role" "grafana_task_execution" {
+  count = var.enable_grafana ? 1 : 0
+
   name_prefix        = "${local.name_prefix}-grafana-exec-"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_execution_assume.json
 
@@ -548,13 +574,17 @@ resource "aws_iam_role" "grafana_task_execution" {
 }
 
 resource "aws_iam_role_policy_attachment" "grafana_task_execution" {
-  role       = aws_iam_role.grafana_task_execution.name
+  count = var.enable_grafana ? 1 : 0
+
+  role       = aws_iam_role.grafana_task_execution[0].name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
 # Allow Grafana Execution Role to access Secrets Manager (for admin password)
 # This permission is required for ECS to inject the secret as an environment variable
 resource "aws_iam_policy" "grafana_secrets" {
+  count = var.enable_grafana ? 1 : 0
+
   name_prefix = "${local.name_prefix}-grafana-secrets-"
   description = "Allow Grafana to access secrets"
 
@@ -567,7 +597,7 @@ resource "aws_iam_policy" "grafana_secrets" {
           "secretsmanager:GetSecretValue"
         ]
         Resource = [
-          aws_secretsmanager_secret.grafana_admin.arn
+          aws_secretsmanager_secret.grafana_admin[0].arn
         ]
       }
     ]
@@ -575,8 +605,10 @@ resource "aws_iam_policy" "grafana_secrets" {
 }
 
 resource "aws_iam_role_policy_attachment" "grafana_secrets" {
-  role       = aws_iam_role.grafana_task_execution.name
-  policy_arn = aws_iam_policy.grafana_secrets.arn
+  count = var.enable_grafana ? 1 : 0
+
+  role       = aws_iam_role.grafana_task_execution[0].name
+  policy_arn = aws_iam_policy.grafana_secrets[0].arn
 }
 
 # Task Role - Allows Prometheus containers to access AWS services (S3 config)
@@ -625,6 +657,8 @@ resource "aws_iam_role_policy_attachment" "prometheus_ecs_exec" {
 }
 
 resource "aws_iam_role" "grafana_task" {
+  count = var.enable_grafana ? 1 : 0
+
   name_prefix        = "${local.name_prefix}-grafana-task-"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_assume.json
 
@@ -638,9 +672,9 @@ resource "aws_iam_role" "grafana_task" {
 
 # Attach SSM policy for ECS Exec debugging
 resource "aws_iam_role_policy_attachment" "grafana_ecs_exec" {
-  count = var.enable_ecs_exec ? 1 : 0
+  count = var.enable_grafana && var.enable_ecs_exec ? 1 : 0
 
-  role       = aws_iam_role.grafana_task.name
+  role       = aws_iam_role.grafana_task[0].name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
@@ -783,20 +817,22 @@ resource "aws_ecs_task_definition" "prometheus" {
 # 1. init-chown: Sidecar to fix EFS permission issues (sets ownership to uid 472)
 # 2. grafana: Main application container
 resource "aws_ecs_task_definition" "grafana" {
+  count = var.enable_grafana ? 1 : 0
+
   family                   = "${local.name_prefix}-grafana"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = var.grafana_task_cpu
   memory                   = var.grafana_task_memory
-  execution_role_arn       = aws_iam_role.grafana_task_execution.arn
-  task_role_arn            = aws_iam_role.grafana_task.arn
+  execution_role_arn       = aws_iam_role.grafana_task_execution[0].arn
+  task_role_arn            = aws_iam_role.grafana_task[0].arn
 
   # Mount EFS volume for persistent data storage
   volume {
     name = "grafana-data"
 
     efs_volume_configuration {
-      file_system_id     = aws_efs_file_system.grafana.id
+      file_system_id     = aws_efs_file_system.grafana[0].id
       transit_encryption = "ENABLED"
       authorization_config {
         iam = "DISABLED"
@@ -807,7 +843,7 @@ resource "aws_ecs_task_definition" "grafana" {
   container_definitions = jsonencode([
     {
       name      = "init-chown"
-      image     = "busybox" # Lightweight image to change ownership
+      image     = "busybox:1.36.1" # Lightweight image to change ownership
       essential = false
       # Fix ownership of the mounted EFS volume to match Grafana user (uid 472)
       # EFS mounts as root by default, which Grafana cannot write to
@@ -822,7 +858,7 @@ resource "aws_ecs_task_definition" "grafana" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.grafana.name
+          "awslogs-group"         = aws_cloudwatch_log_group.grafana[0].name
           "awslogs-region"        = var.aws_region
           "awslogs-stream-prefix" = "init"
         }
@@ -858,13 +894,13 @@ resource "aws_ecs_task_definition" "grafana" {
       secrets = [
         {
           name      = "GF_SECURITY_ADMIN_PASSWORD"
-          valueFrom = aws_secretsmanager_secret.grafana_admin.arn
+          valueFrom = aws_secretsmanager_secret.grafana_admin[0].arn
         }
       ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.grafana.name
+          "awslogs-group"         = aws_cloudwatch_log_group.grafana[0].name
           "awslogs-region"        = var.aws_region
           "awslogs-stream-prefix" = "grafana"
         }
@@ -955,9 +991,11 @@ resource "aws_ecs_service" "prometheus" {
 # Grafana Service
 # Manages the running ECS tasks for Grafana
 resource "aws_ecs_service" "grafana" {
+  count = var.enable_grafana ? 1 : 0
+
   name            = "${local.name_prefix}-grafana"
   cluster         = var.ecs_cluster_id
-  task_definition = aws_ecs_task_definition.grafana.arn
+  task_definition = aws_ecs_task_definition.grafana[0].arn
   desired_count   = var.grafana_desired_count
   launch_type     = "FARGATE"
 

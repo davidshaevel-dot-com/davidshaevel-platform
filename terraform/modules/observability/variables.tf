@@ -232,6 +232,12 @@ variable "enable_ecs_exec" {
 # Grafana ECS Service Variables (Phase 10 - TT-25)
 # ------------------------------------------------------------------------------
 
+variable "enable_grafana" {
+  description = "Enable Grafana resources"
+  type        = bool
+  default     = true
+}
+
 variable "grafana_image" {
   description = "Docker image for Grafana"
   type        = string

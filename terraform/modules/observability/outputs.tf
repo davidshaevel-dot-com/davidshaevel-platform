@@ -149,20 +149,20 @@ output "prometheus_log_group_arn" {
 
 output "grafana_efs_id" {
   description = "ID of the Grafana EFS file system"
-  value       = aws_efs_file_system.grafana.id
+  value       = var.enable_grafana ? aws_efs_file_system.grafana[0].id : null
 }
 
 output "grafana_log_group_name" {
   description = "Name of the Grafana CloudWatch log group"
-  value       = aws_cloudwatch_log_group.grafana.name
+  value       = var.enable_grafana ? aws_cloudwatch_log_group.grafana[0].name : null
 }
 
 output "grafana_security_group_id" {
   description = "ID of the Grafana security group"
-  value       = local.grafana_sg_id
+  value       = var.enable_grafana ? local.grafana_sg_id : null
 }
 
 output "grafana_admin_secret_arn" {
   description = "ARN of the Grafana admin password secret"
-  value       = aws_secretsmanager_secret.grafana_admin.arn
+  value       = var.enable_grafana ? aws_secretsmanager_secret.grafana_admin[0].arn : null
 }
