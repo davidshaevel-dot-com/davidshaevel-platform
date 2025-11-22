@@ -352,6 +352,33 @@ resource "aws_vpc_security_group_egress_rule" "grafana_to_internet" {
   ip_protocol       = "-1"
 }
 
+# Allow ALB to access Grafana (port 3000)
+# Required for public access and health checks
+resource "aws_vpc_security_group_ingress_rule" "grafana_from_alb" {
+  count = var.enable_grafana && var.alb_security_group_id != null ? 1 : 0
+
+  security_group_id            = local.grafana_sg_id
+  description                  = "Allow traffic from ALB"
+  referenced_security_group_id = var.alb_security_group_id
+  from_port                    = local.grafana_port
+  to_port                      = local.grafana_port
+  ip_protocol                  = "tcp"
+}
+
+# Allow ALB outbound to Grafana (port 3000)
+# Note: ALB SG is managed in networking module, but we add this rule here
+# to keep Grafana-specific configuration co-located with the service
+resource "aws_vpc_security_group_egress_rule" "alb_to_grafana" {
+  count = var.enable_grafana && var.alb_security_group_id != null ? 1 : 0
+
+  security_group_id            = var.alb_security_group_id
+  description                  = "Allow traffic to Grafana containers"
+  referenced_security_group_id = local.grafana_sg_id
+  from_port                    = local.grafana_port
+  to_port                      = local.grafana_port
+  ip_protocol                  = "tcp"
+}
+
 # ==============================================================================
 # Secrets Manager for Grafana Admin Password
 # ==============================================================================
@@ -923,6 +950,69 @@ resource "aws_ecs_task_definition" "grafana" {
 }
 
 # ==============================================================================
+# Load Balancer Configuration (ALB)
+# ==============================================================================
+
+# Grafana Target Group
+resource "aws_lb_target_group" "grafana" {
+  count = var.enable_grafana && var.alb_listener_arn != null ? 1 : 0
+
+  name        = "${local.name_prefix}-grafana-tg"
+  port        = local.grafana_port
+  protocol    = "HTTP"
+  vpc_id      = var.vpc_id
+  target_type = "ip"
+
+  health_check {
+    enabled             = true
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    timeout             = 5
+    interval            = 30
+    path                = "/api/health" # Grafana health endpoint
+    protocol            = "HTTP"
+    matcher             = "200"
+  }
+
+  deregistration_delay = 30
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name        = "${local.name_prefix}-grafana-tg"
+      Application = "grafana"
+    }
+  )
+}
+
+# Grafana Listener Rule
+# Routes traffic for grafana.domain.com to the Grafana target group
+resource "aws_lb_listener_rule" "grafana" {
+  count = var.enable_grafana && var.alb_listener_arn != null && var.grafana_domain_name != "" ? 1 : 0
+
+  listener_arn = var.alb_listener_arn
+  priority     = 90 # Higher priority than backend (100)
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.grafana[0].arn
+  }
+
+  condition {
+    host_header {
+      values = [var.grafana_domain_name]
+    }
+  }
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-grafana-rule"
+    }
+  )
+}
+
+# ==============================================================================
 # ECS Services
 # ==============================================================================
 
@@ -1003,6 +1093,16 @@ resource "aws_ecs_service" "grafana" {
     subnets          = var.private_app_subnet_ids
     security_groups  = [local.grafana_sg_id]
     assign_public_ip = false
+  }
+
+  # Attach to ALB if listener ARN is provided
+  dynamic "load_balancer" {
+    for_each = var.alb_listener_arn != null ? [1] : []
+    content {
+      target_group_arn = aws_lb_target_group.grafana[0].arn
+      container_name   = "grafana"
+      container_port   = local.grafana_port
+    }
   }
 
   # Register with AWS Cloud Map for service discovery

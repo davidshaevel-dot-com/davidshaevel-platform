@@ -1,0 +1,8 @@
+davidshaevel-platform - today is friday november 21, 2025. lets make this the
+current working directory: /Users/dshaevel/workspace-ds/davidshaevel-platform. lets
+continue with the next steps. lets create an agenda for today's work session. lets read
+all of the .md files in the repo including the .claude/ directory. lets make sure we understand the codebase. lets make
+sure we understand the git commit history for the repo. lets make sure we read all of
+the pull request comments from the last pull request. lets read the linear project "DavidShaevel.com
+Platform Engineering Portfolio". lets read all of the linear issues for this project.
+lets draft an agenda of what to work on during this next work session.

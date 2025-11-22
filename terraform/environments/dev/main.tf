@@ -300,7 +300,11 @@ module "observability" {
   grafana_desired_count        = var.grafana_desired_count
   grafana_service_registry_arn = module.service_discovery.grafana_service_arn
   grafana_admin_password       = var.grafana_admin_password
-  # grafana_security_group_id is optional. If not provided, the observability module creates a dedicated SG.
+  
+  # ALB Integration for Public Access (HTTP listener, rely on Cloudflare/CloudFront for SSL)
+  alb_listener_arn      = module.compute.alb_http_listener_arn
+  alb_security_group_id = module.networking.alb_security_group_id
+  grafana_domain_name   = "grafana.${var.domain_name}"
 
   tags = {
     CostCenter = "Platform Engineering"
