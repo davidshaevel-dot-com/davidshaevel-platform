@@ -24,10 +24,11 @@ Successfully verified internal Grafana access, configured public access via ALB,
 ### 3. Verification & Testing
 *   ✅ **Test Script:** Created `scripts/test-grafana-deployment.sh` to automate:
     *   ECS Service Status check.
-    *   Task Health check.
+    *   Task Health check and log verification.
     *   Internal HTTP check via ECS Exec.
     *   Public Access check (DNS and direct ALB).
-*   ✅ **Result:** All checks passed (Public access requires DNS update).
+*   ✅ **Result:** All checks passed (Public access accessible via ALB, waiting on DNS propagation).
+*   **Script Polish:** Improved output formatting, error handling, and log verification robustness.
 
 ### 4. Next Steps
 *   **DNS Update:** User needs to add a CNAME record in Cloudflare:
