@@ -36,6 +36,11 @@ Successfully verified internal Grafana access, configured public access via ALB,
     *   Updated `GF_SERVER_DOMAIN` to match the public domain.
     *   Disabled `GF_SERVER_SERVE_FROM_SUB_PATH` to correctly serve from root.
     *   **Result:** Login page loads correctly (`200 OK`) via public endpoint.
+*   **HTTPS Access Fix (Error 521):** Resolved Cloudflare Error 521 (Web server is down).
+    *   **Cause:** Cloudflare (Full SSL) was connecting to port 443, but ALB only had an HTTP listener on port 80.
+    *   **Fix:** Enabled HTTPS listener on ALB by passing `acm_certificate_arn` to the compute module.
+    *   **Update:** Configured ALB to redirect HTTP (80) to HTTPS (443).
+    *   **Verification:** `test-grafana-deployment.sh` updated to verify HTTPS endpoint directly. Result: `200 OK`.
 
 ### 5. Next Steps
 *   **Login:** Access `https://grafana.davidshaevel.com` and login with admin credentials (retrievable from Secrets Manager).
