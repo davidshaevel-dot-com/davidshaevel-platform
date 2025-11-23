@@ -177,6 +177,7 @@ module "compute" {
 
   # ALB configuration
   enable_deletion_protection = var.alb_enable_deletion_protection
+  alb_certificate_arn        = module.cdn.acm_certificate_arn
 
   # CloudWatch Logs
   log_retention_days        = var.ecs_log_retention_days
@@ -302,7 +303,7 @@ module "observability" {
   grafana_admin_password       = var.grafana_admin_password
   
   # ALB Integration for Public Access (HTTP listener, rely on Cloudflare/CloudFront for SSL)
-  alb_listener_arn      = module.compute.alb_http_listener_arn
+  alb_listener_arn      = module.compute.alb_https_listener_arn != null ? module.compute.alb_https_listener_arn : module.compute.alb_http_listener_arn
   alb_security_group_id = module.networking.alb_security_group_id
   grafana_domain_name   = "grafana.${var.domain_name}"
 

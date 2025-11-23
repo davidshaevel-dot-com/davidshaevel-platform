@@ -230,25 +230,29 @@ test_internal_health() {
 test_public_access() {
     section_header "Test 4: Public Access (via ALB)"
 
-    log_info "Testing public endpoint: http://$PUBLIC_DNS/login"
+    log_info "Testing public endpoint: https://$PUBLIC_DNS/login"
     
-    # Test 1: Direct DNS (might fail if not propagated)
+    # Test 1: Direct DNS (HTTP -> HTTPS redirect expected)
     HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://$PUBLIC_DNS/login" || echo "000")
-    log_info "Direct DNS Status Code: $HTTP_CODE"
+    log_info "DNS HTTP Code (Expect 301): $HTTP_CODE"
 
-    # Test 2: Direct ALB with Host Header (bypasses DNS)
+    # Test 2: Direct DNS HTTPS (Expect 200)
+    HTTPS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://$PUBLIC_DNS/login" || echo "000")
+    log_info "DNS HTTPS Code (Expect 200): $HTTPS_CODE"
+
+    # Test 3: Direct ALB HTTPS with Host Header (bypasses DNS)
     log_info "Testing via ALB ($ALB_DNS) with Host header..."
-    ALB_HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: $PUBLIC_DNS" "http://$ALB_DNS/login" || echo "000")
-    log_info "ALB Status Code: $ALB_HTTP_CODE"
+    ALB_HTTPS_CODE=$(curl -s -k -o /dev/null -w "%{http_code}" -H "Host: $PUBLIC_DNS" "https://$ALB_DNS/login" || echo "000")
+    log_info "ALB HTTPS Code: $ALB_HTTPS_CODE"
 
-    if [[ "$HTTP_CODE" =~ ^2 ]] || [[ "$HTTP_CODE" =~ ^3 ]]; then
-        log_success "Public endpoint accessible via DNS"
+    if [[ "$HTTPS_CODE" =~ ^2 ]]; then
+        log_success "Public HTTPS endpoint accessible via DNS"
         TEST_PUBLIC_RESULT="✓"
-    elif [[ "$ALB_HTTP_CODE" =~ ^2 ]] || [[ "$ALB_HTTP_CODE" =~ ^3 ]]; then
-        log_success "Public endpoint accessible via ALB (DNS update needed)"
+    elif [[ "$ALB_HTTPS_CODE" =~ ^2 ]]; then
+        log_success "Public HTTPS endpoint accessible via ALB (DNS propagation pending)"
         TEST_PUBLIC_RESULT="✓ (ALB)"
     else
-        log_warning "Public endpoint not accessible. Check Security Groups and Target Group health."
+        log_warning "Public HTTPS endpoint not accessible. Check Security Groups and Listener."
         TEST_PUBLIC_RESULT="✗"
     fi
 }
