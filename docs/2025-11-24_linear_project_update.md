@@ -22,7 +22,7 @@ We have successfully completed **TT-25 (Phase 10)** and **TT-56**, finalizing th
 ### 🔧 Key Implementation Highlights
 1.  **Infrastructure as Code:**
     - New `init-chown` sidecar container pattern to handle EFS permission mapping (UID 472).
-    - "Recreate" deployment strategy to prevent SQLite database locking on EFS.
+    - `Recreate` deployment strategy to prevent SQLite database locking on EFS.
     - Dynamic ALB integration with host-based routing.
 2.  **Automated Verification:**
     - Created `scripts/test-grafana-deployment.sh` for one-click health validation.

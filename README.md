@@ -363,6 +363,7 @@ terraform output  # View all outputs
 - ✅ https://davidshaevel.com/health - Frontend health check
 - ✅ https://davidshaevel.com/api/health - Backend health check
 - ✅ https://davidshaevel.com/api/projects - Backend API
+- ✅ https://grafana.davidshaevel.com - Grafana Dashboard
 
 **Infrastructure Health:**
 - ✅ 2 frontend ECS tasks: HEALTHY
