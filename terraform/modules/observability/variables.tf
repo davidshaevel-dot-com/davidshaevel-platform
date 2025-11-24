@@ -280,6 +280,24 @@ variable "grafana_security_group_id" {
   default     = "" # If empty, a new security group will be created
 }
 
+variable "alb_listener_arn" {
+  description = "ARN of the ALB listener to attach the Grafana listener rule to (HTTPS preferred)"
+  type        = string
+  default     = null
+}
+
+variable "grafana_domain_name" {
+  description = "Domain name for public Grafana access (e.g. grafana.davidshaevel.com)"
+  type        = string
+  default     = ""
+}
+
+variable "alb_security_group_id" {
+  description = "Security group ID for the Application Load Balancer (for Grafana ingress)"
+  type        = string
+  default     = null
+}
+
 # ------------------------------------------------------------------------------
 # Application Security Groups for Metrics Scraping
 # ------------------------------------------------------------------------------
