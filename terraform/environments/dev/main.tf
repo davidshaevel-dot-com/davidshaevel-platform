@@ -302,7 +302,7 @@ module "observability" {
   grafana_service_registry_arn = module.service_discovery.grafana_service_arn
   grafana_admin_password       = var.grafana_admin_password
   
-  # ALB Integration for Public Access (HTTP listener, rely on Cloudflare/CloudFront for SSL)
+  # ALB Integration for Public Access (prefers HTTPS listener if available)
   alb_listener_arn      = module.compute.alb_https_listener_arn != null ? module.compute.alb_https_listener_arn : module.compute.alb_http_listener_arn
   alb_security_group_id = module.networking.alb_security_group_id
   grafana_domain_name   = "grafana.${var.domain_name}"

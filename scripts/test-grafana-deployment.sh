@@ -17,6 +17,7 @@
 
 set -e  # Exit on error
 set -u  # Exit on undefined variable
+set -o pipefail # Return exit status of the last command in the pipe that failed
 
 # ==============================================================================
 # Configuration
@@ -27,7 +28,11 @@ GRAFANA_SERVICE="${GRAFANA_SERVICE:-dev-davidshaevel-grafana}"
 AWS_REGION="${AWS_REGION:-us-east-1}"
 GRAFANA_DNS="grafana.davidshaevel.local"
 PUBLIC_DNS="grafana.davidshaevel.com"
-ALB_DNS="${ALB_DNS:-dev-davidshaevel-alb-85034469.us-east-1.elb.amazonaws.com}"
+
+# Dynamically fetch ALB DNS name
+ALB_NAME="dev-davidshaevel-alb"
+ALB_DNS=$(aws elbv2 describe-load-balancers --names "${ALB_NAME}" --region "${AWS_REGION}" --query 'LoadBalancers[0].DNSName' --output text)
+
 GRAFANA_PORT="3000"
 
 # Test result tracking
@@ -210,7 +215,6 @@ test_internal_health() {
         --cluster "$CLUSTER_NAME" \
         --task "$TASK_ARN" \
         --container grafana \
-        --interactive \
         --command "wget -qO- http://localhost:3000/api/health" \
         --region "$AWS_REGION" 2>&1 || echo "FAILED")
 
