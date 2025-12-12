@@ -140,6 +140,25 @@ output "frontend_ecr_repository_name" {
   value       = module.compute.frontend_ecr_repository_name
 }
 
+output "grafana_ecr_repository_url" {
+  description = "URL of the Grafana ECR repository (use for docker push)"
+  value       = module.compute.grafana_ecr_repository_url
+}
+
+output "grafana_ecr_repository_name" {
+  description = "Name of the Grafana ECR repository"
+  value       = module.compute.grafana_ecr_repository_name
+}
+
+# -----------------------------------------------------------------------------
+# Observability Outputs (Grafana)
+# -----------------------------------------------------------------------------
+
+output "grafana_service_name" {
+  description = "Name of the Grafana ECS service"
+  value       = module.observability.grafana_service_name
+}
+
 # -----------------------------------------------------------------------------
 # CDN Outputs (CloudFront)
 # -----------------------------------------------------------------------------

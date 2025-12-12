@@ -86,7 +86,7 @@ AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
    - Scroll down to **Environment secrets** section
    - Click **Add secret**
 
-2. **Add 9 Environment Secrets**
+2. **Add 11 Environment Secrets**
 
    **Important:** Add these to the **`dev` environment**, not repository secrets!
 
@@ -100,9 +100,11 @@ AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
    | `AWS_ACCOUNT_ID` | `108581769167` | Fixed value |
    | `ECR_BACKEND_REPOSITORY` | See below | Terraform output |
    | `ECR_FRONTEND_REPOSITORY` | See below | Terraform output |
+   | `ECR_GRAFANA_REPOSITORY` | See below | Terraform output |
    | `ECS_CLUSTER` | See below | Terraform output |
    | `ECS_BACKEND_SERVICE` | See below | Terraform output |
    | `ECS_FRONTEND_SERVICE` | See below | Terraform output |
+   | `ECS_GRAFANA_SERVICE` | See below | Terraform output |
 
 3. **Get Terraform Output Values**
 
@@ -115,14 +117,19 @@ AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
    ```
    ECR_BACKEND_REPOSITORY=108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend
    ECR_FRONTEND_REPOSITORY=108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend
+   ECR_GRAFANA_REPOSITORY=108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/grafana
    ECS_CLUSTER=dev-davidshaevel-cluster
    ECS_BACKEND_SERVICE=dev-davidshaevel-backend
    ECS_FRONTEND_SERVICE=dev-davidshaevel-frontend
+   ECS_GRAFANA_SERVICE=dev-davidshaevel-grafana
    ```
 
+   **Note:** All values including Grafana are now available from Terraform output.
+   The Grafana outputs were added in PR for TT-25 Phase 5 dashboards.
+
 4. **Verify All Secrets**
-   - Confirm you see 9 secrets in **Environment secrets** section
-   - Environment page shows "9 secrets" count
+   - Confirm you see 11 secrets in **Environment secrets** section
+   - Environment page shows "11 secrets" count
    - Secret values are hidden (only shown when you set them)
    - No green "Updated" timestamp yet (secrets not used)
 
@@ -154,7 +161,7 @@ Before proceeding to create GitHub Actions workflows, verify:
 - [ ] IAM policy attached with least-privilege resource scoping
 - [ ] AWS access keys generated and saved securely
 - [ ] GitHub `dev` environment created
-- [ ] 9 environment secrets configured in `dev` environment
+- [ ] 11 environment secrets configured in `dev` environment
 - [ ] All secret values copied exactly (no typos)
 - [ ] Ready to create `.github/workflows/` files
 
