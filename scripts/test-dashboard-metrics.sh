@@ -245,6 +245,16 @@ verify_metrics_in_prometheus() {
 
         # Extract metric name from expression (handles rate(), sum(), etc.)
         # This is a simplified extraction - handles common patterns
+        #
+        # LIMITATION: This regex only extracts the first metric name from complex
+        # expressions. For example, in division expressions like:
+        #   "sum(rate(http_request_errors_total[5m])) / sum(rate(http_requests_total[5m]))"
+        # only "http_request_errors_total" will be extracted and verified, not
+        # "http_requests_total". This is acceptable for basic validation since:
+        # 1. Most panels use related metrics (if one exists, the other likely does)
+        # 2. A comprehensive solution would require a full PromQL parser
+        # 3. The JSON syntax validation catches structural issues
+        # 4. Missing metrics surface quickly in Grafana as "No Data" panels
         local metric_name=$(echo "$expr" | grep -oE '[a-z_]+\{' | sed 's/{//' | head -1)
 
         if [[ -z "$metric_name" ]]; then

@@ -137,7 +137,7 @@
         "gridPos": {"x": 6, "y": 4, "w": 6, "h": 4},
         "targets": [
           {
-            "expr": "100 * sum(rate(http_request_errors_total{job=\"backend\"}[5m])) / sum(rate(http_requests_total{job=\"backend\"}[5m]))",
+            "expr": "(100 * sum(rate(http_request_errors_total{job=\"backend\"}[5m])) / sum(rate(http_requests_total{job=\"backend\"}[5m]))) or on() vector(0)",
             "refId": "A"
           }
         ],
