@@ -114,6 +114,17 @@ variable "origin_request_policy_id_api" {
   default     = ""
 }
 
+variable "origin_protocol_policy" {
+  description = "Protocol policy for CloudFront to origin. Use 'https-only' when ALB has HTTPS listener, 'http-only' when ALB only has HTTP."
+  type        = string
+  default     = "https-only"
+
+  validation {
+    condition     = contains(["http-only", "https-only", "match-viewer"], var.origin_protocol_policy)
+    error_message = "Origin protocol policy must be http-only, https-only, or match-viewer."
+  }
+}
+
 # ------------------------------------------------------------------------------
 # Logging Variables
 # ------------------------------------------------------------------------------
