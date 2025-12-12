@@ -91,7 +91,7 @@ variable "web_acl_id" {
 # ------------------------------------------------------------------------------
 
 variable "cache_policy_id_default" {
-  description = "CloudFront cache policy ID for default behavior (frontend). Defaults to AWS managed CachingOptimized."
+  description = "CloudFront cache policy ID for default behavior (frontend). Defaults to custom Next.js cache policy with RSC header support."
   type        = string
   default     = ""
 }
@@ -103,7 +103,7 @@ variable "cache_policy_id_api" {
 }
 
 variable "origin_request_policy_id_default" {
-  description = "CloudFront origin request policy ID for default behavior. Leave empty for no origin request policy (recommended for static content)."
+  description = "CloudFront origin request policy ID for default behavior. Defaults to AllViewer for Next.js RSC header forwarding."
   type        = string
   default     = ""
 }
