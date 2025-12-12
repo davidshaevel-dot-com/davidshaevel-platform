@@ -166,3 +166,18 @@ output "grafana_admin_secret_arn" {
   description = "ARN of the Grafana admin password secret"
   value       = var.enable_grafana ? aws_secretsmanager_secret.grafana_admin[0].arn : null
 }
+
+output "grafana_service_name" {
+  description = "Name of the Grafana ECS service"
+  value       = var.enable_grafana ? aws_ecs_service.grafana[0].name : null
+}
+
+output "grafana_service_id" {
+  description = "ID of the Grafana ECS service"
+  value       = var.enable_grafana ? aws_ecs_service.grafana[0].id : null
+}
+
+output "grafana_task_definition_arn" {
+  description = "ARN of the Grafana ECS task definition"
+  value       = var.enable_grafana ? aws_ecs_task_definition.grafana[0].arn : null
+}

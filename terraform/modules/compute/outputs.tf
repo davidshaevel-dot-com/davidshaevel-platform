@@ -209,6 +209,21 @@ output "frontend_ecr_repository_name" {
   value       = aws_ecr_repository.frontend.name
 }
 
+output "grafana_ecr_repository_url" {
+  description = "URL of the Grafana ECR repository"
+  value       = aws_ecr_repository.grafana.repository_url
+}
+
+output "grafana_ecr_repository_arn" {
+  description = "ARN of the Grafana ECR repository"
+  value       = aws_ecr_repository.grafana.arn
+}
+
+output "grafana_ecr_repository_name" {
+  description = "Name of the Grafana ECR repository"
+  value       = aws_ecr_repository.grafana.name
+}
+
 # ------------------------------------------------------------------------------
 # Application URLs (for reference)
 # ------------------------------------------------------------------------------

@@ -100,11 +100,11 @@ AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
    | `AWS_ACCOUNT_ID` | `108581769167` | Fixed value |
    | `ECR_BACKEND_REPOSITORY` | See below | Terraform output |
    | `ECR_FRONTEND_REPOSITORY` | See below | Terraform output |
-   | `ECR_GRAFANA_REPOSITORY` | See below | AWS ECR |
+   | `ECR_GRAFANA_REPOSITORY` | See below | Terraform output |
    | `ECS_CLUSTER` | See below | Terraform output |
    | `ECS_BACKEND_SERVICE` | See below | Terraform output |
    | `ECS_FRONTEND_SERVICE` | See below | Terraform output |
-   | `ECS_GRAFANA_SERVICE` | See below | AWS ECS |
+   | `ECS_GRAFANA_SERVICE` | See below | Terraform output |
 
 3. **Get Terraform Output Values**
 
@@ -124,18 +124,8 @@ AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
    ECS_GRAFANA_SERVICE=dev-davidshaevel-grafana
    ```
 
-   **Note:** Grafana values may not be in Terraform output. Get them from AWS directly:
-   ```bash
-   # Get Grafana ECR repository URL
-   AWS_PROFILE=davidshaevel-dev aws ecr describe-repositories \
-     --repository-names davidshaevel/grafana \
-     --query 'repositories[0].repositoryUri' --output text
-
-   # Get Grafana ECS service name
-   AWS_PROFILE=davidshaevel-dev aws ecs list-services \
-     --cluster dev-davidshaevel-cluster \
-     --query 'serviceArns[?contains(@, `grafana`)]' --output text | xargs basename
-   ```
+   **Note:** All values including Grafana are now available from Terraform output.
+   The Grafana outputs were added in PR for TT-25 Phase 5 dashboards.
 
 4. **Verify All Secrets**
    - Confirm you see 11 secrets in **Environment secrets** section
