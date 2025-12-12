@@ -1,0 +1,389 @@
+{
+  "dashboard": {
+    "title": "Node.js Performance",
+    "tags": ["nodejs", "performance", "memory"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "templating": {
+      "list": [
+        {
+          "name": "service",
+          "type": "custom",
+          "options": [
+            {"text": "Backend", "value": "backend"},
+            {"text": "Frontend", "value": "frontend"}
+          ],
+          "current": {"text": "Backend", "value": "backend"},
+          "includeAll": false
+        }
+      ]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Heap Memory Usage",
+        "type": "timeseries",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "nodejs_heap_size_used_bytes{job=\"$service\"}",
+            "refId": "A",
+            "legendFormat": "Heap Used"
+          },
+          {
+            "expr": "nodejs_heap_size_total_bytes{job=\"$service\"}",
+            "refId": "B",
+            "legendFormat": "Heap Total"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bytes",
+            "custom": {
+              "lineWidth": 2,
+              "fillOpacity": 10
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Heap Usage Percentage",
+        "type": "gauge",
+        "gridPos": {"x": 12, "y": 0, "w": 6, "h": 8},
+        "targets": [
+          {
+            "expr": "100 * nodejs_heap_size_used_bytes{job=\"$service\"} / nodejs_heap_size_total_bytes{job=\"$service\"}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "green"},
+                {"value": 70, "color": "yellow"},
+                {"value": 85, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "External Memory",
+        "type": "stat",
+        "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "nodejs_external_memory_bytes{job=\"$service\"}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bytes",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "blue"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Process Resident Memory",
+        "type": "stat",
+        "gridPos": {"x": 18, "y": 4, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "process_resident_memory_bytes{job=\"$service\"}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bytes",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "blue"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Event Loop Lag",
+        "type": "timeseries",
+        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "nodejs_eventloop_lag_seconds{job=\"$service\"}",
+            "refId": "A",
+            "legendFormat": "Event Loop Lag"
+          },
+          {
+            "expr": "nodejs_eventloop_lag_mean_seconds{job=\"$service\"}",
+            "refId": "B",
+            "legendFormat": "Mean Lag"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "custom": {
+              "lineWidth": 2,
+              "fillOpacity": 10
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "green"},
+                {"value": 0.1, "color": "yellow"},
+                {"value": 0.5, "color": "red"}
+              ]
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Event Loop Lag Percentiles",
+        "type": "timeseries",
+        "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "nodejs_eventloop_lag_p50_seconds{job=\"$service\"}",
+            "refId": "A",
+            "legendFormat": "p50"
+          },
+          {
+            "expr": "nodejs_eventloop_lag_p90_seconds{job=\"$service\"}",
+            "refId": "B",
+            "legendFormat": "p90"
+          },
+          {
+            "expr": "nodejs_eventloop_lag_p99_seconds{job=\"$service\"}",
+            "refId": "C",
+            "legendFormat": "p99"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "custom": {
+              "lineWidth": 2,
+              "fillOpacity": 10
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Active Handles & Requests",
+        "type": "timeseries",
+        "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "nodejs_active_handles_total{job=\"$service\"}",
+            "refId": "A",
+            "legendFormat": "Active Handles"
+          },
+          {
+            "expr": "nodejs_active_requests_total{job=\"$service\"}",
+            "refId": "B",
+            "legendFormat": "Active Requests"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "custom": {
+              "lineWidth": 2,
+              "fillOpacity": 10
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "GC Duration",
+        "type": "timeseries",
+        "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(nodejs_gc_duration_seconds_sum{job=\"$service\"}[5m])",
+            "refId": "A",
+            "legendFormat": "GC Time ({{kind}})"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "custom": {
+              "lineWidth": 2,
+              "fillOpacity": 10
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "CPU Usage",
+        "type": "timeseries",
+        "gridPos": {"x": 0, "y": 24, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(process_cpu_user_seconds_total{job=\"$service\"}[5m])",
+            "refId": "A",
+            "legendFormat": "User CPU"
+          },
+          {
+            "expr": "rate(process_cpu_system_seconds_total{job=\"$service\"}[5m])",
+            "refId": "B",
+            "legendFormat": "System CPU"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "custom": {
+              "lineWidth": 2,
+              "fillOpacity": 10
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        }
+      },
+      {
+        "id": 10,
+        "title": "Process Uptime",
+        "type": "stat",
+        "gridPos": {"x": 12, "y": 24, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "time() - process_start_time_seconds{job=\"$service\"}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "blue"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 11,
+        "title": "Node.js Version",
+        "type": "stat",
+        "gridPos": {"x": 18, "y": 24, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "nodejs_version_info{job=\"$service\"}",
+            "refId": "A",
+            "legendFormat": "{{version}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {"type": "value", "options": {"1": {"text": "v${__field.labels.version}"}}}
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "blue"}
+              ]
+            }
+          }
+        },
+        "options": {
+          "textMode": "name"
+        }
+      },
+      {
+        "id": 12,
+        "title": "Heap Space Usage by Type",
+        "type": "timeseries",
+        "gridPos": {"x": 12, "y": 28, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "nodejs_heap_space_size_used_bytes{job=\"$service\"}",
+            "refId": "A",
+            "legendFormat": "{{space}} used"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bytes",
+            "custom": {
+              "lineWidth": 1,
+              "fillOpacity": 20,
+              "stacking": {
+                "mode": "normal"
+              }
+            }
+          }
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          }
+        }
+      }
+    ]
+  },
+  "overwrite": true
+}
