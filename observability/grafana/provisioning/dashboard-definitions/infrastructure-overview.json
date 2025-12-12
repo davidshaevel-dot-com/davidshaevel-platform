@@ -1,476 +1,658 @@
 {
-  "dashboard": {
-    "title": "Infrastructure Overview",
-    "tags": ["infrastructure", "ecs", "prometheus"],
-    "timezone": "browser",
-    "schemaVersion": 38,
-    "version": 1,
-    "refresh": "30s",
-    "templating": {
-      "list": []
+  "title": "Infrastructure Overview",
+  "tags": [
+    "infrastructure",
+    "ecs",
+    "prometheus"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "templating": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Service Health",
+      "type": "stat",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "sum(up)",
+          "refId": "A",
+          "legendFormat": "Healthy Targets"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "red"
+              },
+              {
+                "value": 3,
+                "color": "yellow"
+              },
+              {
+                "value": 5,
+                "color": "green"
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "textMode": "value_and_name"
+      }
     },
-    "panels": [
-      {
-        "id": 1,
-        "title": "Service Health",
-        "type": "stat",
-        "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
-        "targets": [
-          {
-            "expr": "sum(up)",
-            "refId": "A",
-            "legendFormat": "Healthy Targets"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"value": null, "color": "red"},
-                {"value": 3, "color": "yellow"},
-                {"value": 5, "color": "green"}
-              ]
-            }
-          }
-        },
-        "options": {
-          "textMode": "value_and_name"
-        }
+    {
+      "id": 2,
+      "title": "Backend Instances",
+      "type": "stat",
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4
       },
-      {
-        "id": 2,
-        "title": "Backend Instances",
-        "type": "stat",
-        "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
-        "targets": [
-          {
-            "expr": "count(up{job=\"backend\"} == 1)",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "mappings": [
-              {"type": "special", "options": {"no-value": {"text": "0"}}}
-            ],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"value": null, "color": "red"},
-                {"value": 1, "color": "yellow"},
-                {"value": 2, "color": "green"}
-              ]
-            }
-          }
+      "targets": [
+        {
+          "expr": "count(up{job=\"backend\"} == 1)",
+          "refId": "A"
         }
-      },
-      {
-        "id": 3,
-        "title": "Frontend Instances",
-        "type": "stat",
-        "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
-        "targets": [
-          {
-            "expr": "count(up{job=\"frontend\"} == 1)",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "mappings": [
-              {"type": "special", "options": {"no-value": {"text": "0"}}}
-            ],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"value": null, "color": "red"},
-                {"value": 1, "color": "yellow"},
-                {"value": 2, "color": "green"}
-              ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "no-value": {
+                  "text": "0"
+                }
+              }
             }
-          }
-        }
-      },
-      {
-        "id": 4,
-        "title": "Prometheus Status",
-        "type": "stat",
-        "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
-        "targets": [
-          {
-            "expr": "up{job=\"prometheus\"}",
-            "refId": "A"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "mappings": [
-              {"type": "value", "options": {"1": {"text": "UP", "color": "green"}, "0": {"text": "DOWN", "color": "red"}}},
-              {"type": "special", "options": {"no-value": {"text": "NO DATA"}}}
-            ],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"value": null, "color": "red"},
-                {"value": 1, "color": "green"}
-              ]
-            }
-          }
-        }
-      },
-      {
-        "id": 5,
-        "title": "Service Up/Down History",
-        "type": "timeseries",
-        "gridPos": {"x": 0, "y": 4, "w": 12, "h": 6},
-        "targets": [
-          {
-            "expr": "up{job=\"backend\"}",
-            "refId": "A",
-            "legendFormat": "Backend {{instance}}"
-          },
-          {
-            "expr": "up{job=\"frontend\"}",
-            "refId": "B",
-            "legendFormat": "Frontend {{instance}}"
-          },
-          {
-            "expr": "up{job=\"prometheus\"}",
-            "refId": "C",
-            "legendFormat": "Prometheus"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "min": 0,
-            "max": 1,
-            "custom": {
-              "lineWidth": 2,
-              "fillOpacity": 20
-            }
-          }
-        },
-        "options": {
-          "legend": {
-            "displayMode": "list",
-            "placement": "bottom"
-          }
-        }
-      },
-      {
-        "id": 6,
-        "title": "Scrape Duration",
-        "type": "timeseries",
-        "gridPos": {"x": 12, "y": 4, "w": 12, "h": 6},
-        "targets": [
-          {
-            "expr": "scrape_duration_seconds{job=\"backend\"}",
-            "refId": "A",
-            "legendFormat": "Backend {{instance}}"
-          },
-          {
-            "expr": "scrape_duration_seconds{job=\"frontend\"}",
-            "refId": "B",
-            "legendFormat": "Frontend {{instance}}"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "s",
-            "custom": {
-              "lineWidth": 2,
-              "fillOpacity": 10
-            },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"value": null, "color": "green"},
-                {"value": 0.5, "color": "yellow"},
-                {"value": 1, "color": "red"}
-              ]
-            }
-          }
-        },
-        "options": {
-          "legend": {
-            "displayMode": "list",
-            "placement": "bottom"
-          }
-        }
-      },
-      {
-        "id": 7,
-        "title": "HTTP Request Rate",
-        "type": "timeseries",
-        "gridPos": {"x": 0, "y": 10, "w": 12, "h": 8},
-        "targets": [
-          {
-            "expr": "sum(rate(http_requests_total{job=\"backend\"}[5m])) by (method)",
-            "refId": "A",
-            "legendFormat": "Backend {{method}}"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "reqps",
-            "custom": {
-              "lineWidth": 2,
-              "fillOpacity": 10
-            }
-          }
-        },
-        "options": {
-          "legend": {
-            "displayMode": "list",
-            "placement": "bottom"
-          }
-        }
-      },
-      {
-        "id": 8,
-        "title": "HTTP Error Rate",
-        "type": "timeseries",
-        "gridPos": {"x": 12, "y": 10, "w": 12, "h": 8},
-        "targets": [
-          {
-            "expr": "sum(rate(http_request_errors_total{job=\"backend\"}[5m])) by (error_type)",
-            "refId": "A",
-            "legendFormat": "{{error_type}}"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "reqps",
-            "custom": {
-              "lineWidth": 2,
-              "fillOpacity": 10
-            },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"value": null, "color": "green"},
-                {"value": 0.1, "color": "yellow"},
-                {"value": 1, "color": "red"}
-              ]
-            }
-          }
-        },
-        "options": {
-          "legend": {
-            "displayMode": "list",
-            "placement": "bottom"
-          }
-        }
-      },
-      {
-        "id": 9,
-        "title": "HTTP Request Duration (p99)",
-        "type": "timeseries",
-        "gridPos": {"x": 0, "y": 18, "w": 12, "h": 8},
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=\"backend\"}[5m])) by (le, route))",
-            "refId": "A",
-            "legendFormat": "p99 {{route}}"
-          },
-          {
-            "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{job=\"backend\"}[5m])) by (le, route))",
-            "refId": "B",
-            "legendFormat": "p50 {{route}}"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "s",
-            "custom": {
-              "lineWidth": 2,
-              "fillOpacity": 10
-            },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"value": null, "color": "green"},
-                {"value": 0.5, "color": "yellow"},
-                {"value": 1, "color": "red"}
-              ]
-            }
-          }
-        },
-        "options": {
-          "legend": {
-            "displayMode": "list",
-            "placement": "bottom"
-          }
-        }
-      },
-      {
-        "id": 10,
-        "title": "Database Query Rate",
-        "type": "timeseries",
-        "gridPos": {"x": 12, "y": 18, "w": 12, "h": 8},
-        "targets": [
-          {
-            "expr": "sum(rate(db_queries_total{job=\"backend\"}[5m])) by (query_type)",
-            "refId": "A",
-            "legendFormat": "{{query_type}}"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "reqps",
-            "custom": {
-              "lineWidth": 2,
-              "fillOpacity": 10
-            }
-          }
-        },
-        "options": {
-          "legend": {
-            "displayMode": "list",
-            "placement": "bottom"
-          }
-        }
-      },
-      {
-        "id": 11,
-        "title": "Database Query Duration (p99)",
-        "type": "timeseries",
-        "gridPos": {"x": 0, "y": 26, "w": 12, "h": 8},
-        "targets": [
-          {
-            "expr": "histogram_quantile(0.99, sum(rate(db_query_duration_seconds_bucket{job=\"backend\"}[5m])) by (le, table))",
-            "refId": "A",
-            "legendFormat": "p99 {{table}}"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "s",
-            "custom": {
-              "lineWidth": 2,
-              "fillOpacity": 10
-            },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"value": null, "color": "green"},
-                {"value": 0.1, "color": "yellow"},
-                {"value": 0.5, "color": "red"}
-              ]
-            }
-          }
-        },
-        "options": {
-          "legend": {
-            "displayMode": "list",
-            "placement": "bottom"
-          }
-        }
-      },
-      {
-        "id": 12,
-        "title": "Database Errors",
-        "type": "timeseries",
-        "gridPos": {"x": 12, "y": 26, "w": 12, "h": 8},
-        "targets": [
-          {
-            "expr": "sum(rate(db_query_errors_total{job=\"backend\"}[5m])) by (error_type, table)",
-            "refId": "A",
-            "legendFormat": "{{error_type}} - {{table}}"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "reqps",
-            "custom": {
-              "lineWidth": 2,
-              "fillOpacity": 10
-            },
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"value": null, "color": "green"},
-                {"value": 0.01, "color": "yellow"},
-                {"value": 0.1, "color": "red"}
-              ]
-            }
-          }
-        },
-        "options": {
-          "legend": {
-            "displayMode": "list",
-            "placement": "bottom"
-          }
-        }
-      },
-      {
-        "id": 13,
-        "title": "Process Memory (RSS)",
-        "type": "timeseries",
-        "gridPos": {"x": 0, "y": 34, "w": 12, "h": 8},
-        "targets": [
-          {
-            "expr": "process_resident_memory_bytes{job=\"backend\"}",
-            "refId": "A",
-            "legendFormat": "Backend {{instance}}"
-          },
-          {
-            "expr": "process_resident_memory_bytes{job=\"frontend\"}",
-            "refId": "B",
-            "legendFormat": "Frontend {{instance}}"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "bytes",
-            "custom": {
-              "lineWidth": 2,
-              "fillOpacity": 10
-            }
-          }
-        },
-        "options": {
-          "legend": {
-            "displayMode": "list",
-            "placement": "bottom"
-          }
-        }
-      },
-      {
-        "id": 14,
-        "title": "Process CPU Usage",
-        "type": "timeseries",
-        "gridPos": {"x": 12, "y": 34, "w": 12, "h": 8},
-        "targets": [
-          {
-            "expr": "rate(process_cpu_user_seconds_total{job=\"backend\"}[5m]) + rate(process_cpu_system_seconds_total{job=\"backend\"}[5m])",
-            "refId": "A",
-            "legendFormat": "Backend {{instance}}"
-          },
-          {
-            "expr": "rate(process_cpu_user_seconds_total{job=\"frontend\"}[5m]) + rate(process_cpu_system_seconds_total{job=\"frontend\"}[5m])",
-            "refId": "B",
-            "legendFormat": "Frontend {{instance}}"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "unit": "percentunit",
-            "custom": {
-              "lineWidth": 2,
-              "fillOpacity": 10
-            }
-          }
-        },
-        "options": {
-          "legend": {
-            "displayMode": "list",
-            "placement": "bottom"
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "red"
+              },
+              {
+                "value": 1,
+                "color": "yellow"
+              },
+              {
+                "value": 2,
+                "color": "green"
+              }
+            ]
           }
         }
       }
-    ]
-  },
-  "overwrite": true
+    },
+    {
+      "id": 3,
+      "title": "Frontend Instances",
+      "type": "stat",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "count(up{job=\"frontend\"} == 1)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "no-value": {
+                  "text": "0"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "red"
+              },
+              {
+                "value": 1,
+                "color": "yellow"
+              },
+              {
+                "value": 2,
+                "color": "green"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Prometheus Status",
+      "type": "stat",
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "up{job=\"prometheus\"}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "UP",
+                  "color": "green"
+                },
+                "0": {
+                  "text": "DOWN",
+                  "color": "red"
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "no-value": {
+                  "text": "NO DATA"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "red"
+              },
+              {
+                "value": 1,
+                "color": "green"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Service Up/Down History",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "up{job=\"backend\"}",
+          "refId": "A",
+          "legendFormat": "Backend {{instance}}"
+        },
+        {
+          "expr": "up{job=\"frontend\"}",
+          "refId": "B",
+          "legendFormat": "Frontend {{instance}}"
+        },
+        {
+          "expr": "up{job=\"prometheus\"}",
+          "refId": "C",
+          "legendFormat": "Prometheus"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Scrape Duration",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "scrape_duration_seconds{job=\"backend\"}",
+          "refId": "A",
+          "legendFormat": "Backend {{instance}}"
+        },
+        {
+          "expr": "scrape_duration_seconds{job=\"frontend\"}",
+          "refId": "B",
+          "legendFormat": "Frontend {{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 0.5,
+                "color": "yellow"
+              },
+              {
+                "value": 1,
+                "color": "red"
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "HTTP Request Rate",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{job=\"backend\"}[5m])) by (method)",
+          "refId": "A",
+          "legendFormat": "Backend {{method}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "HTTP Error Rate",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 10,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(http_request_errors_total{job=\"backend\"}[5m])) by (error_type)",
+          "refId": "A",
+          "legendFormat": "{{error_type}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 0.1,
+                "color": "yellow"
+              },
+              {
+                "value": 1,
+                "color": "red"
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "HTTP Request Duration (p99)",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=\"backend\"}[5m])) by (le, route))",
+          "refId": "A",
+          "legendFormat": "p99 {{route}}"
+        },
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{job=\"backend\"}[5m])) by (le, route))",
+          "refId": "B",
+          "legendFormat": "p50 {{route}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 0.5,
+                "color": "yellow"
+              },
+              {
+                "value": 1,
+                "color": "red"
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "Database Query Rate",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 18,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(db_queries_total{job=\"backend\"}[5m])) by (query_type)",
+          "refId": "A",
+          "legendFormat": "{{query_type}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "title": "Database Query Duration (p99)",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(db_query_duration_seconds_bucket{job=\"backend\"}[5m])) by (le, table))",
+          "refId": "A",
+          "legendFormat": "p99 {{table}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 0.1,
+                "color": "yellow"
+              },
+              {
+                "value": 0.5,
+                "color": "red"
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 12,
+      "title": "Database Errors",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 26,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(db_query_errors_total{job=\"backend\"}[5m])) by (error_type, table)",
+          "refId": "A",
+          "legendFormat": "{{error_type}} - {{table}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "green"
+              },
+              {
+                "value": 0.01,
+                "color": "yellow"
+              },
+              {
+                "value": 0.1,
+                "color": "red"
+              }
+            ]
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 13,
+      "title": "Process Memory (RSS)",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "process_resident_memory_bytes{job=\"backend\"}",
+          "refId": "A",
+          "legendFormat": "Backend {{instance}}"
+        },
+        {
+          "expr": "process_resident_memory_bytes{job=\"frontend\"}",
+          "refId": "B",
+          "legendFormat": "Frontend {{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 14,
+      "title": "Process CPU Usage",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 34,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "rate(process_cpu_user_seconds_total{job=\"backend\"}[5m]) + rate(process_cpu_system_seconds_total{job=\"backend\"}[5m])",
+          "refId": "A",
+          "legendFormat": "Backend {{instance}}"
+        },
+        {
+          "expr": "rate(process_cpu_user_seconds_total{job=\"frontend\"}[5m]) + rate(process_cpu_system_seconds_total{job=\"frontend\"}[5m])",
+          "refId": "B",
+          "legendFormat": "Frontend {{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    }
+  ]
 }

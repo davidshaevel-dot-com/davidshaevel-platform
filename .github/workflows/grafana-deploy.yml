@@ -44,8 +44,9 @@ jobs:
                 echo "ERROR: Invalid JSON in $file"
                 ERRORS=$((ERRORS + 1))
               else
-                TITLE=$(jq -r '.dashboard.title // "Unknown"' "$file")
-                PANELS=$(jq '.dashboard.panels | length' "$file")
+                # Support both formats: direct dashboard or wrapped in {"dashboard": ...}
+                TITLE=$(jq -r '.title // .dashboard.title // "Unknown"' "$file")
+                PANELS=$(jq '.panels // .dashboard.panels | length' "$file")
                 echo "  ✓ Valid: $TITLE ($PANELS panels)"
               fi
             fi

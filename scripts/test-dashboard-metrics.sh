@@ -145,29 +145,30 @@ validate_json() {
     fi
 
     # Check required fields
-    local title=$(jq -r '.dashboard.title // empty' "$dashboard_file")
+    # Support both formats: direct dashboard or wrapped in {"dashboard": ...}
+    local title=$(jq -r '.title // .dashboard.title // empty' "$dashboard_file")
     if [[ -n "$title" ]]; then
         log_success "Dashboard title: $title"
     else
         log_error "Missing dashboard title"
     fi
 
-    # Count panels
-    local panel_count=$(jq '.dashboard.panels | length' "$dashboard_file")
+    # Count panels (support both formats)
+    local panel_count=$(jq '.panels // .dashboard.panels | length' "$dashboard_file")
     if [[ "$panel_count" -gt 0 ]]; then
         log_success "Panel count: $panel_count"
     else
         log_warning "No panels defined in dashboard"
     fi
 
-    # List panels
+    # List panels (support both formats)
     log_info "Panels:"
-    jq -r '.dashboard.panels[] | "    \(.id). \(.title) (\(.type))"' "$dashboard_file"
+    jq -r '(.panels // .dashboard.panels)[] | "    \(.id). \(.title) (\(.type))"' "$dashboard_file"
 
-    # Extract metrics
+    # Extract metrics (support both formats)
     echo ""
     log_info "PromQL expressions used:"
-    local metrics=$(jq -r '.dashboard.panels[].targets[]?.expr // empty' "$dashboard_file" | sort -u)
+    local metrics=$(jq -r '(.panels // .dashboard.panels)[].targets[]?.expr // empty' "$dashboard_file" | sort -u)
     echo "$metrics" | while read -r expr; do
         if [[ -n "$expr" ]]; then
             log_metric "$expr"
@@ -231,9 +232,9 @@ verify_metrics_in_prometheus() {
     local metric_count=$(echo "$available_metrics" | wc -l | tr -d ' ')
     log_success "Found $metric_count metrics in Prometheus"
 
-    # Extract base metric names from dashboard expressions
+    # Extract base metric names from dashboard expressions (support both formats)
     log_info "Checking dashboard metrics against Prometheus..."
-    local expressions=$(jq -r '.dashboard.panels[].targets[]?.expr // empty' "$dashboard_file" | sort -u)
+    local expressions=$(jq -r '(.panels // .dashboard.panels)[].targets[]?.expr // empty' "$dashboard_file" | sort -u)
 
     local missing_metrics=()
     local found_metrics=()
