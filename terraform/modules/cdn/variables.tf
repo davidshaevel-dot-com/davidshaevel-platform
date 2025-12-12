@@ -91,7 +91,7 @@ variable "web_acl_id" {
 # ------------------------------------------------------------------------------
 
 variable "cache_policy_id_default" {
-  description = "CloudFront cache policy ID for default behavior (frontend). Defaults to AWS managed CachingOptimized."
+  description = "CloudFront cache policy ID for default behavior (frontend). Defaults to custom Next.js cache policy with RSC header support."
   type        = string
   default     = ""
 }
@@ -103,7 +103,7 @@ variable "cache_policy_id_api" {
 }
 
 variable "origin_request_policy_id_default" {
-  description = "CloudFront origin request policy ID for default behavior. Leave empty for no origin request policy (recommended for static content)."
+  description = "CloudFront origin request policy ID for default behavior. Defaults to AllViewer for Next.js RSC header forwarding."
   type        = string
   default     = ""
 }
@@ -112,6 +112,17 @@ variable "origin_request_policy_id_api" {
   description = "CloudFront origin request policy ID for API behavior. Defaults to AWS managed AllViewer."
   type        = string
   default     = ""
+}
+
+variable "origin_protocol_policy" {
+  description = "Protocol policy for CloudFront to origin. Use 'https-only' when ALB has HTTPS listener, 'http-only' when ALB only has HTTP."
+  type        = string
+  default     = "https-only"
+
+  validation {
+    condition     = contains(["http-only", "https-only", "match-viewer"], var.origin_protocol_policy)
+    error_message = "Origin protocol policy must be http-only, https-only, or match-viewer."
+  }
 }
 
 # ------------------------------------------------------------------------------

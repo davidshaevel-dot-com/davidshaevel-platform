@@ -133,3 +133,12 @@ output "cache_invalidation_command" {
   value       = "aws cloudfront create-invalidation --distribution-id ${aws_cloudfront_distribution.main.id} --paths '/*'"
 }
 
+# ------------------------------------------------------------------------------
+# Cache Policy Outputs
+# ------------------------------------------------------------------------------
+
+output "nextjs_cache_policy_id" {
+  description = "ID of the custom Next.js cache policy (includes RSC headers in cache key)"
+  value       = aws_cloudfront_cache_policy.nextjs.id
+}
+

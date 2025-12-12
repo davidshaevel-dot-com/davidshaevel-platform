@@ -47,7 +47,7 @@ resource "aws_cloudfront_distribution" "main" {
     custom_origin_config {
       http_port                = 80
       https_port               = 443
-      origin_protocol_policy   = "http-only" # ALB doesn't have HTTPS yet (no certificate)
+      origin_protocol_policy   = var.origin_protocol_policy
       origin_ssl_protocols     = ["TLSv1.2"]
       origin_read_timeout      = 60
       origin_keepalive_timeout = 5
@@ -59,19 +59,20 @@ resource "aws_cloudfront_distribution" "main" {
     }
   }
 
-  # Default cache behavior - Frontend
+  # Default cache behavior - Frontend (Next.js)
   default_cache_behavior {
     allowed_methods  = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
     cached_methods   = ["GET", "HEAD", "OPTIONS"]
     target_origin_id = "alb-origin"
     compress         = true
 
-    # Use AWS managed caching policy for optimized static content
-    cache_policy_id = var.cache_policy_id_default != "" ? var.cache_policy_id_default : data.aws_cloudfront_cache_policy.caching_optimized.id
+    # Use custom Next.js cache policy by default (includes RSC headers in cache key)
+    # This ensures HTML and RSC responses are cached separately
+    cache_policy_id = var.cache_policy_id_default != "" ? var.cache_policy_id_default : aws_cloudfront_cache_policy.nextjs.id
 
-    # Origin request policy: null by default for better cache hit ratio on static content
-    # Override with var.origin_request_policy_id_default if headers/cookies needed
-    origin_request_policy_id = var.origin_request_policy_id_default != "" ? var.origin_request_policy_id_default : null
+    # Origin request policy: AllViewer by default for Next.js (forwards RSC headers to origin)
+    # Required for proper Next.js App Router functionality
+    origin_request_policy_id = var.origin_request_policy_id_default != "" ? var.origin_request_policy_id_default : data.aws_cloudfront_origin_request_policy.all_viewer.id
 
     viewer_protocol_policy = "redirect-to-https"
   }
@@ -141,6 +142,44 @@ resource "aws_cloudfront_distribution" "main" {
 
   tags = {
     Name = "${var.environment}-${var.project_name}-cloudfront"
+  }
+}
+
+# ------------------------------------------------------------------------------
+# Custom Cache Policy for Next.js App Router
+# Includes RSC headers in cache key to differentiate HTML vs RSC responses
+# ------------------------------------------------------------------------------
+
+resource "aws_cloudfront_cache_policy" "nextjs" {
+  name        = "${var.environment}-${var.project_name}-nextjs-cache-policy"
+  comment     = "Cache policy for Next.js App Router with RSC header support"
+  default_ttl = 0        # Honor origin Cache-Control headers; don't cache if missing
+  max_ttl     = 31536000 # 1 year
+  min_ttl     = 0
+
+  parameters_in_cache_key_and_forwarded_to_origin {
+    cookies_config {
+      cookie_behavior = "none"
+    }
+
+    headers_config {
+      header_behavior = "whitelist"
+      headers {
+        items = [
+          "RSC",                    # React Server Components request
+          "Next-Router-State-Tree", # Next.js router state
+          "Next-Router-Prefetch",   # Next.js prefetch requests
+          "Next-Url",               # Next.js URL header
+        ]
+      }
+    }
+
+    query_strings_config {
+      query_string_behavior = "all"
+    }
+
+    enable_accept_encoding_brotli = true
+    enable_accept_encoding_gzip   = true
   }
 }
 

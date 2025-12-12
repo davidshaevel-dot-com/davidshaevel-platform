@@ -232,6 +232,10 @@ module "cdn" {
   # Logging (optional)
   logging_bucket = var.cdn_logging_bucket
   logging_prefix = var.cdn_logging_prefix
+
+  # Note: cache_policy_id_default and origin_request_policy_id_default
+  # now default to Next.js-optimized settings (custom Next.js cache policy
+  # with RSC headers in cache key, and AllViewer origin request policy)
 }
 
 # ==============================================================================
