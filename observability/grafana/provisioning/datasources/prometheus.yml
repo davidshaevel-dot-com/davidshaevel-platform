@@ -8,7 +8,7 @@ datasources:
     type: prometheus
     access: proxy
     # Use service discovery DNS name for Prometheus
-    url: http://dev-davidshaevel-prometheus.davidshaevel.local:9090
+    url: http://prometheus.davidshaevel.local:9090
     isDefault: true
     editable: false
     jsonData:
