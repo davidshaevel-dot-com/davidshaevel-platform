@@ -232,6 +232,10 @@ module "cdn" {
   # Logging (optional)
   logging_bucket = var.cdn_logging_bucket
   logging_prefix = var.cdn_logging_prefix
+
+  # Origin request policy to forward Host header for ALB routing
+  # Required because ALB HTTP->HTTPS redirect uses #{host} placeholder
+  origin_request_policy_id_default = "216adef6-5c7f-47e4-b989-5492eafa07d3" # Managed-AllViewer
 }
 
 # ==============================================================================
