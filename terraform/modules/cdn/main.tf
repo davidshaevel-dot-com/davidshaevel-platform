@@ -153,7 +153,7 @@ resource "aws_cloudfront_distribution" "main" {
 resource "aws_cloudfront_cache_policy" "nextjs" {
   name        = "${var.environment}-${var.project_name}-nextjs-cache-policy"
   comment     = "Cache policy for Next.js App Router with RSC header support"
-  default_ttl = 86400    # 1 day
+  default_ttl = 0        # Honor origin Cache-Control headers; don't cache if missing
   max_ttl     = 31536000 # 1 year
   min_ttl     = 0
 
