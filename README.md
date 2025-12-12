@@ -232,11 +232,15 @@ terraform output  # View all outputs
 - Optional HTTPS listener support
 - Database integration via Secrets Manager
 
-### CDN Module (v1.0)
+### CDN Module (v1.1)
 - CloudFront distribution with ALB origin
 - ACM certificate with DNS validation
 - Custom domain support
-- Intelligent cache behaviors (static vs dynamic)
+- **Custom Next.js cache policy** with RSC header support (Dec 2025)
+  - RSC headers in cache key (`RSC`, `Next-Router-State-Tree`, `Next-Router-Prefetch`, `Next-Url`)
+  - `default_ttl=0` honors origin Cache-Control headers
+  - Prevents accidental caching of dynamic content
+- AllViewer origin request policy for header forwarding
 - HTTP→HTTPS redirect
 - IPv6 and HTTP/2 support
 - Custom error responses
@@ -719,8 +723,8 @@ Austin, Texas
 - Frontend Deployment: October 30-31, 2025 (Complete)
 - PR Feedback & Security Fixes: October 31, 2025 (Complete)
 
-**Status:** ✅ PRODUCTION DEPLOYMENT COMPLETE + Observability Phase 8-9 Complete
-**Last Updated:** November 20, 2025
+**Status:** ✅ PRODUCTION DEPLOYMENT COMPLETE + Observability Complete + CloudFront RSC Cache Policy
+**Last Updated:** December 12, 2025
 
 ## 🤖 AI Agent Sessions
 
@@ -740,6 +744,8 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - Nov 5: TT-31 Phase 2 - Backend CI/CD workflow (PR #26, #27, #28)
 - Nov 6: TT-31 Phase 3 - Frontend CI/CD workflow (PR #29, #30)
 - Nov 6: TT-31 Phase 4 & 5 - Testing, validation, and documentation
+- Nov 24: TT-25 Phase 10 - Grafana deployment and public access (PR #58, #59)
+- Dec 12: CloudFront RSC cache policy fix (PR #62) - Fixed redirect loop and RSC caching
 
 **Infrastructure Milestones:**
 - ✅ TT-16 (Steps 1-3): Foundation

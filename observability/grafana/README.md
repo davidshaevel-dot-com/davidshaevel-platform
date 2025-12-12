@@ -225,6 +225,43 @@ backend_info
 rate(backend_http_requests_total[5m])
 ```
 
+## CloudFront Integration
+
+Grafana is accessed via CloudFront CDN at `https://grafana.davidshaevel.com`. The CDN module includes a custom cache policy optimized for Next.js App Router that also works well with Grafana's dynamic content.
+
+### Cache Policy Configuration
+
+The custom Next.js cache policy (`dev-davidshaevel-nextjs-cache-policy`) includes:
+
+**RSC Headers in Cache Key:**
+- `RSC` - React Server Components request
+- `Next-Router-State-Tree` - Next.js router state
+- `Next-Router-Prefetch` - Next.js prefetch requests
+- `Next-Url` - Next.js URL header
+
+**Key Settings:**
+- `default_ttl = 0` - Honors origin Cache-Control headers; doesn't cache if missing
+- `max_ttl = 31536000` (1 year)
+- `min_ttl = 0`
+- Brotli and Gzip compression enabled
+- All query strings included in cache key
+
+**Why `default_ttl = 0`:**
+Setting `default_ttl` to 0 ensures CloudFront only caches content when the origin (ALB/Grafana) explicitly instructs via `Cache-Control` headers. This is safer for dynamic applications like Grafana where stale cached data could cause issues.
+
+### Origin Request Policy
+
+Uses AWS managed `AllViewer` policy which forwards all viewer headers to the origin. This ensures:
+- RSC headers reach the Next.js frontend correctly
+- Authentication headers reach Grafana correctly
+- All query parameters are forwarded
+
+### Related Terraform Files
+
+- `terraform/modules/cdn/main.tf` - CloudFront distribution and cache policy
+- `terraform/modules/cdn/variables.tf` - Cache policy variables
+- `terraform/modules/cdn/outputs.tf` - Includes `nextjs_cache_policy_id` output
+
 ## Resources
 
 - **Official Docs:** https://grafana.com/docs/grafana/latest/
