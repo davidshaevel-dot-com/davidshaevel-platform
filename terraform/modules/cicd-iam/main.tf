@@ -74,7 +74,8 @@ resource "aws_iam_policy" "github_actions_deployment" {
         ]
         Resource = [
           "arn:aws:ecs:${var.aws_region}:${var.aws_account_id}:service/${var.environment}-${var.project_name}-cluster/${var.environment}-${var.project_name}-backend",
-          "arn:aws:ecs:${var.aws_region}:${var.aws_account_id}:service/${var.environment}-${var.project_name}-cluster/${var.environment}-${var.project_name}-frontend"
+          "arn:aws:ecs:${var.aws_region}:${var.aws_account_id}:service/${var.environment}-${var.project_name}-cluster/${var.environment}-${var.project_name}-frontend",
+          "arn:aws:ecs:${var.aws_region}:${var.aws_account_id}:service/${var.environment}-${var.project_name}-cluster/${var.environment}-${var.project_name}-grafana"
         ]
       },
       # ECS: Task operations with cluster condition
@@ -93,6 +94,7 @@ resource "aws_iam_policy" "github_actions_deployment" {
         }
       },
       # IAM: PassRole scoped to specific ECS task roles
+      # Note: Grafana roles use name_prefix (random suffix) so we use wildcards
       {
         Sid    = "IAMPassRoleForECS"
         Effect = "Allow"
@@ -100,7 +102,9 @@ resource "aws_iam_policy" "github_actions_deployment" {
         Resource = [
           "arn:aws:iam::${var.aws_account_id}:role/${var.environment}-${var.project_name}-ecs-task-execution-role",
           "arn:aws:iam::${var.aws_account_id}:role/${var.environment}-${var.project_name}-backend-task-role",
-          "arn:aws:iam::${var.aws_account_id}:role/${var.environment}-${var.project_name}-frontend-task-role"
+          "arn:aws:iam::${var.aws_account_id}:role/${var.environment}-${var.project_name}-frontend-task-role",
+          "arn:aws:iam::${var.aws_account_id}:role/${var.environment}-${var.project_name}-grafana-exec-*",
+          "arn:aws:iam::${var.aws_account_id}:role/${var.environment}-${var.project_name}-grafana-task-*"
         ]
       },
       # CloudWatch Logs: Scoped to ECS log groups
