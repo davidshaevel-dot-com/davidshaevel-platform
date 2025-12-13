@@ -8,18 +8,21 @@ The CI/CD workflows require environment-specific secrets to authenticate with AW
 
 ## Required Secrets Per Environment
 
-Each GitHub environment needs 8 secrets configured:
+Each GitHub environment needs 11 secrets configured:
 
 | Secret Name | Description | Example Value |
 |-------------|-------------|---------------|
 | `AWS_ACCESS_KEY_ID` | IAM user access key | `AKIAIOSFODNN7EXAMPLE` |
 | `AWS_SECRET_ACCESS_KEY` | IAM user secret key | `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY` |
+| `AWS_ACCOUNT_ID` | AWS account ID | `108581769167` |
 | `AWS_REGION` | AWS region | `us-east-1` |
 | `ECR_BACKEND_REPOSITORY` | Full ECR backend repo URI | `108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend` |
 | `ECR_FRONTEND_REPOSITORY` | Full ECR frontend repo URI | `108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend` |
+| `ECR_GRAFANA_REPOSITORY` | Full ECR Grafana repo URI | `108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/grafana` |
 | `ECS_CLUSTER` | ECS cluster name | `dev-davidshaevel-cluster` |
 | `ECS_BACKEND_SERVICE` | ECS backend service name | `dev-davidshaevel-backend` |
 | `ECS_FRONTEND_SERVICE` | ECS frontend service name | `dev-davidshaevel-frontend` |
+| `ECS_GRAFANA_SERVICE` | ECS Grafana service name | `dev-davidshaevel-grafana` |
 
 ---
 
@@ -82,7 +85,7 @@ us-east-1
 # Get ECR repository URIs
 aws ecr describe-repositories \
   --profile davidshaevel-dev \
-  --repository-names davidshaevel/backend davidshaevel/frontend \
+  --repository-names davidshaevel/backend davidshaevel/frontend davidshaevel/grafana \
   --query 'repositories[*].[repositoryName,repositoryUri]' \
   --output table
 ```
@@ -91,6 +94,7 @@ Example output:
 ```
 davidshaevel/backend   → 108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend
 davidshaevel/frontend  → 108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend
+davidshaevel/grafana   → 108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/grafana
 ```
 
 ### ECS Resource Names
@@ -107,10 +111,13 @@ aws ecs list-services --profile davidshaevel-dev --cluster dev-davidshaevel-clus
 
 Example values:
 ```
-Cluster:         dev-davidshaevel-cluster
-Backend Service: dev-davidshaevel-backend
+Cluster:          dev-davidshaevel-cluster
+Backend Service:  dev-davidshaevel-backend
 Frontend Service: dev-davidshaevel-frontend
+Grafana Service:  dev-davidshaevel-grafana
 ```
+
+> **Note:** The `dev-davidshaevel-prometheus` service exists but does not require GitHub secrets as it uses a public Prometheus image and is managed entirely through Terraform.
 
 ---
 
@@ -126,6 +133,9 @@ gh secret set AWS_ACCESS_KEY_ID --env dev
 gh secret set AWS_SECRET_ACCESS_KEY --env dev
 # Paste the secret access key when prompted
 
+# Set AWS account ID
+echo "108581769167" | gh secret set AWS_ACCOUNT_ID --env dev
+
 # Set AWS region
 echo "us-east-1" | gh secret set AWS_REGION --env dev
 
@@ -139,9 +149,13 @@ echo "108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend" | \
 echo "108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend" | \
   gh secret set ECR_FRONTEND_REPOSITORY --env dev
 
+echo "108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/grafana" | \
+  gh secret set ECR_GRAFANA_REPOSITORY --env dev
+
 # Set ECS service names
 echo "dev-davidshaevel-backend" | gh secret set ECS_BACKEND_SERVICE --env dev
 echo "dev-davidshaevel-frontend" | gh secret set ECS_FRONTEND_SERVICE --env dev
+echo "dev-davidshaevel-grafana" | gh secret set ECS_GRAFANA_SERVICE --env dev
 ```
 
 ### Via GitHub UI
@@ -151,7 +165,7 @@ echo "dev-davidshaevel-frontend" | gh secret set ECS_FRONTEND_SERVICE --env dev
 3. Name: Enter secret name (e.g., `AWS_ACCESS_KEY_ID`)
 4. Value: Enter secret value
 5. Click **Add secret**
-6. Repeat for all 7 secrets
+6. Repeat for all 11 secrets
 
 ---
 
@@ -167,13 +181,16 @@ gh secret list --env dev
 **Expected output:**
 ```
 AWS_ACCESS_KEY_ID          Updated YYYY-MM-DD
+AWS_ACCOUNT_ID             Updated YYYY-MM-DD
 AWS_REGION                 Updated YYYY-MM-DD
 AWS_SECRET_ACCESS_KEY      Updated YYYY-MM-DD
 ECR_BACKEND_REPOSITORY     Updated YYYY-MM-DD
 ECR_FRONTEND_REPOSITORY    Updated YYYY-MM-DD
+ECR_GRAFANA_REPOSITORY     Updated YYYY-MM-DD
 ECS_BACKEND_SERVICE        Updated YYYY-MM-DD
 ECS_CLUSTER                Updated YYYY-MM-DD
 ECS_FRONTEND_SERVICE       Updated YYYY-MM-DD
+ECS_GRAFANA_SERVICE        Updated YYYY-MM-DD
 ```
 
 ### Test Secrets
@@ -376,6 +393,20 @@ gh api repos/davidshaevel-dot-com/davidshaevel-platform/environments/dev
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** November 6, 2025  
+**Document Version:** 1.1
+**Last Updated:** December 13, 2025
 **See Also:** [docs/prod-environment-setup.md](prod-environment-setup.md)
+
+---
+
+## Changelog
+
+### v1.1 (December 13, 2025)
+- Added `AWS_ACCOUNT_ID` secret
+- Added `ECR_GRAFANA_REPOSITORY` secret for Grafana container deployments
+- Added `ECS_GRAFANA_SERVICE` secret for Grafana ECS service
+- Updated secret count from 8 to 11
+- Added note about Prometheus service (no secrets required)
+
+### v1.0 (November 6, 2025)
+- Initial documentation with 8 secrets for backend and frontend services
