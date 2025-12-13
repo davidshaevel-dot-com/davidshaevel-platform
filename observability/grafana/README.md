@@ -225,6 +225,31 @@ backend_info
 rate(backend_http_requests_total[5m])
 ```
 
+## CloudFront Integration
+
+Grafana is accessed via CloudFront CDN at `https://grafana.davidshaevel.com`. The CDN configuration ensures Grafana's dynamic content is handled correctly.
+
+### Key Configuration for Grafana
+
+**Cache Policy (`default_ttl = 0`):**
+
+CloudFront is configured with `default_ttl = 0`, which means:
+- CloudFront honors origin `Cache-Control` headers when present
+- When no `Cache-Control` header is present, content is NOT cached
+- This prevents stale dashboard data from being served to users
+
+This is critical for Grafana because dashboards display real-time metrics that should never be cached incorrectly.
+
+**Origin Request Policy (AllViewer):**
+
+All viewer headers are forwarded to the origin, ensuring:
+- Authentication headers (cookies, authorization) reach Grafana correctly
+- All query parameters are forwarded for dashboard filtering
+
+### Related Documentation
+
+For full technical details on the CloudFront cache policy configuration, including Next.js RSC header support, see the [CDN Module README](../../terraform/modules/cdn/README.md#custom-nextjs-cache-policy-v11).
+
 ## Resources
 
 - **Official Docs:** https://grafana.com/docs/grafana/latest/
