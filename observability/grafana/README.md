@@ -12,18 +12,18 @@ Grafana is deployed as an ECS Fargate service that visualizes metrics from Prome
 ## Architecture
 
 ```
-┌─────────────────────────────────────┐
-│      ECS Fargate Service            │
-│  ┌───────────────────────────────┐ │
-│  │   Grafana Container           │ │
-│  │   - Port 3000                 │ │
-│  │   - EFS mount: /var/lib/grafana  │ │
-│  └───────────────────────────────┘ │
-│              │                      │
-│              ▼                      │
-│      Prometheus Datasource         │
-│   (via service discovery)          │
-└─────────────────────────────────────┘
+┌──────────────────────────────────-----─┐
+│      ECS Fargate Service               │
+│  ┌─────────────────────────────---──┐  │
+│  │   Grafana Container              │  │
+│  │   - Port 3000                    │  │
+│  │   - EFS mount: /var/lib/grafana  │  │
+│  └────────────────────────────---───┘  │
+│              │                         │
+│              ▼                         │
+│      Prometheus Datasource             │
+│   (via service discovery)              │
+└──────────────────────────────────---───┘
 ```
 
 ## Directory Structure

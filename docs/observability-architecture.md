@@ -19,57 +19,57 @@ The observability stack provides real-time monitoring and visualization of appli
 ┌──────────────────────────────────────────────────────────────────┐
 │                    AWS VPC (dev-davidshaevel)                    │
 │                                                                  │
-│  ┌───────────────────────────────────────────────────────────┐ │
-│  │          Application Load Balancer (Public)                │ │
-│  │  /prometheus/* → Prometheus Target Group (9090)           │ │
-│  │  /grafana/* → Grafana Target Group (3000)                 │ │
-│  └───────────────────────────────────────────────────────────┘ │
-│                          │                                      │
-│                          ▼                                      │
-│  ┌──────────────────────────────────────────────────────────┐ │
-│  │              ECS Cluster (Fargate)                        │ │
-│  │                                                           │ │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │ │
-│  │  │  Backend     │  │  Frontend    │  │  Prometheus  │  │ │
-│  │  │  Service     │  │  Service     │  │  Service     │  │ │
-│  │  │  (2 tasks)   │  │  (2 tasks)   │  │  (1 task)    │  │ │
-│  │  │  :3001       │  │  :3000       │  │  :9090       │  │ │
-│  │  │              │  │              │  │              │  │ │
-│  │  │ /api/metrics │  │  /metrics    │  │  scrapes ────┼──┼──┐
-│  │  └──────────────┘  └──────────────┘  └──────────────┘  │ │ │
-│  │         ▲                 ▲                 │           │ │ │
-│  │         └─────────────────┴─────────────────┘           │ │ │
-│  │                   Scrape every 15s                      │ │ │
-│  │                                                          │ │ │
-│  │                          ┌──────────────┐               │ │ │
-│  │                          │   Grafana    │               │ │ │
-│  │                          │   Service    │               │ │ │
-│  │                          │   (1 task)   │               │ │ │
-│  │                          │   :3000      │               │ │ │
-│  │                          │              │               │ │ │
-│  │                          │  queries ────┼───────────────┘ │ │
-│  │                          └──────────────┘                 │ │
-│  └──────────────────────────────────────────────────────────┘ │
-│                                                                │
-│  ┌──────────────────────────────────────────────────────────┐ │
-│  │         Service Discovery (AWS Cloud Map)                 │ │
-│  │  Namespace: davidshaevel.local                           │ │
-│  │  - backend.davidshaevel.local → Backend tasks            │ │
-│  │  - frontend.davidshaevel.local → Frontend tasks          │ │
-│  │  - prometheus.davidshaevel.local → Prometheus task       │ │
-│  │  - grafana.davidshaevel.local → Grafana task             │ │
-│  └──────────────────────────────────────────────────────────┘ │
-│                                                                │
-│  ┌──────────────────────────────────────────────────────────┐ │
-│  │              Elastic File System (EFS)                    │ │
-│  │                                                           │ │
-│  │  ┌─────────────────────┐  ┌──────────────────────────┐  │ │
-│  │  │ Prometheus Data     │  │  Grafana Data            │  │ │
-│  │  │ /prometheus         │  │  /var/lib/grafana        │  │ │
-│  │  │ - TSDB blocks       │  │  - SQLite database       │  │ │
-│  │  │ - 15 day retention  │  │  - Custom dashboards     │  │ │
-│  │  └─────────────────────┘  └──────────────────────────┘  │ │
-│  └──────────────────────────────────────────────────────────┘ │
+│  ┌───────────────────────────────────────────────────────────┐   │
+│  │          Application Load Balancer (Public)               │   │
+│  │  /prometheus/* → Prometheus Target Group (9090)           │   │
+│  │  /grafana/* → Grafana Target Group (3000)                 │   │
+│  └───────────────────────────────────────────────────────────┘   │
+│                          │                                       │
+│                          ▼                                       │
+│  ┌─────────────────────────────────────────────────────────-─┐   │
+│  │              ECS Cluster (Fargate)                        │   │
+│  │                                                           │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │   │
+│  │  │  Backend     │  │  Frontend    │  │  Prometheus  │     │   │
+│  │  │  Service     │  │  Service     │  │  Service     │     │   │
+│  │  │  (2 tasks)   │  │  (2 tasks)   │  │  (1 task)    │     │   │
+│  │  │  :3001       │  │  :3000       │  │  :9090       │     │   │
+│  │  │              │  │              │  │              │     │   │
+│  │  │ /api/metrics │  │  /metrics    │  │  scrapes ────┼───┐ │   │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘   │ │   │
+│  │         ▲                 ▲                 │           │ │   │
+│  │         └─────────────────┴─────────────────┘           │ │   │
+│  │                   Scrape every 15s                      │ │   │
+│  │                                                         │ │   │
+│  │                          ┌──────────────┐               │ │   │
+│  │                          │   Grafana    │               │ │   │
+│  │                          │   Service    │               │ │   │
+│  │                          │   (1 task)   │               │ │   │
+│  │                          │   :3000      │               │ │   │
+│  │                          │              │               │ │   │
+│  │                          │  queries ────┼───────────────┘ │   │
+│  │                          └──────────────┘                 │   │
+│  └───────────────────────────────────────────────────-───────┘   │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐    │
+│  │         Service Discovery (AWS Cloud Map)                │    │
+│  │  Namespace: davidshaevel.local                           │    │
+│  │  - backend.davidshaevel.local → Backend tasks            │    │
+│  │  - frontend.davidshaevel.local → Frontend tasks          │    │
+│  │  - prometheus.davidshaevel.local → Prometheus task       │    │
+│  │  - grafana.davidshaevel.local → Grafana task             │    │
+│  └──────────────────────────────────────────────────────────┘    │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐    │
+│  │              Elastic File System (EFS)                   │    │
+│  │                                                          │    │
+│  │  ┌─────────────────────┐  ┌──────────────────────────┐   │    │
+│  │  │ Prometheus Data     │  │  Grafana Data            │   │    │
+│  │  │ /prometheus         │  │  /var/lib/grafana        │   │    │
+│  │  │ - TSDB blocks       │  │  - SQLite database       │   │    │
+│  │  │ - 15 day retention  │  │  - Custom dashboards     │   │    │
+│  │  └─────────────────────┘  └──────────────────────────┘   │    │
+│  └──────────────────────────────────────────────────────-───┘    │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
