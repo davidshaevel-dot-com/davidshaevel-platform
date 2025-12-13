@@ -294,11 +294,12 @@ curl -I http://example.com
 
 - **Cached Methods**: GET, HEAD, OPTIONS
 - **Allowed Methods**: All (GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE)
-- **Cache Policy**: AWS Managed `CachingOptimized`
+- **Cache Policy**: Custom Next.js cache policy with RSC header support (see below)
+- **Origin Request Policy**: AWS Managed `AllViewer` (forwards all headers to origin)
 - **Compression**: Enabled
 - **Viewer Protocol**: Redirect HTTP to HTTPS
 
-**Best For**: Static assets, HTML pages, images, CSS, JavaScript
+**Best For**: Next.js applications with App Router and React Server Components
 
 ### Ordered Behavior (Backend API - `/api/*`)
 
@@ -310,6 +311,102 @@ curl -I http://example.com
 - **Viewer Protocol**: Redirect HTTP to HTTPS
 
 **Best For**: Dynamic API endpoints, authentication, user-specific content
+
+## Custom Next.js Cache Policy (v1.1)
+
+As of December 2025, this module includes a custom cache policy specifically designed for Next.js App Router applications with React Server Components (RSC) support.
+
+### RSC Headers in Cache Key
+
+React Server Components use special headers to differentiate between HTML page requests and RSC data requests. Without including these headers in the cache key, CloudFront would serve incorrect cached responses (e.g., HTML when RSC payload was expected, or vice versa).
+
+**Headers included in cache key:**
+
+| Header | Purpose |
+|--------|---------|
+| `RSC` | Indicates a React Server Components request |
+| `Next-Router-State-Tree` | Contains the current router state for incremental updates |
+| `Next-Router-Prefetch` | Indicates a prefetch request for navigation |
+| `Next-Url` | The original URL being requested |
+
+### Key Settings
+
+```hcl
+resource "aws_cloudfront_cache_policy" "nextjs" {
+  name        = "${var.environment}-${var.project_name}-nextjs-cache-policy"
+  default_ttl = 0        # Honor origin Cache-Control; don't cache if missing
+  max_ttl     = 31536000 # 1 year
+  min_ttl     = 0
+
+  parameters_in_cache_key_and_forwarded_to_origin {
+    headers_config {
+      header_behavior = "whitelist"
+      headers {
+        items = ["RSC", "Next-Router-State-Tree", "Next-Router-Prefetch", "Next-Url"]
+      }
+    }
+    query_strings_config {
+      query_string_behavior = "all"
+    }
+    cookies_config {
+      cookie_behavior = "none"
+    }
+    enable_accept_encoding_brotli = true
+    enable_accept_encoding_gzip   = true
+  }
+}
+```
+
+### Why `default_ttl = 0`?
+
+Setting `default_ttl` to 0 is a **safety measure** for dynamic applications:
+
+1. **Honors origin headers**: When Next.js sends `Cache-Control` headers, CloudFront respects them
+2. **Safe default**: When no `Cache-Control` header is present, CloudFront does NOT cache the response
+3. **Prevents stale content**: Dynamic pages, authenticated content, and real-time data are never accidentally cached
+4. **Works for Grafana**: Since Grafana uses the same CloudFront distribution, this prevents Grafana's dynamic dashboards from being cached incorrectly
+
+### Origin Request Policy
+
+The module uses the AWS managed `AllViewer` origin request policy for the default behavior, which forwards all viewer headers to the origin. This ensures:
+
+- **RSC headers reach Next.js**: Required for proper App Router functionality
+- **Authentication headers forwarded**: Cookies and authorization headers reach the origin
+- **Query strings forwarded**: All URL parameters are passed to the origin
+
+### Troubleshooting RSC Issues
+
+**RSC responses not working correctly:**
+
+*Symptoms:* Pages load but navigation doesn't work, or you see HTML instead of RSC payloads
+
+*Solution:* Verify the cache policy includes RSC headers. Check with:
+
+```bash
+aws cloudfront get-cache-policy --id <policy-id> \
+  --query 'CachePolicy.CachePolicyConfig.ParametersInCacheKeyAndForwardedToOrigin.HeadersConfig'
+```
+
+**Dynamic content being cached incorrectly:**
+
+*Symptoms:* User-specific content showing for wrong users, or stale data appearing
+
+*Solution:* Ensure your Next.js application sends appropriate `Cache-Control` headers:
+
+```typescript
+// In your Next.js API routes or page components
+export const dynamic = 'force-dynamic';
+// or
+export const revalidate = 0;
+```
+
+**Redirect loops (HTTP → HTTPS):**
+
+*Symptoms:* ERR_TOO_MANY_REDIRECTS in browser
+
+*Cause:* `origin_protocol_policy` set to `http-only` but ALB has HTTPS listener
+
+*Solution:* Set `origin_protocol_policy = "https-only"` when ALB has HTTPS listeners
 
 ## Outputs
 
@@ -548,7 +645,7 @@ For issues or questions about this module, please check:
 
 ---
 
-**Last Updated**: October 26, 2025  
-**Module Version**: 1.0.0  
+**Last Updated**: December 12, 2025
+**Module Version**: 1.1.0
 **Terraform Version**: >= 1.13.0
 

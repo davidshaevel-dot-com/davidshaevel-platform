@@ -227,40 +227,28 @@ rate(backend_http_requests_total[5m])
 
 ## CloudFront Integration
 
-Grafana is accessed via CloudFront CDN at `https://grafana.davidshaevel.com`. The CDN module includes a custom cache policy optimized for Next.js App Router that also works well with Grafana's dynamic content.
+Grafana is accessed via CloudFront CDN at `https://grafana.davidshaevel.com`. The CDN configuration ensures Grafana's dynamic content is handled correctly.
 
-### Cache Policy Configuration
+### Key Configuration for Grafana
 
-The custom Next.js cache policy (`dev-davidshaevel-nextjs-cache-policy`) includes:
+**Cache Policy (`default_ttl = 0`):**
 
-**RSC Headers in Cache Key:**
-- `RSC` - React Server Components request
-- `Next-Router-State-Tree` - Next.js router state
-- `Next-Router-Prefetch` - Next.js prefetch requests
-- `Next-Url` - Next.js URL header
+CloudFront is configured with `default_ttl = 0`, which means:
+- CloudFront honors origin `Cache-Control` headers when present
+- When no `Cache-Control` header is present, content is NOT cached
+- This prevents stale dashboard data from being served to users
 
-**Key Settings:**
-- `default_ttl = 0` - Honors origin Cache-Control headers; doesn't cache if missing
-- `max_ttl = 31536000` (1 year)
-- `min_ttl = 0`
-- Brotli and Gzip compression enabled
-- All query strings included in cache key
+This is critical for Grafana because dashboards display real-time metrics that should never be cached incorrectly.
 
-**Why `default_ttl = 0`:**
-Setting `default_ttl` to 0 ensures CloudFront only caches content when the origin (ALB/Grafana) explicitly instructs via `Cache-Control` headers. This is safer for dynamic applications like Grafana where stale cached data could cause issues.
+**Origin Request Policy (AllViewer):**
 
-### Origin Request Policy
+All viewer headers are forwarded to the origin, ensuring:
+- Authentication headers (cookies, authorization) reach Grafana correctly
+- All query parameters are forwarded for dashboard filtering
 
-Uses AWS managed `AllViewer` policy which forwards all viewer headers to the origin. This ensures:
-- RSC headers reach the Next.js frontend correctly
-- Authentication headers reach Grafana correctly
-- All query parameters are forwarded
+### Related Documentation
 
-### Related Terraform Files
-
-- `terraform/modules/cdn/main.tf` - CloudFront distribution and cache policy
-- `terraform/modules/cdn/variables.tf` - Cache policy variables
-- `terraform/modules/cdn/outputs.tf` - Includes `nextjs_cache_policy_id` output
+For full technical details on the CloudFront cache policy configuration, including Next.js RSC header support, see the [CDN Module README](../../terraform/modules/cdn/README.md#custom-nextjs-cache-policy-v11).
 
 ## Resources
 

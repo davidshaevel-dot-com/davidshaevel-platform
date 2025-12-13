@@ -238,7 +238,7 @@ terraform output  # View all outputs
 - Custom domain support
 - **Custom Next.js cache policy** with RSC header support (Dec 2025)
   - RSC headers in cache key (`RSC`, `Next-Router-State-Tree`, `Next-Router-Prefetch`, `Next-Url`)
-  - `default_ttl=0` honors origin Cache-Control headers
+  - `default_ttl=0` honors origin `Cache-Control` headers; doesn't cache if missing
   - Prevents accidental caching of dynamic content
 - AllViewer origin request policy for header forwarding
 - HTTP→HTTPS redirect
