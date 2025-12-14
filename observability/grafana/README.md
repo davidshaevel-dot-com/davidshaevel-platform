@@ -12,25 +12,25 @@ Grafana is deployed as an ECS Fargate service that visualizes metrics from Prome
 ## Architecture
 
 ```
-┌─────────────────────────────────────┐
-│      ECS Fargate Service            │
-│  ┌───────────────────────────────┐ │
-│  │   Grafana Container           │ │
-│  │   - Port 3000                 │ │
-│  │   - EFS mount: /var/lib/grafana  │ │
-│  └───────────────────────────────┘ │
-│              │                      │
-│              ▼                      │
-│      Prometheus Datasource         │
-│   (via service discovery)          │
-└─────────────────────────────────────┘
+┌──────────────────────────────────-----─┐
+│      ECS Fargate Service               │
+│  ┌─────────────────────────────---──┐  │
+│  │   Grafana Container              │  │
+│  │   - Port 3000                    │  │
+│  │   - EFS mount: /var/lib/grafana  │  │
+│  └────────────────────────────---───┘  │
+│              │                         │
+│              ▼                         │
+│      Prometheus Datasource             │
+│   (via service discovery)              │
+└──────────────────────────────────---───┘
 ```
 
 ## Directory Structure
 
 ```
 grafana/
-├── Dockerfile                              # Custom Grafana image
+├── Dockerfile                              # Custom Grafana image (grafana:10.4.2)
 ├── README.md                               # This file
 └── provisioning/
     ├── datasources/
@@ -38,7 +38,9 @@ grafana/
     ├── dashboards/
     │   └── default.yml                     # Dashboard provider config
     └── dashboard-definitions/
-        └── application-overview.json       # Application metrics dashboard
+        ├── application-overview.json       # Application health and status
+        ├── nodejs-performance.json         # Node.js memory, CPU, event loop
+        └── infrastructure-overview.json    # ECS tasks, ALB metrics
 ```
 
 ## Configuration Files
@@ -48,7 +50,7 @@ grafana/
 Automatically configures Prometheus as the default datasource when Grafana starts.
 
 **Key settings:**
-- **URL:** `http://dev-davidshaevel-prometheus.davidshaevel.local:9090` (via service discovery)
+- **URL:** `http://prometheus.davidshaevel.local:9090` (via AWS Cloud Map service discovery)
 - **Access mode:** Proxy (Grafana queries Prometheus on behalf of browser)
 - **Default:** Yes (primary datasource)
 - **Editable:** No (prevents accidental changes)
@@ -83,6 +85,30 @@ Pre-configured dashboard showing:
 
 **Refresh:** 30 seconds
 
+### 2. Node.js Performance
+
+**Purpose:** Detailed Node.js runtime metrics for both services
+
+**Panels:**
+- Memory usage breakdown (RSS, Heap Used, Heap Total, External)
+- Event loop lag and utilization
+- Active handles and requests
+- Garbage collection metrics
+
+**Refresh:** 30 seconds
+
+### 3. Infrastructure Overview
+
+**Purpose:** ECS task and load balancer metrics
+
+**Panels:**
+- ECS task CPU and memory utilization
+- ALB request counts and latency
+- Target group health status
+- Error rates and 4xx/5xx responses
+
+**Refresh:** 30 seconds
+
 ## Storage
 
 Grafana data is stored in EFS at `/var/lib/grafana` including:
@@ -93,8 +119,8 @@ Grafana data is stored in EFS at `/var/lib/grafana` including:
 ## Access
 
 Grafana UI is accessible at:
-- **Internal:** `http://dev-davidshaevel-grafana.davidshaevel.local:3000`
-- **External (via ALB):** `https://davidshaevel.com/grafana`
+- **Internal:** `http://grafana.davidshaevel.local:3000` (via AWS Cloud Map)
+- **External (via CloudFront):** `https://grafana.davidshaevel.com`
 
 **Default credentials:**
 - Username: `admin`
@@ -104,7 +130,7 @@ Grafana UI is accessible at:
 
 ### Option 1: Via UI (Recommended for development)
 
-1. Access Grafana at `https://davidshaevel.com/grafana`
+1. Access Grafana at `https://grafana.davidshaevel.com`
 2. Click **+** → **New Dashboard**
 3. Add panels and configure queries
 4. Click **Save** → Export as JSON
@@ -120,13 +146,13 @@ Grafana UI is accessible at:
 
 ## Monitoring Grafana
 
-Health check endpoint: `http://dev-davidshaevel-grafana.davidshaevel.local:3000/api/health`
+Health check endpoint: `http://grafana.davidshaevel.local:3000/api/health`
 
 Response when healthy:
 ```json
 {
   "database": "ok",
-  "version": "10.2.3"
+  "version": "10.4.2"
 }
 ```
 
@@ -136,7 +162,7 @@ Response when healthy:
 
 1. Check service discovery DNS:
    ```bash
-   dig +short dev-davidshaevel-prometheus.davidshaevel.local
+   dig +short prometheus.davidshaevel.local
    ```
 
 2. Check Grafana datasource status:
@@ -255,3 +281,24 @@ For full technical details on the CloudFront cache policy configuration, includi
 - **Official Docs:** https://grafana.com/docs/grafana/latest/
 - **Dashboard JSON Schema:** https://grafana.com/docs/grafana/latest/dashboards/json-model/
 - **Provisioning:** https://grafana.com/docs/grafana/latest/administration/provisioning/
+
+---
+
+**Document Version:** 1.2
+**Last Updated:** December 13, 2025
+
+### Changelog
+
+#### v1.2 (December 13, 2025)
+- Fixed service discovery DNS names (removed `dev-davidshaevel-` prefix)
+- Updated external URL to `https://grafana.davidshaevel.com` (CloudFront subdomain)
+- Added Node.js Performance and Infrastructure Overview dashboards to directory structure
+- Added descriptions for all 3 pre-configured dashboards
+- Updated Grafana version reference to 10.4.2
+
+#### v1.1 (December 12, 2025)
+- Added CloudFront Integration section
+- Documented cache policy and origin request policy configuration
+
+#### v1.0 (November 2025)
+- Initial Grafana configuration documentation
