@@ -437,7 +437,9 @@ GC thrashing → Increase memory or fix leak
 
 ## Integration with Lab Exercises
 
-This dashboard is designed to work with the [Node.js Profiling & Debugging Lab](../jobs-2025-q4/docs/labs/node-profiling-and-debugging.md).
+This dashboard is designed to work with the [Node.js Profiling & Debugging Lab](../job-searches-2025-q4/docs/labs/node-profiling-and-debugging.md).
+
+> **Note:** The lab document link above is a relative path to a sibling repository (`job-searches-2025-q4`). This link works on local filesystems where both repositories are cloned as siblings, but will not resolve on GitHub.
 
 ### Lab → Dashboard Correlation
 
