@@ -287,6 +287,10 @@ terraform output  # View all outputs
 - [Observability Module](terraform/modules/observability/README.md) - 340 lines (new - TT-25 Phase 3)
 - Service Discovery Module - 350+ lines (new - TT-25 Phase 4, README pending)
 
+### Observability Documentation
+- [Grafana README](observability/grafana/README.md) - Configuration, dashboards, troubleshooting
+- [Node.js Performance Dashboard Guide](docs/nodejs-performance-dashboard-guide.md) - **NEW** comprehensive panel interpretation guide
+
 ## 🛠️ Technology Stack
 
 **Infrastructure:**
@@ -449,11 +453,13 @@ terraform output  # View all outputs
   - Automated verification script (`test-grafana-deployment.sh`)
   - Gemini code review feedback addressed (Dynamic DNS, Error Handling, Security)
 
-**TT-26: Documentation & Demo Materials** (4-6 hours) - Priority 4
-- Architecture diagrams
-- Deployment runbook
-- Interview talking points
-- Portfolio demonstration materials
+**TT-26: Documentation & Demo Materials** (4-6 hours) - Priority 4 [IN PROGRESS]
+- ✅ Grafana README updates (v1.2) - Fixed DNS names, added dashboard descriptions
+- ✅ Node.js Performance Dashboard Guide - Comprehensive panel interpretation
+- ⏳ Architecture diagrams
+- ⏳ Deployment runbook
+- ⏳ Interview talking points
+- ⏳ Portfolio demonstration materials
 
 ## 🚀 Deployment
 
@@ -724,7 +730,7 @@ Austin, Texas
 - PR Feedback & Security Fixes: October 31, 2025 (Complete)
 
 **Status:** ✅ PRODUCTION DEPLOYMENT COMPLETE + Observability Complete + CloudFront RSC Cache Policy
-**Last Updated:** December 12, 2025
+**Last Updated:** December 13, 2025
 
 ## 🤖 AI Agent Sessions
 
@@ -746,6 +752,7 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - Nov 6: TT-31 Phase 4 & 5 - Testing, validation, and documentation
 - Nov 24: TT-25 Phase 10 - Grafana deployment and public access (PR #58, #59)
 - Dec 12: CloudFront RSC cache policy fix (PR #62) - Fixed redirect loop and RSC caching
+- Dec 13: TT-26 Documentation updates (PR #64, #65) - Grafana README updates, Node.js Performance Dashboard Guide
 
 **Infrastructure Milestones:**
 - ✅ TT-16 (Steps 1-3): Foundation
@@ -765,4 +772,4 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - ⏳ TT-20: Local Development (Planned - 6-8 hours)
 - ⏳ TT-26: Documentation (Planned - 4-6 hours)
 
-**Current Phase:** Production operational with automated CI/CD, full Observability Stack (Prometheus + Grafana), and enhanced application metrics. Ready for documentation and final polish.
+**Current Phase:** Production operational with automated CI/CD, full Observability Stack (Prometheus + Grafana), and enhanced application metrics. Documentation phase in progress (TT-26).
