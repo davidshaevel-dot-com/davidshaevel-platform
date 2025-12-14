@@ -289,7 +289,7 @@ terraform output  # View all outputs
 
 ### Observability Documentation
 - [Grafana README](observability/grafana/README.md) - Configuration, dashboards, troubleshooting
-- [Node.js Performance Dashboard Guide](docs/nodejs-performance-dashboard-guide.md) - **NEW** 488 lines, comprehensive panel interpretation guide
+- [Node.js Performance Dashboard Guide](docs/nodejs-performance-dashboard-guide.md) - **NEW** comprehensive panel interpretation guide
 
 ## 🛠️ Technology Stack
 
@@ -455,7 +455,7 @@ terraform output  # View all outputs
 
 **TT-26: Documentation & Demo Materials** (4-6 hours) - Priority 4 [IN PROGRESS]
 - ✅ Grafana README updates (v1.2) - Fixed DNS names, added dashboard descriptions
-- ✅ Node.js Performance Dashboard Guide (488 lines) - Comprehensive panel interpretation
+- ✅ Node.js Performance Dashboard Guide - Comprehensive panel interpretation
 - ⏳ Architecture diagrams
 - ⏳ Deployment runbook
 - ⏳ Interview talking points
