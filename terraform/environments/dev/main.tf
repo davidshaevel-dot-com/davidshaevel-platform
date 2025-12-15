@@ -187,6 +187,10 @@ module "compute" {
   enable_backend_ecs_exec  = var.enable_backend_ecs_exec
   enable_frontend_ecs_exec = var.enable_frontend_ecs_exec
 
+  # Lab endpoints configuration (TT-63 Node.js Profiling Lab)
+  lab_enable = var.lab_enable
+  lab_token  = var.lab_token
+
   # Service Discovery (AWS Cloud Map) - from service_discovery module
   backend_service_registry_arn  = module.service_discovery.backend_service_arn
   frontend_service_registry_arn = module.service_discovery.frontend_service_arn
