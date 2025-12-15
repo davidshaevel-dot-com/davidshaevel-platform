@@ -1,4 +1,5 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { timingSafeEqual } from 'node:crypto';
 import { Request } from 'express';
 
 @Injectable()
@@ -18,7 +19,18 @@ export class LabGuard implements CanActivate {
     if (!expectedToken) return false;
 
     const providedToken = req.header('x-lab-token') ?? '';
-    return providedToken === expectedToken;
+
+    // Use constant-time comparison to prevent timing attacks.
+    // Note: Length check is not constant-time, which can leak token length.
+    // For this lab feature, this is an acceptable tradeoff.
+    const expectedBuffer = Buffer.from(expectedToken);
+    const providedBuffer = Buffer.from(providedToken);
+
+    if (expectedBuffer.length !== providedBuffer.length) {
+      return false;
+    }
+
+    return timingSafeEqual(expectedBuffer, providedBuffer);
   }
 }
 

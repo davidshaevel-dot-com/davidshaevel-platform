@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  DefaultValuePipe,
+  Get,
+  ParseIntPipe,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { LabGuard } from './lab.guard';
 import { LabService } from './lab.service';
 
@@ -13,15 +21,17 @@ export class LabController {
   }
 
   @Post('event-loop-jam')
-  eventLoopJam(@Query('ms') ms?: string) {
-    const n = ms ? Number(ms) : 2000;
-    return this.labService.eventLoopJam(n);
+  eventLoopJam(
+    @Query('ms', new DefaultValuePipe(2000), ParseIntPipe) ms: number,
+  ) {
+    return this.labService.eventLoopJam(ms);
   }
 
   @Post('memory-leak')
-  memoryLeak(@Query('mb') mb?: string) {
-    const n = mb ? Number(mb) : 64;
-    return this.labService.retainMemory(n);
+  memoryLeak(
+    @Query('mb', new DefaultValuePipe(64), ParseIntPipe) mb: number,
+  ) {
+    return this.labService.retainMemory(mb);
   }
 
   @Post('memory-clear')
@@ -35,9 +45,10 @@ export class LabController {
   }
 
   @Post('cpu-profile')
-  cpuProfile(@Query('seconds') seconds?: string) {
-    const n = seconds ? Number(seconds) : 30;
-    return this.labService.captureCpuProfile(n);
+  cpuProfile(
+    @Query('seconds', new DefaultValuePipe(30), ParseIntPipe) seconds: number,
+  ) {
+    return this.labService.captureCpuProfile(seconds);
   }
 }
 
