@@ -44,9 +44,9 @@ services:
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       DB_NAME: davidshaevel
-      # Lab endpoints configuration (disabled by default)
-      LAB_ENABLE: "false"
-      # LAB_TOKEN: "your-secure-token-here"
+      # Lab endpoints configuration
+      LAB_ENABLE: "true"
+      LAB_TOKEN: "dev-token-123"
       # Node Inspector - enable debugging
       NODE_OPTIONS: "--inspect=0.0.0.0:9229"
     ports:

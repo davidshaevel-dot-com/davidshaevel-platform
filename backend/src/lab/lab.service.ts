@@ -113,9 +113,9 @@ function sleep(ms: number) {
 
 function post<T = unknown>(session: inspector.Session, method: string, params?: object): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    session.post(method, params ?? {}, (err: Error | null, result: T) => {
+    session.post(method, params ?? {}, (err: Error | null, result?: object) => {
       if (err) reject(err);
-      else resolve(result);
+      else resolve(result as T);
     });
   });
 }

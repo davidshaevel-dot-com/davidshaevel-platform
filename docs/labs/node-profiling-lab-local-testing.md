@@ -288,21 +288,27 @@ docker compose down -v
 
 ## Test Results Summary
 
+**Test Date:** December 14, 2025
+**Environment:** Docker Compose (macOS)
+
 | Test | Endpoint | Expected | Status |
 |------|----------|----------|--------|
-| 1 | GET /api/lab/status (no auth) | 403 | |
-| 2 | GET /api/lab/status (with auth) | 200 + JSON | |
-| 3 | POST /api/lab/event-loop-jam | 200 + blocks | |
-| 4 | POST /api/lab/memory-leak | 200 + retained | |
-| 5 | GET /api/lab/status (after leak) | shows retained | |
-| 6 | POST /api/lab/memory-clear | 200 + cleared | |
-| 7 | POST /api/lab/heap-snapshot | 200 + file path | |
-| 8 | POST /api/lab/cpu-profile | 200 + file path | |
-| 9 | POST /api/lab/cpu-profile (concurrent) | 409 Conflict | |
-| 10 | Chrome DevTools attach | Inspector connected | |
-| 11 | Breakpoint debugging | Pauses at breakpoint | |
-| 12 | Live CPU profiling | Shows flame chart | |
-| 13 | Live heap inspection | Shows Buffer objects | |
+| 1 | GET /api/lab/status (no auth) | 403 | ✅ PASS |
+| 2 | GET /api/lab/status (with auth) | 200 + JSON | ✅ PASS |
+| 3 | POST /api/lab/event-loop-jam | 200 + blocks | ✅ PASS (1.057s) |
+| 4 | POST /api/lab/memory-leak | 200 + retained | ✅ PASS (67108864 bytes) |
+| 5 | GET /api/lab/status (after leak) | shows retained | ✅ PASS |
+| 6 | POST /api/lab/memory-clear | 200 + cleared | ✅ PASS |
+| 7 | POST /api/lab/heap-snapshot | 200 + file path | ✅ PASS (~27MB file) |
+| 8 | POST /api/lab/cpu-profile | 200 + file path | ✅ PASS (5.224s) |
+| 9 | POST /api/lab/cpu-profile (concurrent) | 409 Conflict | ✅ PASS |
+| 10 | Chrome DevTools attach | Inspector connected | ⏳ Manual |
+| 11 | Breakpoint debugging | Pauses at breakpoint | ⏳ Manual |
+| 12 | Live CPU profiling | Shows flame chart | ⏳ Manual |
+| 13 | Live heap inspection | Shows Buffer objects | ⏳ Manual |
+
+**Automated Tests:** 9/9 PASS
+**Manual Tests:** 4 (require Chrome DevTools interaction)
 
 ---
 
