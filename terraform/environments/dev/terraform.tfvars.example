@@ -86,6 +86,21 @@ enable_backend_ecs_exec = false
 enable_frontend_ecs_exec = false
 
 # -----------------------------------------------------------------------------
+# Lab Endpoints Configuration (TT-63 Node.js Profiling Lab)
+# -----------------------------------------------------------------------------
+
+# Enable lab endpoints for profiling/debugging
+# WARNING: Only enable in development/staging environments
+# These endpoints allow CPU profiling, heap snapshots, and memory leak simulation
+# NEVER enable in production without LAB_ALLOW_PROD (handled automatically by Terraform)
+lab_enable = false
+
+# Authentication token for lab endpoints
+# Generate a secure random token: openssl rand -hex 32
+# This token must be passed in the x-lab-token header to access lab endpoints
+lab_token = "your-secure-random-token-here"
+
+# -----------------------------------------------------------------------------
 # Additional Tags (Optional)
 # -----------------------------------------------------------------------------
 
