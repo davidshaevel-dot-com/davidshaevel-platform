@@ -1,0 +1,81 @@
+# Docker Compose for local development
+# Includes Node Inspector support for debugging
+#
+# Usage:
+#   docker compose up -d              # Start all services
+#   docker compose up -d backend db   # Start backend + database only
+#   docker compose logs -f backend    # Follow backend logs
+#   docker compose down               # Stop all services
+#
+# Inspector debugging:
+#   1. Start services: docker compose up -d
+#   2. Open Chrome: chrome://inspect
+#   3. Click "Configure" and add localhost:9229
+#   4. Click "inspect" on the Node.js target
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: davidshaevel-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: davidshaevel
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: davidshaevel-backend
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: davidshaevel
+      # Lab endpoints configuration (disabled by default)
+      LAB_ENABLE: "false"
+      # LAB_TOKEN: "your-secure-token-here"
+      # Node Inspector - enable debugging
+      NODE_OPTIONS: "--inspect=0.0.0.0:9229"
+    ports:
+      - "3001:3001"   # API port
+      - "9229:9229"   # Node Inspector port (development only!)
+    volumes:
+      - ./backend/src:/app/src:ro
+      - ./backend/package.json:/app/package.json:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    # Override command to use development mode with watch
+    command: ["npm", "run", "start:dev"]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: davidshaevel-frontend
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/src:/app/src:ro
+      - ./frontend/public:/app/public:ro
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
