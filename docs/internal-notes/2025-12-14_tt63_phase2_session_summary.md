@@ -1,6 +1,6 @@
-# TT-63 Phase 2 Session Summary - December 15, 2025
+# TT-63 Phase 2 Session Summary - December 14, 2025
 
-**Date:** Sunday, December 15, 2025
+**Date:** Sunday, December 14, 2025
 **Linear Issue:** [TT-63](https://linear.app/davidshaevel-dot-com/issue/TT-63/nodejs-profiling-debugging-hands-on-lab)
 **Branch:** `david/tt-63-phase2-local-testing`
 **PR:** #68 (merged)

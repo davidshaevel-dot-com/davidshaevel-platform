@@ -1,6 +1,6 @@
 # TT-63: Node.js Profiling & Debugging Hands-On Lab - Session Agenda
 
-**Date:** Sunday, December 14-15, 2025
+**Date:** Sunday, December 14, 2025
 **Linear Issue:** [TT-63](https://linear.app/davidshaevel-dot-com/issue/TT-63/nodejs-profiling-debugging-hands-on-lab)
 **Phase 1 Branch:** `david/tt-63-nodejs-profiling-debugging-hands-on-lab`
 **Phase 2 Branch:** `david/tt-63-phase2-local-testing`
