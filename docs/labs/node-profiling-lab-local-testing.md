@@ -331,6 +331,28 @@ docker compose up -d backend
 2. Check backend logs for "Debugger listening on ws://..."
 3. Refresh `chrome://inspect`
 
+### Source files not visible in DevTools
+
+If you can connect to the Inspector but can't find source files (like `lab.controller.ts`):
+
+1. **Verify the inspector is connected to the right process:**
+   ```bash
+   curl -s http://localhost:9229/json/list | jq '.[].title'
+   ```
+   - Should show `/app/dist/main` (the NestJS application)
+   - If it shows `/usr/local/bin/npm`, the inspector is attached to the wrong process
+
+2. **Fix:** The docker-compose.yml should use NestJS debug mode directly:
+   ```yaml
+   command: ["npx", "nest", "start", "--debug", "0.0.0.0:9229", "--watch"]
+   ```
+   NOT using `NODE_OPTIONS="--inspect=..."` which only affects the npm wrapper process.
+
+3. **Restart backend after fix:**
+   ```bash
+   docker compose up -d backend
+   ```
+
 ### Lab endpoints return 403
 
 1. Verify `LAB_ENABLE=true` in docker-compose.yml
