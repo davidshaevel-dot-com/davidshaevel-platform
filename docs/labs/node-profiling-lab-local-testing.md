@@ -288,7 +288,7 @@ docker compose down -v
 
 ## Test Results Summary
 
-**Test Date:** December 14, 2025
+**Test Date:** December 15, 2025
 **Environment:** Docker Compose (macOS)
 
 | Test | Endpoint | Expected | Status |
@@ -302,13 +302,14 @@ docker compose down -v
 | 7 | POST /api/lab/heap-snapshot | 200 + file path | ✅ PASS (~27MB file) |
 | 8 | POST /api/lab/cpu-profile | 200 + file path | ✅ PASS (5.224s) |
 | 9 | POST /api/lab/cpu-profile (concurrent) | 409 Conflict | ✅ PASS |
-| 10 | Chrome DevTools attach | Inspector connected | ⏳ Manual |
-| 11 | Breakpoint debugging | Pauses at breakpoint | ⏳ Manual |
-| 12 | Live CPU profiling | Shows flame chart | ⏳ Manual |
-| 13 | Live heap inspection | Shows Buffer objects | ⏳ Manual |
+| 10 | Chrome DevTools attach | Inspector connected | ✅ PASS |
+| 11 | Breakpoint debugging | Pauses at breakpoint | ✅ PASS |
+| 12 | Live CPU profiling | Shows flame chart | ✅ PASS |
+| 13 | Live heap inspection | Shows Buffer objects | ✅ PASS |
 
 **Automated Tests:** 9/9 PASS
-**Manual Tests:** 4 (require Chrome DevTools interaction)
+**Manual Tests:** 4/4 PASS
+**Overall:** 13/13 PASS
 
 ---
 
