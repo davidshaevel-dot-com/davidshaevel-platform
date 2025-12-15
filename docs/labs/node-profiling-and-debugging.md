@@ -389,10 +389,18 @@ Response includes a `/tmp/... .cpuprofile` path on the running task.
 
 ### Export the Profile from ECS
 
-Use the helper script:
+> **Note:** A helper script (`scripts/export-backend-ecs-artifact.sh`) is planned for Phase 3 of this lab.
+> For now, use the manual approach below.
 
+**Manual Export via S3:**
 ```bash
-./scripts/export-backend-ecs-artifact.sh /tmp/<file>.cpuprofile ./cpu.cpuprofile
+# 1. Copy file to S3 from within the container (via ECS Exec)
+aws ecs execute-command --cluster $CLUSTER --task $TASK_ID \
+  --container backend --interactive \
+  --command "aws s3 cp /tmp/<file>.cpuprofile s3://your-bucket/profiles/"
+
+# 2. Download from S3 to local machine
+aws s3 cp s3://your-bucket/profiles/<file>.cpuprofile ./cpu.cpuprofile
 ```
 
 ### Analyze the Profile
@@ -455,10 +463,15 @@ curl -sS -X POST \
   https://davidshaevel.com/api/lab/heap-snapshot | jq
 ```
 
-Export it:
+Export it (see [Export the Profile from ECS](#export-the-profile-from-ecs) for manual S3 approach):
 
 ```bash
-./scripts/export-backend-ecs-artifact.sh /tmp/<file>.heapsnapshot ./heap.heapsnapshot
+# Manual export via S3:
+aws ecs execute-command --cluster $CLUSTER --task $TASK_ID \
+  --container backend --interactive \
+  --command "aws s3 cp /tmp/<file>.heapsnapshot s3://your-bucket/profiles/"
+
+aws s3 cp s3://your-bucket/profiles/<file>.heapsnapshot ./heap.heapsnapshot
 ```
 
 ### Analyze in Chrome

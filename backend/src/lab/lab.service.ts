@@ -56,12 +56,12 @@ export class LabService {
     return this.getStatus();
   }
 
-  async writeHeapSnapshot(): Promise<{ filePath: string }> {
+  writeHeapSnapshot(): { filePath: string } {
     const filePath = path.join(
       '/tmp',
       `heap-${new Date().toISOString().replaceAll(':', '-')}-${randomBytes(4).toString('hex')}.heapsnapshot`,
     );
-    // v8.writeHeapSnapshot returns the filename it wrote.
+    // v8.writeHeapSnapshot is a synchronous, blocking operation that returns the filename it wrote.
     const written = v8.writeHeapSnapshot(filePath);
     return { filePath: written };
   }
