@@ -55,9 +55,6 @@ if [[ -z "$TASK_ARN" || "$TASK_ARN" == "None" ]]; then
   exit 1
 fi
 
-TMP_B64="$(mktemp)"
-trap 'rm -f "$TMP_B64"' EXIT
-
 echo "Exporting artifact from ECS task..."
 echo "- region:   $AWS_REGION"
 echo "- cluster:  $ECS_CLUSTER_NAME"
@@ -71,13 +68,14 @@ echo
 # `base64` being present in the container image.
 #
 # We print explicit markers so we can reliably extract the payload from the exec output.
+# Capture stderr (2>&1) so container errors are included in RAW_OUT for debugging.
 RAW_OUT="$(aws ecs execute-command \
   --region "$AWS_REGION" \
   --cluster "$ECS_CLUSTER_NAME" \
   --task "$TASK_ARN" \
   --container "$CONTAINER_NAME" \
   --interactive \
-  --command "node -e \"const fs=require('fs'); const p=process.argv[1]; console.log('---BEGIN_ARTIFACT_B64---'); process.stdout.write(fs.readFileSync(p).toString('base64')); console.log('\\n---END_ARTIFACT_B64---');\" \"$ARTIFACT_PATH\"")"
+  --command "node -e \"const fs=require('fs'); const p=process.argv[1]; console.log('---BEGIN_ARTIFACT_B64---'); process.stdout.write(fs.readFileSync(p).toString('base64')); console.log('\\n---END_ARTIFACT_B64---');\" \"$ARTIFACT_PATH\"" 2>&1)"
 
 python3 - <<'PY' "$RAW_OUT" "$OUT_PATH"
 import base64
@@ -87,14 +85,13 @@ import sys
 raw = sys.argv[1]
 out_path = sys.argv[2]
 
-# Filter out AWS SSM session manager noise that may appear in the output
-raw = raw.replace("Cannot perform start session: EOF", "")
-
+# The regex extracts base64 content between markers, ignoring any AWS SSM noise
+# that may appear elsewhere in the output (e.g., "Cannot perform start session: EOF").
 m = re.search(r"---BEGIN_ARTIFACT_B64---\\s*(?P<b64>[A-Za-z0-9+/=\\s]+)\\s*---END_ARTIFACT_B64---", raw)
 if not m:
-    print("error: could not find base64 payload in ECS exec output", file=sys.stderr)
-    print("hint: the file may not exist or the task may have been replaced", file=sys.stderr)
-    print("hint: with multiple tasks, the profile may be on a different task", file=sys.stderr)
+    print("error: could not find base64 payload in ECS exec output. See raw output below.", file=sys.stderr)
+    print("hint: the file may not exist, the task may have been replaced, or an error occurred.", file=sys.stderr)
+    print("\\n---[ RAW ECS OUTPUT ]---\\n" + raw, file=sys.stderr)
     sys.exit(1)
 
 b64 = re.sub(r"\\s+", "", m.group("b64"))
@@ -105,10 +102,3 @@ with open(out_path, "wb") as f:
 
 print(f"Wrote {len(data)} bytes to {out_path}")
 PY
-
-
-
-
-
-
-
