@@ -1,8 +1,10 @@
 # TT-63: Node.js Profiling & Debugging Hands-On Lab - Session Agenda
 
-**Date:** Sunday, December 14, 2025
+**Date:** Sunday, December 14-15, 2025
 **Linear Issue:** [TT-63](https://linear.app/davidshaevel-dot-com/issue/TT-63/nodejs-profiling-debugging-hands-on-lab)
-**Branch:** `david/tt-63-nodejs-profiling-debugging-hands-on-lab`
+**Phase 1 Branch:** `david/tt-63-nodejs-profiling-debugging-hands-on-lab`
+**Phase 2 Branch:** `david/tt-63-phase2-local-testing`
+**Status:** ✅ Phase 1 & 2 Complete (PRs #67 and #68 merged)
 
 ---
 
@@ -75,7 +77,7 @@ The lab now covers three debugging approaches:
 
 ## Todo List for Lab Completion
 
-### Phase 1: Code Integration (TODAY - COMPLETE)
+### Phase 1: Code Integration ✅ COMPLETE (PR #67 - Dec 14)
 - [x] Create Linear issue TT-63 for tracking
 - [x] Rename branch to include Linear issue number
 - [x] Copy lab files from job-searches-2025-q4 to davidshaevel-platform
@@ -86,22 +88,30 @@ The lab now covers three debugging approaches:
 - [x] Add Node Inspector sections (Part 1)
 - [x] Add Remote Debugging section (Part 3)
 - [x] Add Appendix with troubleshooting
-- [ ] Verify LabModule is properly imported in app.module.ts
-- [ ] Add missing API prefix to lab controller routes (`/api/lab/*`)
+- [x] Verify LabModule is properly imported in app.module.ts
+- [x] Add missing API prefix to lab controller routes (`/api/lab/*`)
 
-### Phase 2: Local Testing
-- [ ] Test lab endpoints locally with Docker Compose
-- [ ] Verify token authentication works correctly
-- [ ] Test each endpoint:
-  - [ ] GET /api/lab/status
-  - [ ] POST /api/lab/event-loop-jam
-  - [ ] POST /api/lab/memory-leak
-  - [ ] POST /api/lab/memory-clear
-  - [ ] POST /api/lab/heap-snapshot
-  - [ ] POST /api/lab/cpu-profile
-- [ ] Verify Inspector attachment works
-- [ ] Test breakpoint debugging workflow
-- [ ] Verify Prometheus metrics reflect induced conditions
+### Phase 2: Local Testing ✅ COMPLETE (PR #68 - Dec 15)
+- [x] Test lab endpoints locally with Docker Compose
+- [x] Verify token authentication works correctly
+- [x] Test each endpoint:
+  - [x] GET /api/lab/status (403 without token, 200 with token)
+  - [x] POST /api/lab/event-loop-jam (1.057s blocking)
+  - [x] POST /api/lab/memory-leak (67MB retained)
+  - [x] POST /api/lab/memory-clear (cleared successfully)
+  - [x] POST /api/lab/heap-snapshot (~27MB file created)
+  - [x] POST /api/lab/cpu-profile (5.224s, 409 on concurrent)
+- [x] Verify Inspector attachment works
+- [x] Test breakpoint debugging workflow
+- [x] Test live CPU profiling (flame chart visible)
+- [x] Test live heap inspection (Buffer objects found)
+
+**Test Results:** 13/13 PASS (9 automated + 4 manual Chrome DevTools)
+
+**Key Fixes Made:**
+1. TypeScript error in lab.service.ts - fixed inspector callback type
+2. Inspector source files not visible - switched to NestJS debug mode
+3. Security warnings added per Gemini Code Assist feedback
 
 ### Phase 3: Helper Scripts
 - [ ] Create `scripts/export-backend-ecs-artifact.sh` for retrieving profiles from ECS
@@ -174,10 +184,17 @@ NODE_OPTIONS="--inspect=0.0.0.0:9229"
 | Enhance lab documentation | ✅ Done | 3-part structure, 640+ lines |
 | Update TT-63 with plan | ✅ Done | Node Inspector integration plan |
 | Create session agenda | ✅ Done | This document |
-| Verify app.module.ts | ⏳ Pending | |
-| Local testing | ⏳ Pending | |
-| Helper scripts | ⏳ Pending | |
-| Deployment | ⏳ Pending | |
+| Verify app.module.ts | ✅ Done | LabModule imported correctly |
+| **Phase 1 PR #67** | ✅ Merged | Dec 14, 2025 |
+| Local testing | ✅ Done | 13/13 tests passing |
+| Create local testing guide | ✅ Done | 382 lines |
+| Fix TypeScript error | ✅ Done | Inspector callback type |
+| Fix Inspector source visibility | ✅ Done | NestJS debug mode |
+| Add security warnings | ✅ Done | Gemini Code Assist feedback |
+| **Phase 2 PR #68** | ✅ Merged | Dec 15, 2025 |
+| Helper scripts | ⏳ Pending | Phase 3 |
+| Documentation enhancements | ⏳ Pending | Phase 4 |
+| Deployment | ⏳ Pending | Phase 5 |
 
 ---
 
@@ -191,9 +208,43 @@ NODE_OPTIONS="--inspect=0.0.0.0:9229"
 
 ---
 
-## Next Steps
+## Next Steps (Phases 3-5)
 
-1. Verify the LabModule import in app.module.ts is correct
-2. Add `/api` prefix to the lab controller routes
-3. Test locally with Docker Compose
-4. Create PR for initial lab code integration
+**Phase 3: Helper Scripts**
+1. Create `scripts/export-backend-ecs-artifact.sh` for retrieving profiles from ECS
+2. Document script usage in lab guide
+3. Test script against dev environment
+
+**Phase 4: Documentation Enhancements**
+1. Add architecture diagram showing lab flow
+2. Add screenshots of Chrome DevTools analysis
+3. Add example flamegraph interpretation
+4. Create interview talking points for lab demonstration
+
+**Phase 5: Deployment**
+1. Deploy to dev environment with LAB_ENABLE=true
+2. Test full lab workflow end-to-end
+3. Create Terraform variables for lab configuration
+4. Document deployment considerations
+
+---
+
+## Session Summary (December 14-15, 2025)
+
+**Accomplishments:**
+- ✅ Phase 1 complete - Lab module code integrated (PR #67)
+- ✅ Phase 2 complete - All 13 local tests passing (PR #68)
+- ✅ Fixed TypeScript error in lab.service.ts
+- ✅ Fixed Inspector source file visibility issue
+- ✅ Added security warning comments per Gemini feedback
+- ✅ Created comprehensive local testing guide (382 lines)
+
+**Technical Learnings:**
+- Flame chart interpretation (X-axis = time, Y-axis = call stack, width = CPU time)
+- Heap snapshot comparison (use "Comparison" view, filter by Constructor name)
+- NestJS debug mode vs NODE_OPTIONS for Inspector visibility
+
+**Files Created:**
+- `docs/labs/node-profiling-lab-local-testing.md` (382 lines)
+- Updated `docker-compose.yml` with NestJS debug mode
+- Updated `backend/src/lab/lab.service.ts` with TypeScript fix
