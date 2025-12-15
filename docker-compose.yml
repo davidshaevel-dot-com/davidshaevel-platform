@@ -44,7 +44,9 @@ services:
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       DB_NAME: davidshaevel
-      # Lab endpoints configuration
+      # Lab endpoints configuration (enabled for local development)
+      # WARNING: The token below is for local testing ONLY and is not secure.
+      # It must be replaced with a strong secret for any non-local environment.
       LAB_ENABLE: "true"
       LAB_TOKEN: "dev-token-123"
     ports:

@@ -56,6 +56,7 @@ Look for:
 
 ```bash
 # Set the lab token (matches docker-compose.yml)
+# WARNING: This token is insecure and for local testing only.
 export LAB_TOKEN="dev-token-123"
 export BASE_URL="http://localhost:3001"
 ```
