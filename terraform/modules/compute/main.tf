@@ -466,7 +466,7 @@ resource "aws_ecs_task_definition" "backend" {
         }
       ]
 
-      environment = [
+      environment = concat([
         {
           name  = "NODE_ENV"
           value = "production" # Always use production for deployed backend (enables SSL for RDS)
@@ -487,7 +487,25 @@ resource "aws_ecs_task_definition" "backend" {
           name  = "DB_NAME"
           value = var.database_name
         }
-      ]
+      ],
+        # Lab endpoints configuration (TT-63 Node.js Profiling Lab)
+        # Only include LAB_* environment variables when lab_enable is true
+        # LAB_ALLOW_PROD is required because NODE_ENV=production (for SSL/RDS)
+        var.lab_enable ? [
+          {
+            name  = "LAB_ENABLE"
+            value = "true"
+          },
+          {
+            name  = "LAB_TOKEN"
+            value = var.lab_token
+          },
+          {
+            name  = "LAB_ALLOW_PROD"
+            value = "true"
+          }
+        ] : []
+      )
 
       secrets = [
         {

@@ -269,6 +269,23 @@ variable "enable_frontend_ecs_exec" {
 }
 
 # -----------------------------------------------------------------------------
+# Lab Endpoints Configuration (TT-63 Node.js Profiling Lab)
+# -----------------------------------------------------------------------------
+
+variable "lab_enable" {
+  description = "Enable lab endpoints for profiling/debugging (should be false in production)"
+  type        = bool
+  default     = false
+}
+
+variable "lab_token" {
+  description = "Authentication token for lab endpoints (required if lab_enable is true)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+# -----------------------------------------------------------------------------
 # CDN Configuration (CloudFront)
 # -----------------------------------------------------------------------------
 
