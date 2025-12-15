@@ -44,11 +44,11 @@ services:
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       DB_NAME: davidshaevel
-      # Lab endpoints configuration (disabled by default)
-      LAB_ENABLE: "false"
-      # LAB_TOKEN: "your-secure-token-here"
-      # Node Inspector - enable debugging
-      NODE_OPTIONS: "--inspect=0.0.0.0:9229"
+      # Lab endpoints configuration (enabled for local development)
+      # WARNING: The token below is for local testing ONLY and is not secure.
+      # It must be replaced with a strong secret for any non-local environment.
+      LAB_ENABLE: "true"
+      LAB_TOKEN: "dev-token-123"
     ports:
       - "3001:3001"   # API port
       - "9229:9229"   # Node Inspector port (development only!)
@@ -58,8 +58,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    # Override command to use development mode with watch
-    command: ["npm", "run", "start:dev"]
+    # Use NestJS debug mode with Inspector bound to 0.0.0.0 for Docker access
+    command: ["npx", "nest", "start", "--debug", "0.0.0.0:9229", "--watch"]
 
   frontend:
     build:
