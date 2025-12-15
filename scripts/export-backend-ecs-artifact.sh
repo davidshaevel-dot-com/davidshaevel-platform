@@ -9,6 +9,14 @@ if [[ -z "$ARTIFACT_PATH" || -z "$OUT_PATH" ]]; then
   echo
   echo "example:"
   echo "  $0 /tmp/cpu-2025-12-12T12-34-56.000Z.cpuprofile ./cpu.cpuprofile"
+  echo
+  echo "environment variables:"
+  echo "  TASK_ARN        - Specify a task ARN directly (useful with multiple tasks)"
+  echo "  TF_ENV_DIR      - Terraform environment directory (default: terraform/environments/dev)"
+  echo "  CONTAINER_NAME  - Container name (default: backend)"
+  echo
+  echo "example with specific task:"
+  echo "  TASK_ARN=arn:aws:ecs:us-east-1:123:task/cluster/abc123 $0 /tmp/cpu.cpuprofile ./cpu.cpuprofile"
   exit 2
 fi
 
@@ -42,17 +50,24 @@ AWS_REGION="$(terraform output -raw aws_region)"
 ECS_CLUSTER_NAME="$(terraform output -raw ecs_cluster_name)"
 BACKEND_SERVICE_NAME="$(terraform output -raw backend_service_name)"
 
-TASK_ARN="$(aws ecs list-tasks \
-  --region "$AWS_REGION" \
-  --cluster "$ECS_CLUSTER_NAME" \
-  --service-name "$BACKEND_SERVICE_NAME" \
-  --desired-status RUNNING \
-  --query 'taskArns[0]' \
-  --output text)"
+# Allow overriding the task ARN via environment variable.
+# Useful when multiple tasks are running (high availability) and the artifact
+# is on a specific task. See troubleshooting docs for how to identify which task has your artifact.
+if [[ -n "${TASK_ARN:-}" ]]; then
+  echo "Using TASK_ARN from environment: $TASK_ARN"
+else
+  TASK_ARN="$(aws ecs list-tasks \
+    --region "$AWS_REGION" \
+    --cluster "$ECS_CLUSTER_NAME" \
+    --service-name "$BACKEND_SERVICE_NAME" \
+    --desired-status RUNNING \
+    --query 'taskArns[0]' \
+    --output text)"
 
-if [[ -z "$TASK_ARN" || "$TASK_ARN" == "None" ]]; then
-  echo "error: could not find a RUNNING task for service: $BACKEND_SERVICE_NAME" >&2
-  exit 1
+  if [[ -z "$TASK_ARN" || "$TASK_ARN" == "None" ]]; then
+    echo "error: could not find a RUNNING task for service: $BACKEND_SERVICE_NAME" >&2
+    exit 1
+  fi
 fi
 
 echo "Exporting artifact from ECS task..."

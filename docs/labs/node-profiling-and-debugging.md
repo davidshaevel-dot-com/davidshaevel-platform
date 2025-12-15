@@ -27,6 +27,8 @@ You will learn three approaches to debugging Node.js applications:
 - **Docker & Docker Compose** installed
 - **Chrome browser** (for DevTools debugging)
 - **AWS CLI** + Session Manager plugin (for Part 2 & 3 with ECS)
+- **Terraform** (for the export script to read cluster/service names)
+- **Python 3** (for the export script's base64 decoding)
 - Optional: [Speedscope](https://www.speedscope.app/) for flamegraph visualization
 
 ## What Already Exists in This Repo
@@ -389,10 +391,30 @@ Response includes a `/tmp/... .cpuprofile` path on the running task.
 
 ### Export the Profile from ECS
 
-> **Note:** A helper script (`scripts/export-backend-ecs-artifact.sh`) is planned for Phase 3 of this lab.
-> For now, use the manual approach below.
+Use the helper script to download the profile directly from the ECS container:
 
-**Manual Export via S3:**
+```bash
+# From the repository root
+cd /path/to/davidshaevel-platform
+
+# Export the CPU profile (use the path from the curl response)
+AWS_PROFILE=davidshaevel-dev ./scripts/export-backend-ecs-artifact.sh \
+  "/tmp/cpu-2025-12-15T22-30-00.000Z.cpuprofile" \
+  "./cpu-profile.cpuprofile"
+```
+
+The script:
+1. Discovers the running backend task automatically via Terraform outputs
+2. Uses ECS Exec to base64-encode the file inside the container
+3. Extracts and decodes the payload locally
+4. Writes the file to your specified output path
+
+**Expected output:** `Wrote XXXXX bytes to ./cpu-profile.cpuprofile`
+
+**Alternative: Manual Export via S3**
+
+If the helper script doesn't work for your environment, you can export via S3:
+
 ```bash
 # 1. Copy file to S3 from within the container (via ECS Exec)
 aws ecs execute-command --cluster $CLUSTER --task $TASK_ID \
@@ -463,16 +485,18 @@ curl -sS -X POST \
   https://davidshaevel.com/api/lab/heap-snapshot | jq
 ```
 
-Export it (see [Export the Profile from ECS](#export-the-profile-from-ecs) for manual S3 approach):
+Export it using the helper script:
 
 ```bash
-# Manual export via S3:
-aws ecs execute-command --cluster $CLUSTER --task $TASK_ID \
-  --container backend --interactive \
-  --command "aws s3 cp /tmp/<file>.heapsnapshot s3://your-bucket/profiles/"
-
-aws s3 cp s3://your-bucket/profiles/<file>.heapsnapshot ./heap.heapsnapshot
+# Export the heap snapshot (use the path from the curl response)
+AWS_PROFILE=davidshaevel-dev ./scripts/export-backend-ecs-artifact.sh \
+  "/tmp/heapdump-2025-12-15T22-35-00.000Z.heapsnapshot" \
+  "./heap-snapshot.heapsnapshot"
 ```
+
+> **Note:** Heap snapshots can be large (tens to hundreds of MB). The export may take 30-60 seconds depending on heap size.
+
+**Alternative: Manual export via S3** (see [Export the Profile from ECS](#export-the-profile-from-ecs) for details)
 
 ### Analyze in Chrome
 
@@ -638,6 +662,70 @@ You now have full DevTools access to the remote container!
 1. Ensure profiling ran for long enough (10s+ recommended)
 2. Verify the operation occurred during profiling window
 3. Check file was fully written before export
+
+### Export script fails
+
+1. **"could not find base64 payload"** - The file may not exist, or the task was replaced
+   - Verify the file path matches exactly what the lab endpoint returned
+   - Check if a new deployment replaced the task (artifacts are lost on task replacement)
+   - Run the lab endpoint again to generate a fresh artifact
+
+2. **"could not find a RUNNING task"** - No backend tasks are running
+   - Check ECS service status: `aws ecs describe-services --cluster dev-davidshaevel-cluster --services dev-davidshaevel-backend`
+
+3. **Terraform errors** - Script can't read outputs
+   - Ensure you're in the correct directory or set `TF_ENV_DIR`
+   - Run `terraform init` if needed
+
+4. **SSM/ECS Exec errors** - Session Manager issues
+   - Verify Session Manager plugin is installed: `session-manager-plugin --version`
+   - Ensure `enable_backend_ecs_exec = true` in Terraform
+   - Check IAM permissions for ECS Exec
+
+5. **Multi-task deployment**: Profile on different task than script targets
+
+   When running multiple backend tasks (high availability), curl requests are load-balanced across tasks. The profile may be created on a different task than the one the export script connects to.
+
+   **Workaround**: List all running tasks and check each one for the artifact:
+
+   ```bash
+   # List all backend task ARNs
+   AWS_PROFILE=davidshaevel-dev aws ecs list-tasks \
+     --cluster dev-davidshaevel-cluster \
+     --service-name dev-davidshaevel-backend \
+     --query 'taskArns' --output text
+
+   # Check each task for the file
+   AWS_PROFILE=davidshaevel-dev aws ecs execute-command \
+     --cluster dev-davidshaevel-cluster \
+     --task <TASK_ARN> \
+     --container backend \
+     --interactive \
+     --command "ls -la /tmp/*.cpuprofile /tmp/*.heapsnapshot 2>/dev/null || echo 'No artifacts'"
+   ```
+
+   Once you find the task with your artifact, use the `TASK_ARN` environment variable to specify it:
+
+   ```bash
+   TASK_ARN=<task-arn-with-artifact> AWS_PROFILE=davidshaevel-dev ./scripts/export-backend-ecs-artifact.sh \
+     "/tmp/cpu-xxx.cpuprofile" "./cpu.cpuprofile"
+   ```
+
+6. **SSM session EOF**: Session terminates before output completes
+
+   ECS Exec sessions may terminate with "Cannot perform start session: EOF" before the base64 output completes. This is a known limitation of SSM session streaming with larger outputs (even files as small as 10-15KB can trigger this).
+
+   **Root cause**: The SSM session buffer/timeout limits cause the session to close before the full base64-encoded file can be transmitted.
+
+   **Recommended workaround**: Use **remote debugging (Part 3)** instead of the export script. With Chrome DevTools connected via port forwarding:
+   - Start a CPU profile directly from DevTools Performance tab
+   - Save the profile locally with "Save profile..." button
+   - No ECS Exec limitations since data flows through the Inspector protocol
+
+   **Alternative workarounds**:
+   - Try the export multiple times (session stability varies)
+   - For very small files (<5KB), the export may succeed
+   - Manually extract the partial base64 from the error output (if BEGIN marker is visible)
 
 ## Notes / Extensions
 
