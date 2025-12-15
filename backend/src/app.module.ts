@@ -8,6 +8,7 @@ import { HealthModule } from './health/health.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { MetricsInterceptor } from './metrics/metrics.interceptor';
 import { ProjectsModule } from './projects/projects.module';
+import { LabModule } from './lab/lab.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { ProjectsModule } from './projects/projects.module';
     HealthModule,
     MetricsModule,
     ProjectsModule,
+    LabModule,
   ],
   controllers: [AppController],
   providers: [

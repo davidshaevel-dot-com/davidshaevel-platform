@@ -1,0 +1,17 @@
+# Development Dockerfile with hot reload and Inspector support
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Copy source (will be overridden by volume mount in compose)
+COPY . .
+
+# Expose ports
+EXPOSE 3001 9229
+
+# Default command (can be overridden in compose)
+CMD ["npm", "run", "start:dev"]
