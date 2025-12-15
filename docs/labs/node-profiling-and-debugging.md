@@ -114,7 +114,7 @@ Learn to step through code and inspect state.
    - Use `Cmd+P` (Mac) or `Ctrl+P` (Windows) to open file picker
    - Type `lab.controller` to find the file
 
-3. Find the `eventLoopJam` method (~line 16)
+3. Find the `eventLoopJam` method (~line 24)
 
 4. Click the line number to set a breakpoint (blue marker appears)
 

@@ -1,6 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import inspector from 'node:inspector';
+import { ConflictException, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { randomBytes } from 'node:crypto';
 import { promises as fs } from 'node:fs';
+import inspector from 'node:inspector';
 import path from 'node:path';
 import v8 from 'node:v8';
 
@@ -13,12 +15,18 @@ export class LabService {
   private readonly retainedBuffers: Buffer[] = [];
   private cpu: CpuProfileState = { inProgress: false };
 
+  constructor(private readonly configService: ConfigService) {}
+
   getStatus() {
-    const totalBytes = this.retainedBuffers.reduce((sum, b) => sum + b.byteLength, 0);
+    const totalBytes = this.retainedBuffers.reduce(
+      (sum, b) => sum + b.byteLength,
+      0,
+    );
     return {
-      labEnabled: (process.env.LAB_ENABLE ?? '').toLowerCase() === 'true',
-      nodeEnv: process.env.NODE_ENV ?? 'unknown',
-      appEnv: process.env.APP_ENV ?? null,
+      labEnabled:
+        this.configService.get<string>('LAB_ENABLE')?.toLowerCase() === 'true',
+      nodeEnv: this.configService.get<string>('NODE_ENV') ?? 'unknown',
+      appEnv: this.configService.get<string>('APP_ENV') ?? null,
       retainedBufferCount: this.retainedBuffers.length,
       retainedBytes: totalBytes,
       cpuProfileInProgress: this.cpu.inProgress,
@@ -49,7 +57,10 @@ export class LabService {
   }
 
   async writeHeapSnapshot(): Promise<{ filePath: string }> {
-    const filePath = path.join('/tmp', `heap-${new Date().toISOString().replaceAll(':', '-')}.heapsnapshot`);
+    const filePath = path.join(
+      '/tmp',
+      `heap-${new Date().toISOString().replaceAll(':', '-')}-${randomBytes(4).toString('hex')}.heapsnapshot`,
+    );
     // v8.writeHeapSnapshot returns the filename it wrote.
     const written = v8.writeHeapSnapshot(filePath);
     return { filePath: written };
@@ -57,7 +68,7 @@ export class LabService {
 
   async captureCpuProfile(seconds: number): Promise<{ filePath: string; durationSeconds: number }> {
     if (this.cpu.inProgress) {
-      throw new Error('CPU profile already in progress');
+      throw new ConflictException('CPU profile already in progress');
     }
 
     const durationSeconds = clampInt(seconds, 1, 120);
@@ -73,7 +84,7 @@ export class LabService {
       await sleep(durationSeconds * 1000);
 
       const { profile } = await post<{ profile: unknown }>(session, 'Profiler.stop');
-      const filePath = path.join('/tmp', `cpu-${new Date().toISOString().replaceAll(':', '-')}.cpuprofile`);
+      const filePath = path.join('/tmp', `cpu-${new Date().toISOString().replaceAll(':', '-')}-${randomBytes(4).toString('hex')}.cpuprofile`);
       await fs.writeFile(filePath, JSON.stringify(profile));
 
       return { filePath, durationSeconds };
