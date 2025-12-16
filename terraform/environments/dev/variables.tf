@@ -268,6 +268,12 @@ variable "enable_frontend_ecs_exec" {
   default     = false
 }
 
+variable "enable_backend_inspector" {
+  description = "Enable Node.js Inspector for remote debugging (--inspect=0.0.0.0:9229). WARNING: Only enable temporarily for debugging sessions."
+  type        = bool
+  default     = false
+}
+
 # -----------------------------------------------------------------------------
 # Lab Endpoints Configuration (TT-63 Node.js Profiling Lab)
 # -----------------------------------------------------------------------------

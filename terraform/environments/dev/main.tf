@@ -187,6 +187,9 @@ module "compute" {
   enable_backend_ecs_exec  = var.enable_backend_ecs_exec
   enable_frontend_ecs_exec = var.enable_frontend_ecs_exec
 
+  # Node.js Inspector for remote debugging (TT-63 Part 3)
+  enable_backend_inspector = var.enable_backend_inspector
+
   # Lab endpoints configuration (TT-63 Node.js Profiling Lab)
   lab_enable = var.lab_enable
   lab_token  = var.lab_token
@@ -309,7 +312,7 @@ module "observability" {
   grafana_desired_count        = var.grafana_desired_count
   grafana_service_registry_arn = module.service_discovery.grafana_service_arn
   grafana_admin_password       = var.grafana_admin_password
-  
+
   # ALB Integration for Public Access (prefers HTTPS listener if available)
   alb_listener_arn      = module.compute.alb_https_listener_arn != null ? module.compute.alb_https_listener_arn : module.compute.alb_http_listener_arn
   alb_security_group_id = module.networking.alb_security_group_id

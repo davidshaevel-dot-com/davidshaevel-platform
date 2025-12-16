@@ -38,8 +38,9 @@ USER nestjs
 EXPOSE 3001
 
 # Health check
+# Using wget instead of node -e to avoid NODE_OPTIONS conflict (Inspector binds to 9229)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3001/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+  CMD wget -qO- http://localhost:3001/api/health || exit 1
 
 # Start the application
 CMD ["node", "dist/main.js"]

@@ -85,6 +85,13 @@ enable_backend_ecs_exec = false
 # Set to false for production environments
 enable_frontend_ecs_exec = false
 
+# Enable Node.js Inspector for remote debugging via Chrome DevTools
+# Sets NODE_OPTIONS="--inspect=0.0.0.0:9229" in the backend container
+# WARNING: Only enable TEMPORARILY for debugging sessions, then disable immediately
+# The Inspector protocol has NO authentication - anyone with network access can connect
+# Use with SSM port forwarding (Part 3 of TT-63 lab documentation)
+enable_backend_inspector = false
+
 # -----------------------------------------------------------------------------
 # Lab Endpoints Configuration (TT-63 Node.js Profiling Lab)
 # -----------------------------------------------------------------------------
