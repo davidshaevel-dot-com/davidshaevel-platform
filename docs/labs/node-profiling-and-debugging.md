@@ -596,8 +596,8 @@ TASK_ARN=$(AWS_PROFILE=davidshaevel-dev aws ecs list-tasks \
   --service-name dev-davidshaevel-backend \
   --query 'taskArns[0]' --output text)
 
-# Extract task ID from ARN
-TASK_ID=$(echo $TASK_ARN | rev | cut -d'/' -f1 | rev)
+# Extract task ID from ARN (basename extracts the last path component)
+TASK_ID=$(basename "$TASK_ARN")
 
 # Get container runtime ID
 RUNTIME_ID=$(AWS_PROFILE=davidshaevel-dev aws ecs describe-tasks \
