@@ -504,6 +504,15 @@ resource "aws_ecs_task_definition" "backend" {
             name  = "LAB_ALLOW_PROD"
             value = "true"
           }
+        ] : [],
+        # Node.js Inspector for remote debugging (TT-63 Part 3)
+        # WARNING: Only enable temporarily for debugging sessions
+        # Exposes Inspector protocol on port 9229 with no authentication
+        var.enable_backend_inspector ? [
+          {
+            name  = "NODE_OPTIONS"
+            value = "--inspect=0.0.0.0:9229"
+          }
         ] : []
       )
 
@@ -527,10 +536,12 @@ resource "aws_ecs_task_definition" "backend" {
         }
       }
 
+      # Health check using wget to avoid NODE_OPTIONS conflict when Inspector is enabled
+      # (node -e with NODE_OPTIONS would try to bind to port 9229, conflicting with main process)
       healthCheck = {
         command = [
           "CMD-SHELL",
-          "node -e \"require('http').get('http://localhost:${local.backend_port}/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""
+          "wget -qO- http://localhost:${local.backend_port}/api/health || exit 1"
         ]
         interval    = 30
         timeout     = 5
