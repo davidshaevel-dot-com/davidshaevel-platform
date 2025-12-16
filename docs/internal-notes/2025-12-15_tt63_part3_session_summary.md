@@ -94,11 +94,11 @@ Example: `ecs:dev-davidshaevel-cluster_abc123_def456-789`
 
 | PR | Status | Description |
 |----|--------|-------------|
-| #67 | Merged | Phase 1: Lab module code |
-| #68 | Merged | Phase 2: Local testing |
-| #69 | Merged | Part 1 & 2 documentation |
-| #70 | Merged | Phase 3: Terraform + export script |
-| #71 | Merged | Phase 4: Part 3 Remote Debugging |
+| #67 | Merged | Lab module code integration |
+| #68 | Merged | Local testing (Part 1) |
+| #69 | Merged | Documentation (Parts 1 & 2) |
+| #70 | Merged | Terraform + export script (Part 2) |
+| #71 | Merged | Remote Debugging (Part 3) |
 
 ---
 
