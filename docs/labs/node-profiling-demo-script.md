@@ -179,7 +179,7 @@ enable_backend_inspector = true
 
 # Apply and deploy
 terraform apply
-aws ecs update-service ... --force-new-deployment
+aws ecs update-service --cluster dev-davidshaevel-cluster --service dev-davidshaevel-backend --force-new-deployment
 ```
 
 **Step 2: Get container runtime ID (30 seconds)**

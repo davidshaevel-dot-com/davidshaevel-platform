@@ -253,7 +253,8 @@ resource "aws_s3_bucket_public_access_block" "profiling_artifacts" {
   restrict_public_buckets = true
 }
 
-# IAM policy for backend task to write/read profiling artifacts
+# IAM policy for backend task to upload profiling artifacts
+# Note: Only s3:PutObject is needed - download and delete are done locally with user credentials
 resource "aws_iam_role_policy" "backend_profiling_artifacts" {
   count = var.enable_profiling_artifacts_bucket ? 1 : 0
   name  = "${local.resource_prefix}-backend-profiling-artifacts"
@@ -263,16 +264,12 @@ resource "aws_iam_role_policy" "backend_profiling_artifacts" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "ProfilingArtifactsAccess"
+        Sid    = "ProfilingArtifactsUpload"
         Effect = "Allow"
         Action = [
-          "s3:PutObject",
-          "s3:GetObject",
-          "s3:DeleteObject",
-          "s3:ListBucket"
+          "s3:PutObject"
         ]
         Resource = [
-          aws_s3_bucket.profiling_artifacts[0].arn,
           "${aws_s3_bucket.profiling_artifacts[0].arn}/*"
         ]
       }

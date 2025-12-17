@@ -116,13 +116,17 @@ aws ecs execute-command \
   --interactive \
   --command "aws s3 cp '$ARTIFACT_PATH' 's3://$BUCKET_NAME/$S3_KEY' --region $AWS_REGION"
 
+# Schedule cleanup to run when the script exits (handles Ctrl+C and failures)
+cleanup_s3() {
+  echo
+  echo "Step 3/3: Cleaning up S3 artifact..."
+  aws s3 rm "s3://$BUCKET_NAME/$S3_KEY" --region "$AWS_REGION" 2>/dev/null || true
+}
+trap cleanup_s3 EXIT
+
 # Step 2: Download artifact from S3 to local machine
 echo "Step 2/3: Downloading artifact from S3..."
 aws s3 cp "s3://$BUCKET_NAME/$S3_KEY" "$OUT_PATH" --region "$AWS_REGION"
-
-# Step 3: Clean up S3 artifact
-echo "Step 3/3: Cleaning up S3 artifact..."
-aws s3 rm "s3://$BUCKET_NAME/$S3_KEY" --region "$AWS_REGION"
 
 # Report success
 FILE_SIZE="$(wc -c < "$OUT_PATH" | tr -d ' ')"
