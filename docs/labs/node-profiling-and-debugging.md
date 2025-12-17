@@ -348,32 +348,141 @@ Expected: `labEnabled: true`
 
 ---
 
-## Step 2.2 — Reproduce an Event Loop Jam (CPU Stall)
+## Step 2.2 — Trigger Performance Scenarios and Observe Metrics
 
-Trigger a CPU jam (default 2000ms, max 60000ms):
+Open the **Node.js Performance Dashboard** in Grafana before running these experiments.
 
-```bash
-curl -sS -X POST \
-  -H "x-lab-token: $LAB_TOKEN" \
-  "https://davidshaevel.com/api/lab/event-loop-jam?ms=5000" | jq
-```
+**Tip:** Set the dashboard time range to "Last 5 minutes" and auto-refresh to 5s for real-time observation.
 
-### What to Observe
+### Experiment 1: Event Loop Jam (CPU Stall)
 
-| Metric | Where to Look | Expected Change |
-|--------|---------------|-----------------|
-| Request latency | ALB metrics, Prometheus | Spike to 5s+ |
-| Other requests | Concurrent curl | Queue behind jam |
-| CPU usage | ECS task metrics | Near 100% |
-| Event loop lag | Prometheus `nodejs_eventloop_lag_*` | Spike |
-
-**Try this:** In another terminal, make a health check request while the jam is running:
+**Trigger:** Block the event loop for 55 seconds (spans 3-4 Prometheus scrape intervals).
 
 ```bash
-time curl -sS https://davidshaevel.com/api/health
+curl -sS -X POST -H "x-lab-token: $LAB_TOKEN" \
+  "https://davidshaevel.com/api/lab/event-loop-jam?ms=55000" | jq
 ```
 
-You'll see it takes ~5 seconds because the event loop is blocked!
+**Grafana panels to watch:**
+
+| Panel | What You'll See |
+|-------|-----------------|
+| **Event Loop Lag Percentiles** | p99 will spike significantly (most reliable indicator) |
+| **Event Loop Lag** | May or may not show spike (see note below) |
+| **Process CPU Usage** | User CPU jumps to near 100% during the blocking operation |
+| **Active Handles** | Spike as incoming requests queue up while the event loop is blocked |
+
+> **Why percentiles are more reliable:** The "Event Loop Lag" panel shows the instantaneous value at Prometheus scrape time (every 15s). If the jam occurs between scrapes, or if you have multiple tasks and only one is jammed, the spike may not appear. The **percentile metrics** are calculated from a histogram that captures the full distribution, making them more reliable for detecting brief spikes. This is why p99 is often the best indicator for production monitoring.
+
+**Observe request blocking:** In another terminal, run parallel requests while the jam is active:
+
+```bash
+# Run this while the jam is active - requests hitting the blocked task will be slow
+# Wrapped in subshell to suppress job control messages
+(
+  for i in {1..5}; do
+    curl -sS -w "Request $i completed in %{time_total} seconds\n" -o /dev/null https://davidshaevel.com/api/health &
+  done
+  wait
+  echo "All requests complete"
+)
+```
+
+**Important:** If you have multiple ECS tasks running (high availability), the ALB may route requests to a different task that isn't blocked. This demonstrates why HA is valuable - one blocked task doesn't take down the service. With a single task, all requests would be blocked.
+
+### Experiment 2: Memory Growth
+
+**Trigger:** Allocate and retain 256MB of memory.
+
+```bash
+curl -sS -X POST -H "x-lab-token: $LAB_TOKEN" \
+  "https://davidshaevel.com/api/lab/memory-leak?mb=256" | jq
+```
+
+**Grafana panels to watch:**
+
+| Panel | What You'll See |
+|-------|-----------------|
+| **External Memory** | Immediate spike of ~256MB (Buffer allocations live here) |
+| **Process Resident Memory** | Overall process memory increase |
+
+> **Why not Heap Used?** Large `Buffer.alloc()` calls in Node.js use **external memory** (off-heap), not the V8 heap. This is a V8 optimization for large allocations. The "Heap Used" panel only shows V8's internal heap, so Buffer allocations won't appear there.
+
+> **Multi-task consideration:** With multiple ECS tasks running, the allocation only affects one task. Run the allocation command multiple times to hit both tasks via the load balancer.
+
+### Experiment 3: Garbage Collection Churn
+
+**Trigger:** Repeatedly allocate and release memory to trigger GC activity.
+
+```bash
+for i in {1..3}; do
+  curl -sS -X POST -H "x-lab-token: $LAB_TOKEN" \
+    "https://davidshaevel.com/api/lab/memory-leak?mb=128" | jq
+  curl -sS -X POST -H "x-lab-token: $LAB_TOKEN" \
+    "https://davidshaevel.com/api/lab/memory-clear" | jq
+done
+```
+
+**Grafana panels to watch:**
+
+| Panel | What You'll See |
+|-------|-----------------|
+| **GC Duration** | Spikes as V8 garbage collects the released buffers |
+| **External Memory** | Sawtooth pattern (up then down with each iteration) |
+
+> **Note:** The sawtooth pattern may be subtle with multiple tasks running. Larger allocations (128MB+) produce more visible GC activity.
+
+### Experiment 4: Concurrent Request Queueing
+
+**Trigger:** Start a 30-second jam then flood with requests that will queue.
+
+```bash
+(
+  curl -sS -X POST -H "x-lab-token: $LAB_TOKEN" \
+    "https://davidshaevel.com/api/lab/event-loop-jam?ms=30000" &
+  sleep 1
+  for i in {1..20}; do
+    curl -sS https://davidshaevel.com/api/health &
+  done
+  wait
+)
+```
+
+**Grafana panels to watch:**
+
+| Panel | What You'll See |
+|-------|-----------------|
+| **Active Handles** | Spike as requests queue waiting for the event loop |
+| **Event Loop Lag Percentiles** | p99 spike from the 30-second jam |
+
+### Cleanup
+
+After running experiments, clear any retained memory:
+
+```bash
+# Run multiple times to hit all ECS tasks via ALB
+for i in {1..5}; do
+  curl -sS -X POST -H "x-lab-token: $LAB_TOKEN" \
+    "https://davidshaevel.com/api/lab/memory-clear" | jq
+done
+```
+
+**Understanding memory metrics after clearing:**
+
+| Metric | Behavior After Clear |
+|--------|---------------------|
+| **External Memory** | Drops immediately (within 15-30 seconds, next Prometheus scrape) |
+| **Process Resident Memory (RSS)** | May stay elevated - OS is lazy about reclaiming memory from processes |
+
+> **Why RSS stays high:** RSS measures what the OS has allocated to the process, not what the process is actively using. Node.js keeps memory pools allocated for potential reuse. To fully reset RSS, force a service redeployment:
+> ```bash
+> aws ecs update-service \
+>   --cluster dev-davidshaevel-cluster \
+>   --service dev-davidshaevel-backend \
+>   --force-new-deployment \
+>   --query 'service.deployments[0].{status:status,runningCount:runningCount,desiredCount:desiredCount}' \
+>   --output table
+> ```
 
 ---
 
@@ -389,9 +498,45 @@ curl -sS -X POST \
 
 Response includes a `/tmp/... .cpuprofile` path on the running task.
 
+### Triggering Activity During Capture
+
+> **Important:** A CPU profile captures *what the process is doing* during the capture window. If the service is idle, the profile will show nothing interesting — just empty frames or minimal activity.
+
+While the profile is capturing, trigger activity in another terminal:
+
+```bash
+# Trigger a 5-second event loop jam (run multiple times)
+for i in {1..5}; do
+  curl -sS -X POST -H "x-lab-token: $LAB_TOKEN" \
+    "https://davidshaevel.com/api/lab/event-loop-jam?ms=5000" | jq
+done
+```
+
+> **Multi-task consideration:** With multiple ECS tasks running, the CPU profile captures activity on *one specific task*, but your curl requests may hit *any task* via the load balancer. Run multiple jams (as shown above) to increase the chance that at least one hits the task being profiled. Alternatively, trigger real API traffic that exercises the code paths you want to analyze.
+
+### Prerequisites for Export
+
+Before exporting artifacts, ensure the profiling artifacts S3 bucket is enabled:
+
+```hcl
+# terraform/environments/dev/terraform.tfvars
+enable_profiling_artifacts_bucket = true
+```
+
+Then apply the Terraform changes:
+
+```bash
+cd terraform/environments/dev
+terraform apply
+```
+
+This creates:
+- S3 bucket `dev-davidshaevel-profiling-artifacts` with 7-day lifecycle
+- IAM permissions for the backend task to upload files
+
 ### Export the Profile from ECS
 
-Use the helper script to download the profile directly from the ECS container:
+Use the helper script to download the profile via S3:
 
 ```bash
 # From the repository root
@@ -400,40 +545,26 @@ cd /path/to/davidshaevel-platform
 # Export the CPU profile (use the path from the curl response)
 AWS_PROFILE=davidshaevel-dev ./scripts/export-backend-ecs-artifact.sh \
   "/tmp/cpu-2025-12-15T22-30-00.000Z.cpuprofile" \
-  "./cpu-profile.cpuprofile"
+  "$HOME/Downloads/cpu-profile.cpuprofile"
 ```
 
 The script:
 1. Discovers the running backend task automatically via Terraform outputs
-2. Uses ECS Exec to base64-encode the file inside the container
-3. Extracts and decodes the payload locally
-4. Writes the file to your specified output path
+2. Uses ECS Exec to upload the file to S3 from within the container
+3. Downloads the file from S3 to your local machine
+4. Cleans up the S3 object after download
 
-**Expected output:** `Wrote XXXXX bytes to ./cpu-profile.cpuprofile`
-
-**Alternative: Manual Export via S3**
-
-If the helper script doesn't work for your environment, you can export via S3:
-
-```bash
-# 1. Copy file to S3 from within the container (via ECS Exec)
-aws ecs execute-command --cluster $CLUSTER --task $TASK_ID \
-  --container backend --interactive \
-  --command "aws s3 cp /tmp/<file>.cpuprofile s3://your-bucket/profiles/"
-
-# 2. Download from S3 to local machine
-aws s3 cp s3://your-bucket/profiles/<file>.cpuprofile ./cpu.cpuprofile
-```
+**Expected output:** `Success! Exported XXXXX bytes to $HOME/Downloads/cpu-profile.cpuprofile`
 
 ### Analyze the Profile
 
 **Option A: Chrome DevTools**
 1. Open DevTools → Performance
-2. Click load icon → Select `cpu.cpuprofile`
+2. Click load icon → Select `cpu-profile.cpuprofile` from your Downloads folder
 
 **Option B: Speedscope**
 1. Go to https://www.speedscope.app/
-2. Drag and drop `cpu.cpuprofile`
+2. Drag and drop `cpu-profile.cpuprofile` from your Downloads folder
 
 ### What You're Looking For
 
@@ -485,18 +616,16 @@ curl -sS -X POST \
   https://davidshaevel.com/api/lab/heap-snapshot | jq
 ```
 
-Export it using the helper script:
+Export it using the helper script (requires `enable_profiling_artifacts_bucket = true`, see [Prerequisites for Export](#prerequisites-for-export)):
 
 ```bash
 # Export the heap snapshot (use the path from the curl response)
 AWS_PROFILE=davidshaevel-dev ./scripts/export-backend-ecs-artifact.sh \
   "/tmp/heapdump-2025-12-15T22-35-00.000Z.heapsnapshot" \
-  "./heap-snapshot.heapsnapshot"
+  "$HOME/Downloads/heap-snapshot.heapsnapshot"
 ```
 
-> **Note:** Heap snapshots can be large (tens to hundreds of MB). The export may take 30-60 seconds depending on heap size.
-
-**Alternative: Manual export via S3** (see [Export the Profile from ECS](#export-the-profile-from-ecs) for details)
+> **Note:** Heap snapshots can be large (tens to hundreds of MB). The export may take 30-60 seconds depending on heap size and network speed.
 
 ### Analyze in Chrome
 
@@ -516,15 +645,38 @@ AWS_PROFILE=davidshaevel-dev ./scripts/export-backend-ecs-artifact.sh \
 
 ## Step 2.6 — Cleanup
 
-Clear retained memory:
+Clear retained memory on all ECS tasks:
 
 ```bash
-curl -sS -X POST \
-  -H "x-lab-token: $LAB_TOKEN" \
-  https://davidshaevel.com/api/lab/memory-clear | jq
+# Run multiple times to hit all ECS tasks via ALB
+for i in {1..5}; do
+  curl -sS -X POST -H "x-lab-token: $LAB_TOKEN" \
+    "https://davidshaevel.com/api/lab/memory-clear" | jq
+done
 ```
 
-Disable lab endpoints by removing env vars or redeploying.
+**Understanding memory metrics after clearing:**
+
+| Metric | Behavior After Clear |
+|--------|---------------------|
+| **External Memory** | Drops immediately (within 15-30 seconds, next Prometheus scrape) |
+| **Process Resident Memory (RSS)** | May stay elevated - OS is lazy about reclaiming memory from processes |
+
+> **Why RSS stays high:** RSS measures what the OS has allocated to the process, not what the process is actively using. Node.js keeps memory pools allocated for potential reuse. To fully reset RSS, force a service redeployment:
+> ```bash
+> aws ecs update-service \
+>   --cluster dev-davidshaevel-cluster \
+>   --service dev-davidshaevel-backend \
+>   --force-new-deployment \
+>   --query 'service.deployments[0].{status:status,runningCount:runningCount,desiredCount:desiredCount}' \
+>   --output table
+> ```
+
+**Remove local artifacts:**
+
+```bash
+rm -f $HOME/Downloads/*.cpuprofile $HOME/Downloads/*.heapsnapshot
+```
 
 ---
 
@@ -994,11 +1146,39 @@ Should show no "Debugger listening" messages in recent logs.
    - Ensure `enable_backend_ecs_exec = true` in Terraform
    - Check IAM permissions for ECS Exec
 
-5. **Multi-task deployment**: Profile on different task than script targets
+5. **Multi-task deployment**: "File does not exist" when exporting
 
-   When running multiple backend tasks (high availability), curl requests are load-balanced across tasks. The profile may be created on a different task than the one the export script connects to.
+   When running multiple backend tasks (high availability), curl requests are load-balanced across tasks. The artifact may be created on **Task A**, but the export script connects to **Task B** (which doesn't have the file).
 
-   **Workaround**: List all running tasks and check each one for the artifact:
+   **Workaround A - Scale to 1 task temporarily** (simplest):
+
+   ```bash
+   # Scale down to 1 task
+   aws ecs update-service --cluster dev-davidshaevel-cluster \
+     --service dev-davidshaevel-backend --desired-count 1
+
+   # Wait for stabilization (~1-2 minutes)
+   aws ecs wait services-stable --cluster dev-davidshaevel-cluster \
+     --services dev-davidshaevel-backend
+
+   # Now all requests go to the same task - capture and export will work
+   # Don't forget to scale back up when done:
+   aws ecs update-service --cluster dev-davidshaevel-cluster \
+     --service dev-davidshaevel-backend --desired-count 2
+   ```
+
+   **Workaround B - Run capture multiple times** (increases odds):
+
+   ```bash
+   # Run multiple captures - at least one should land on the same task
+   for i in {1..5}; do
+     curl -sS -X POST -H "x-lab-token: $LAB_TOKEN" \
+       https://davidshaevel.com/api/lab/heap-snapshot | jq
+   done
+   # Try exporting the most recent path
+   ```
+
+   **Workaround C - Find which task has the file**:
 
    ```bash
    # List all backend task ARNs

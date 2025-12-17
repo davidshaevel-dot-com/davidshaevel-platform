@@ -1,6 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# =============================================================================
+# Export Profiling Artifact from ECS Backend Task via S3
+# =============================================================================
+#
+# This script exports profiling artifacts (CPU profiles, heap snapshots) from
+# an ECS backend task to the local machine using S3 as an intermediary.
+#
+# Workflow:
+# 1. Upload artifact from container to S3 using ECS Exec
+# 2. Download artifact from S3 to local machine
+# 3. Clean up S3 artifact
+#
+# Prerequisites:
+# - enable_profiling_artifacts_bucket = true in Terraform
+# - AWS CLI configured with appropriate permissions
+# - ECS Exec enabled for the backend service
+#
+# =============================================================================
+
 ARTIFACT_PATH="${1:-}"
 OUT_PATH="${2:-}"
 
@@ -39,16 +58,18 @@ if ! command -v aws >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! command -v python3 >/dev/null 2>&1; then
-  echo "error: python3 not found on PATH" >&2
-  exit 1
-fi
-
 cd "$TF_ENV_DIR"
 
 AWS_REGION="$(terraform output -raw aws_region)"
 ECS_CLUSTER_NAME="$(terraform output -raw ecs_cluster_name)"
 BACKEND_SERVICE_NAME="$(terraform output -raw backend_service_name)"
+BUCKET_NAME="$(terraform output -raw profiling_artifacts_bucket_name)"
+
+if [[ -z "$BUCKET_NAME" ]]; then
+  echo "error: profiling artifacts bucket not enabled" >&2
+  echo "hint: set enable_profiling_artifacts_bucket = true in Terraform and apply" >&2
+  exit 1
+fi
 
 # Allow overriding the task ARN via environment variable.
 # Useful when multiple tasks are running (high availability) and the artifact
@@ -70,50 +91,40 @@ else
   fi
 fi
 
-echo "Exporting artifact from ECS task..."
-echo "- region:   $AWS_REGION"
-echo "- cluster:  $ECS_CLUSTER_NAME"
-echo "- service:  $BACKEND_SERVICE_NAME"
-echo "- task:     $TASK_ARN"
-echo "- container:$CONTAINER_NAME"
-echo "- path:     $ARTIFACT_PATH"
+# Generate a unique S3 key for this artifact
+ARTIFACT_FILENAME="$(basename "$ARTIFACT_PATH")"
+S3_KEY="exports/$(date +%Y%m%d-%H%M%S)-${ARTIFACT_FILENAME}"
+
+echo "Exporting artifact from ECS task via S3..."
+echo "- region:    $AWS_REGION"
+echo "- cluster:   $ECS_CLUSTER_NAME"
+echo "- service:   $BACKEND_SERVICE_NAME"
+echo "- task:      $TASK_ARN"
+echo "- container: $CONTAINER_NAME"
+echo "- path:      $ARTIFACT_PATH"
+echo "- bucket:    $BUCKET_NAME"
+echo "- s3_key:    $S3_KEY"
 echo
 
-# Use Node.js inside the container to base64-encode the file. This avoids relying on
-# `base64` being present in the container image.
-#
-# We print explicit markers so we can reliably extract the payload from the exec output.
-# Capture stderr (2>&1) so container errors are included in RAW_OUT for debugging.
-RAW_OUT="$(aws ecs execute-command \
+# Step 1: Upload artifact from container to S3 using ECS Exec
+echo "Step 1/3: Uploading artifact to S3..."
+aws ecs execute-command \
   --region "$AWS_REGION" \
   --cluster "$ECS_CLUSTER_NAME" \
   --task "$TASK_ARN" \
   --container "$CONTAINER_NAME" \
   --interactive \
-  --command "node -e \"const fs=require('fs'); const p=process.argv[1]; console.log('---BEGIN_ARTIFACT_B64---'); process.stdout.write(fs.readFileSync(p).toString('base64')); console.log('\\n---END_ARTIFACT_B64---');\" \"$ARTIFACT_PATH\"" 2>&1)"
+  --command "aws s3 cp '$ARTIFACT_PATH' 's3://$BUCKET_NAME/$S3_KEY' --region $AWS_REGION"
 
-python3 - <<'PY' "$RAW_OUT" "$OUT_PATH"
-import base64
-import re
-import sys
+# Step 2: Download artifact from S3 to local machine
+echo "Step 2/3: Downloading artifact from S3..."
+aws s3 cp "s3://$BUCKET_NAME/$S3_KEY" "$OUT_PATH" --region "$AWS_REGION"
 
-raw = sys.argv[1]
-out_path = sys.argv[2]
+# Step 3: Clean up S3 artifact
+echo "Step 3/3: Cleaning up S3 artifact..."
+aws s3 rm "s3://$BUCKET_NAME/$S3_KEY" --region "$AWS_REGION"
 
-# The regex extracts base64 content between markers, ignoring any AWS SSM noise
-# that may appear elsewhere in the output (e.g., "Cannot perform start session: EOF").
-m = re.search(r"---BEGIN_ARTIFACT_B64---\\s*(?P<b64>[A-Za-z0-9+/=\\s]+)\\s*---END_ARTIFACT_B64---", raw)
-if not m:
-    print("error: could not find base64 payload in ECS exec output. See raw output below.", file=sys.stderr)
-    print("hint: the file may not exist, the task may have been replaced, or an error occurred.", file=sys.stderr)
-    print("\\n---[ RAW ECS OUTPUT ]---\\n" + raw, file=sys.stderr)
-    sys.exit(1)
-
-b64 = re.sub(r"\\s+", "", m.group("b64"))
-data = base64.b64decode(b64)
-
-with open(out_path, "wb") as f:
-    f.write(data)
-
-print(f"Wrote {len(data)} bytes to {out_path}")
-PY
+# Report success
+FILE_SIZE="$(wc -c < "$OUT_PATH" | tr -d ' ')"
+echo
+echo "Success! Exported $FILE_SIZE bytes to $OUT_PATH"

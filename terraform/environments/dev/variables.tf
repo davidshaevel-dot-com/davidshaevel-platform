@@ -274,6 +274,12 @@ variable "enable_backend_inspector" {
   default     = false
 }
 
+variable "enable_profiling_artifacts_bucket" {
+  description = "Create S3 bucket for exporting profiling artifacts (CPU profiles, heap snapshots). When enabled, adds S3 permissions to the backend task role."
+  type        = bool
+  default     = false
+}
+
 # -----------------------------------------------------------------------------
 # Lab Endpoints Configuration (TT-63 Node.js Profiling Lab)
 # -----------------------------------------------------------------------------

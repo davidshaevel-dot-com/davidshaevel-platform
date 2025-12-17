@@ -256,3 +256,17 @@ output "backend_port" {
   description = "Port number for backend container"
   value       = local.backend_port
 }
+
+# ------------------------------------------------------------------------------
+# Profiling Artifacts Bucket Outputs
+# ------------------------------------------------------------------------------
+
+output "profiling_artifacts_bucket_name" {
+  description = "Name of the S3 bucket for profiling artifacts (empty if not enabled)"
+  value       = var.enable_profiling_artifacts_bucket ? aws_s3_bucket.profiling_artifacts[0].id : ""
+}
+
+output "profiling_artifacts_bucket_arn" {
+  description = "ARN of the S3 bucket for profiling artifacts (empty if not enabled)"
+  value       = var.enable_profiling_artifacts_bucket ? aws_s3_bucket.profiling_artifacts[0].arn : ""
+}

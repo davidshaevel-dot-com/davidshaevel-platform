@@ -231,3 +231,12 @@ output "cicd_iam_policy_name" {
   description = "Name of the GitHub Actions deployment policy"
   value       = module.cicd_iam.policy_name
 }
+
+# -----------------------------------------------------------------------------
+# Profiling Artifacts Outputs
+# -----------------------------------------------------------------------------
+
+output "profiling_artifacts_bucket_name" {
+  description = "Name of the S3 bucket for profiling artifacts (empty if not enabled)"
+  value       = module.compute.profiling_artifacts_bucket_name
+}

@@ -22,6 +22,10 @@ ENV NODE_ENV=production
 ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
 
+# Install AWS CLI for profiling artifact export (S3 uploads from container)
+# This enables the export-backend-ecs-artifact.sh script to work
+RUN apk add --no-cache aws-cli
+
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs

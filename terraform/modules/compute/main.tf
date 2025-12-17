@@ -212,6 +212,75 @@ resource "aws_iam_role_policy_attachment" "ecs_exec" {
 }
 
 # ------------------------------------------------------------------------------
+# Profiling Artifacts S3 Bucket (for CPU profiles, heap snapshots)
+# ------------------------------------------------------------------------------
+
+resource "aws_s3_bucket" "profiling_artifacts" {
+  count  = var.enable_profiling_artifacts_bucket ? 1 : 0
+  bucket = "${local.resource_prefix}-profiling-artifacts"
+
+  tags = merge(local.common_tags, {
+    Name    = "${local.resource_prefix}-profiling-artifacts"
+    Purpose = "Profiling artifacts - CPU profiles and heap snapshots"
+  })
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "profiling_artifacts" {
+  count  = var.enable_profiling_artifacts_bucket ? 1 : 0
+  bucket = aws_s3_bucket.profiling_artifacts[0].id
+
+  rule {
+    id     = "expire-artifacts"
+    status = "Enabled"
+
+    expiration {
+      days = 7
+    }
+
+    filter {
+      prefix = ""
+    }
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "profiling_artifacts" {
+  count  = var.enable_profiling_artifacts_bucket ? 1 : 0
+  bucket = aws_s3_bucket.profiling_artifacts[0].id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# IAM policy for backend task to write/read profiling artifacts
+resource "aws_iam_role_policy" "backend_profiling_artifacts" {
+  count = var.enable_profiling_artifacts_bucket ? 1 : 0
+  name  = "${local.resource_prefix}-backend-profiling-artifacts"
+  role  = aws_iam_role.backend_task.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "ProfilingArtifactsAccess"
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:DeleteObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          aws_s3_bucket.profiling_artifacts[0].arn,
+          "${aws_s3_bucket.profiling_artifacts[0].arn}/*"
+        ]
+      }
+    ]
+  })
+}
+
+# ------------------------------------------------------------------------------
 # Application Load Balancer (Step 8)
 # ------------------------------------------------------------------------------
 

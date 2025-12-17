@@ -190,6 +190,9 @@ module "compute" {
   # Node.js Inspector for remote debugging (TT-63 Part 3)
   enable_backend_inspector = var.enable_backend_inspector
 
+  # Profiling artifacts S3 bucket
+  enable_profiling_artifacts_bucket = var.enable_profiling_artifacts_bucket
+
   # Lab endpoints configuration (TT-63 Node.js Profiling Lab)
   lab_enable = var.lab_enable
   lab_token  = var.lab_token
