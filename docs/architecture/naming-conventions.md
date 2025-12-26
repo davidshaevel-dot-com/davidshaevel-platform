@@ -1,9 +1,9 @@
 # Resource Naming Conventions
 
-**Project:** DavidShaevel.com Platform  
-**Date:** October 23, 2025  
-**Author:** David Shaevel  
-**Version:** 1.0
+**Project:** DavidShaevel.com Platform
+**Date:** December 26, 2025
+**Author:** David Shaevel
+**Version:** 1.1
 
 ## Overview
 
@@ -76,9 +76,9 @@ This document defines the naming conventions for all AWS resources in the DavidS
 | Resource | Abbreviation | Example |
 |----------|-------------|---------|
 | S3 Bucket | `s3` | `123456789012-dev-davidshaevel-s3-static-assets` |
-| ECR Repository | `ecr` | `dev-davidshaevel-ecr-frontend` |
+| ECR Repository | (none) | `davidshaevel/frontend` |
 
-**Note:** ECR repositories should include environment prefix to separate dev/prod images.
+**Note:** ECR repositories use a simplified naming convention without environment prefix. Images are tagged with git SHA or version (e.g., `davidshaevel/backend:af279a6`).
 
 ### CDN & DNS
 
@@ -110,6 +110,19 @@ This document defines the naming conventions for all AWS resources in the DavidS
 | CloudWatch Alarm | `cw-alarm` | `dev-davidshaevel-cw-alarm-cpu-high` |
 | CloudWatch Dashboard | `cw-dashboard` | `dev-davidshaevel-cw-dashboard-main` |
 | SNS Topic | `sns` | `dev-davidshaevel-sns-alerts` |
+
+### Observability
+
+| Resource | Abbreviation | Example |
+|----------|-------------|---------|
+| ECS Service (Prometheus) | `ecs-service` | `dev-davidshaevel-prometheus` |
+| ECS Service (Grafana) | `ecs-service` | `dev-davidshaevel-grafana` |
+| EFS File System | `efs` | `dev-davidshaevel-prometheus-efs` |
+| EFS Access Point | `efs-ap` | `dev-davidshaevel-prometheus-ap` |
+| Cloud Map Namespace | (none) | `davidshaevel.local` |
+| Cloud Map Service | (none) | `prometheus.davidshaevel.local` |
+
+**Note:** Cloud Map uses a private DNS namespace for service discovery within the VPC.
 
 ## Detailed Naming Examples
 
@@ -181,10 +194,11 @@ dev-davidshaevel-secret-db-credentials
 123456789012-dev-davidshaevel-s3-static-assets
 123456789012-dev-davidshaevel-s3-terraform-state
 123456789012-dev-davidshaevel-s3-logs
-dev-davidshaevel-ecr-frontend
-dev-davidshaevel-ecr-backend
-prod-davidshaevel-ecr-frontend
-prod-davidshaevel-ecr-backend
+123456789012-dev-davidshaevel-profiling-artifacts
+
+# ECR (simplified naming, no environment prefix)
+davidshaevel/frontend
+davidshaevel/backend
 ```
 
 ### CloudFront & DNS
@@ -226,22 +240,21 @@ dev-davidshaevel-sns-alerts
 
 ## Docker Image Naming
 
-**Format:** `{account-id}.dkr.ecr.{region}.amazonaws.com/{repository}:{tag}`
+**Format:** `{account-id}.dkr.ecr.{region}.amazonaws.com/davidshaevel/{service}:{tag}`
 
 **Examples:**
 ```
-123456789012.dkr.ecr.us-east-1.amazonaws.com/dev-davidshaevel-ecr-frontend:latest
-123456789012.dkr.ecr.us-east-1.amazonaws.com/dev-davidshaevel-ecr-frontend:v1.0.0
-123456789012.dkr.ecr.us-east-1.amazonaws.com/dev-davidshaevel-ecr-frontend:abc123
-123456789012.dkr.ecr.us-east-1.amazonaws.com/prod-davidshaevel-ecr-frontend:v1.2.3
-123456789012.dkr.ecr.us-east-1.amazonaws.com/prod-davidshaevel-ecr-backend:latest
+108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend:8c2b63d
+108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend:af279a6
+108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend:latest
 ```
 
 **Tagging Strategy:**
-- `latest` - Most recent build (dev environment)
-- `v{major}.{minor}.{patch}` - Semantic version (prod releases)
-- `{env}-{git-sha}` - Environment-specific Git commit
-- `{env}-{branch}-{timestamp}` - Feature branch builds
+- `{git-sha}` - Short git commit SHA (primary tag, e.g., `af279a6`)
+- `latest` - Most recent build (automatically tagged)
+- `v{major}.{minor}.{patch}` - Semantic version (optional for releases)
+
+**Note:** CI/CD automatically tags images with the git SHA from the build commit.
 
 ## Tag Standards
 
@@ -363,7 +376,9 @@ PROD_DATABASE_URL
 | Compute | `{env}-davidshaevel-{type}-{component}` | `dev-davidshaevel-ecs-service-frontend` |
 | Security Groups | `{env}-davidshaevel-sg-{tier}` | `dev-davidshaevel-sg-backend` |
 | S3 Buckets | `{account}-{env}-davidshaevel-{purpose}` | `123456789012-dev-davidshaevel-static-assets` |
-| ECR Repos | `{env}-davidshaevel-ecr-{component}` | `dev-davidshaevel-ecr-frontend` |
+| ECR Repos | `davidshaevel/{component}` | `davidshaevel/backend` |
+| EFS | `{env}-davidshaevel-{service}-efs` | `dev-davidshaevel-prometheus-efs` |
+| Cloud Map | `{service}.davidshaevel.local` | `prometheus.davidshaevel.local` |
 | Route53 Zone | `davidshaevel-r53-zone-{name}` | `davidshaevel-r53-zone-main` (shared) |
 | Route53 Records | `{env}-davidshaevel-r53-record-{name}` | `dev-davidshaevel-r53-record-www` |
 | ACM Cert | `davidshaevel-acm-{type}` | `davidshaevel-acm-wildcard` (shared) |
@@ -407,6 +422,17 @@ locals {
 
 ---
 
-**Last Updated:** October 23, 2025  
-**Next Review:** After initial deployment
+**Last Updated:** December 26, 2025
+**Version:** 1.1
+
+### Changelog
+
+#### v1.1 (December 26, 2025)
+- Updated ECR naming to match actual (`davidshaevel/backend` instead of `dev-davidshaevel-ecr-backend`)
+- Added Observability resources (EFS, Cloud Map, Prometheus, Grafana)
+- Updated Docker image tagging strategy to reflect CI/CD convention (git SHA)
+- Added S3 profiling artifacts bucket
+
+#### v1.0 (October 23, 2025)
+- Initial naming conventions document
 

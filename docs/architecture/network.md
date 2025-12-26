@@ -1,9 +1,9 @@
 # Network Architecture
 
-**Project:** DavidShaevel.com Platform  
-**Date:** October 23, 2025  
-**Author:** David Shaevel  
-**Version:** 1.0
+**Project:** DavidShaevel.com Platform
+**Date:** December 26, 2025
+**Author:** David Shaevel
+**Version:** 1.1
 
 ## Overview
 
@@ -401,6 +401,15 @@ While a single NAT Gateway could save ~$32/month, the trade-offs make it not wor
 
 ---
 
-**Last Updated:** October 23, 2025  
-**Next Review:** After initial deployment
+**Last Updated:** December 26, 2025
+**Version:** 1.1
+
+### Changelog
+
+#### v1.1 (December 26, 2025)
+- Updated header date and version
+- Content verified accurate for current infrastructure
+
+#### v1.0 (October 23, 2025)
+- Initial network architecture document
 

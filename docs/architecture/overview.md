@@ -1,9 +1,11 @@
 # Architecture Overview
 
-**Project:** DavidShaevel.com Platform  
-**Date:** October 23, 2025  
-**Author:** David Shaevel  
-**Version:** 1.0
+**Project:** DavidShaevel.com Platform
+**Date:** December 26, 2025
+**Author:** David Shaevel
+**Version:** 2.0
+
+**Status:** ✅ Production Complete - Platform live at https://davidshaevel.com
 
 ---
 
@@ -23,7 +25,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     Cloudflare DNS                          │
-│                  davidshaevel.com                           │
+│    davidshaevel.com | grafana.davidshaevel.com              │
 └────────────────────┬────────────────────────────────────────┘
                      │
 ┌────────────────────▼────────────────────────────────────────┐
@@ -34,25 +36,42 @@
 ┌────────────────────▼────────────────────────────────────────┐
 │                 Application Load Balancer                   │
 │                  (ALB - Multi-AZ)                           │
-└──────────┬──────────────────────────┬───────────────────────┘
-           │                          │
-┌──────────▼──────────┐    ┌─────────▼──────────┐
-│   ECS Fargate       │    │   ECS Fargate      │
-│   Frontend          │    │   Backend API      │
-│   (Next.js)         │    │   (Nest.js)        │
-│   Container         │    │   Container        │
-└─────────────────────┘    └──────────┬─────────┘
-                                      │
-                           ┌──────────▼──────────┐
-                           │   RDS PostgreSQL    │
-                           │   (Multi-AZ)        │
-                           └─────────────────────┘
+│  /api/* → Backend | /* → Frontend | /grafana/* → Grafana    │
+└──────┬─────────────────┬─────────────────┬──────────────────┘
+       │                 │                 │
+┌──────▼──────┐   ┌──────▼──────┐   ┌──────▼──────┐
+│ ECS Fargate │   │ ECS Fargate │   │ ECS Fargate │
+│  Frontend   │   │   Backend   │   │   Grafana   │
+│  (Next.js)  │   │  (Nest.js)  │   │ Dashboards  │
+│   :3000     │   │   :3001     │   │   :3000     │
+└─────────────┘   └──────┬──────┘   └──────┬──────┘
+                         │                 │
+              ┌──────────▼──────┐   ┌──────▼──────┐
+              │ RDS PostgreSQL  │   │ ECS Fargate │
+              │   (Single-AZ)   │   │ Prometheus  │
+              │      :5432      │   │   :9090     │
+              └─────────────────┘   └─────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
-│               Monitoring & Observability                    │
+│               Observability Stack (ECS Fargate)             │
 │  ┌──────────────┐  ┌────────────┐  ┌──────────────┐         │
 │  │   Grafana    │  │ Prometheus │  │  CloudWatch  │         │
-│  │  Dashboards  │  │  Metrics   │  │     Logs     │         │
+│  │  Dashboards  │◄─┤  Metrics   │  │     Logs     │         │
+│  │  :3000       │  │  :9090     │  │              │         │
+│  └──────────────┘  └─────┬──────┘  └──────────────┘         │
+│                          │ scrapes                          │
+│         ┌────────────────┴────────────────┐                 │
+│         ▼                                 ▼                 │
+│   Backend /api/metrics              Frontend /metrics       │
+│   (prom-client)                     (prom-client)           │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│               Supporting Infrastructure                     │
+│  ┌──────────────┐  ┌────────────┐  ┌──────────────┐         │
+│  │   AWS EFS    │  │  AWS Cloud │  │   AWS S3     │         │
+│  │  Persistent  │  │    Map     │  │  Profiling   │         │
+│  │   Storage    │  │  Discovery │  │  Artifacts   │         │
 │  └──────────────┘  └────────────┘  └──────────────┘         │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -415,11 +434,11 @@ Triggers: Manual approval (workflow_dispatch)
 ```
 terraform/
 ├── modules/
-│   ├── networking/          # VPC, subnets, security groups
-│   ├── compute/             # ECS cluster, task definitions
-│   ├── database/            # RDS instance
-│   ├── monitoring/          # CloudWatch, alarms
-│   └── cdn/                 # CloudFront distribution
+│   ├── networking/          # VPC, subnets, security groups, NAT gateways
+│   ├── compute/             # ECS cluster, ALB, task definitions, services
+│   ├── database/            # RDS PostgreSQL instance
+│   ├── cdn/                 # CloudFront distribution, ACM certificates
+│   └── observability/       # Prometheus, Grafana, EFS, Cloud Map
 ├── environments/
 │   ├── dev/
 │   │   ├── main.tf
@@ -431,8 +450,14 @@ terraform/
 │       ├── variables.tf
 │       ├── outputs.tf
 │       └── terraform.tfvars
+├── scripts/
+│   ├── setup-backend.sh     # Initialize S3/DynamoDB backend
+│   ├── validate-all.sh      # Validate all environments
+│   └── cost-estimate.sh     # Estimate infrastructure costs
 └── README.md
 ```
+
+**Total Resources:** 81 AWS resources (78 Terraform-managed + 3 ECR repos)
 
 **State Management:**
 - Backend: S3 with DynamoDB locking
@@ -474,26 +499,32 @@ terraform/
 
 ## 💰 Cost Optimization
 
-**Estimated Monthly Costs (Development):**
-- ECS Fargate: ~$15/month (1 task, 0.25 vCPU, 0.5 GB)
-- RDS t3.micro: ~$15/month (single-AZ)
-- ALB: ~$20/month
-- Data transfer: ~$5/month
-- **Total: ~$55/month**
+**Actual Monthly Costs (Development Environment - December 2025):**
 
-**Estimated Monthly Costs (Production):**
-- ECS Fargate: ~$30/month (2 tasks, 0.5 vCPU, 1 GB)
-- RDS t3.small: ~$60/month (Multi-AZ)
-- ALB: ~$20/month
-- CloudFront: ~$10/month
-- Data transfer: ~$10/month
-- **Total: ~$130/month**
+| Resource | Configuration | Monthly Cost |
+|----------|--------------|--------------|
+| ECS Fargate (Frontend) | 2 tasks, 0.5 vCPU, 1 GB | ~$17 |
+| ECS Fargate (Backend) | 2 tasks, 0.5 vCPU, 1 GB | ~$17 |
+| ECS Fargate (Prometheus) | 1 task, 0.5 vCPU, 1 GB | ~$17 |
+| ECS Fargate (Grafana) | 1 task, 0.5 vCPU, 1 GB | ~$17 |
+| RDS t4g.micro | Single-AZ PostgreSQL | ~$12 |
+| NAT Gateways | 2 (one per AZ) | ~$32 |
+| ALB | Multi-target routing | ~$20 |
+| EFS Storage | ~5 GB (Prometheus + Grafana) | ~$2 |
+| CloudFront | CDN with caching | ~$1 |
+| Data transfer | Minimal | ~$3 |
+| **Total** | | **~$118-125/month** |
 
-**Cost Optimization Strategies:**
-- Use Fargate Spot for non-critical workloads
-- Auto-shutdown dev environment overnight
-- S3 lifecycle policies for logs
-- Reserved instances for predictable workloads
+**Cost Optimization Strategies (Already Implemented):**
+- ARM-based RDS instance (t4g.micro vs t3.micro)
+- EFS lifecycle policies for infrequent access
+- CloudFront caching to reduce origin requests
+- S3 lifecycle policies for profiling artifacts (7-day expiration)
+
+**Additional Optimization Options:**
+- Single NAT Gateway in dev: Save ~$32/month (reduced HA)
+- Fargate Spot for observability: Save ~$12/month
+- Schedule dev shutdown overnight: Save ~40%
 
 ---
 
@@ -546,6 +577,28 @@ terraform/
 
 ---
 
-**Last Updated:** October 23, 2025  
-**Next Review:** After initial deployment
+## 📚 Related Documentation
+
+- [Observability Architecture](../observability-architecture.md) - Prometheus + Grafana deep dive
+- [Node.js Performance Dashboard Guide](../nodejs-performance-dashboard-guide.md) - Grafana panel interpretation
+- [Deployment Runbook](../deployment-runbook.md) - Operational procedures
+- [Node.js Profiling Lab](../labs/node-profiling-and-debugging.md) - Hands-on profiling exercises
+
+---
+
+**Last Updated:** December 26, 2025
+**Version:** 2.0
+
+### Changelog
+
+#### v2.0 (December 26, 2025)
+- Updated architecture diagram with observability stack (Prometheus, Grafana)
+- Added actual cost breakdown (~$118-125/month)
+- Added observability module to Terraform structure
+- Added supporting infrastructure (EFS, Cloud Map, S3 profiling bucket)
+- Added related documentation links
+- Marked platform as production complete
+
+#### v1.0 (October 23, 2025)
+- Initial architecture documentation
 
