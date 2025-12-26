@@ -62,7 +62,7 @@
 │                          │ scrapes                          │
 │         ┌────────────────┴────────────────┐                 │
 │         ▼                                 ▼                 │
-│   Backend /api/metrics              Frontend /metrics       │
+│   Backend /api/metrics              Frontend /api/metrics   │
 │   (prom-client)                     (prom-client)           │
 └─────────────────────────────────────────────────────────────┘
 

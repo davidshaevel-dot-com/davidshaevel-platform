@@ -314,29 +314,17 @@ cd terraform/environments/dev
 terraform apply
 ```
 
-Or via ECS task definition update (temporary):
-
-```bash
-# Force new deployment with updated environment
-aws ecs update-service --profile davidshaevel-dev \
-  --cluster dev-davidshaevel-cluster \
-  --service dev-davidshaevel-backend \
-  --force-new-deployment
-```
+**Note:** Terraform apply creates a new task definition and updates the ECS service, which automatically triggers a rolling deployment.
 
 ### Disable Lab Endpoints
 
 ```bash
+cd terraform/environments/dev
+
 # Edit terraform.tfvars
 # Set: lab_enable = false
 
 terraform apply
-
-# Force new deployment
-aws ecs update-service --profile davidshaevel-dev \
-  --cluster dev-davidshaevel-cluster \
-  --service dev-davidshaevel-backend \
-  --force-new-deployment
 ```
 
 ### Lab Endpoint Usage
