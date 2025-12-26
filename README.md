@@ -109,7 +109,6 @@ davidshaevel-platform/
 │   ├── architecture/       # AWS architecture diagrams and decisions
 │   ├── terraform-local-setup.md
 │   ├── terraform-implementation-plan.md  # 10-step plan (complete)
-│   ├── tt-24-implementation-plan-cloudflare.md
 │   ├── backend-setup-log.md
 │   └── 2025-10-*_*.md     # Session agendas, summaries, PR descriptions
 ├── frontend/               # Next.js 16 application (TT-18 - Complete)
@@ -275,7 +274,7 @@ terraform output  # View all outputs
 ### Key Documents
 - [Terraform Local Setup](docs/terraform-local-setup.md) - Environment configuration
 - [Implementation Plan](docs/terraform-implementation-plan.md) - 10-step plan (complete)
-- [TT-24 Implementation](docs/tt-24-implementation-plan-cloudflare.md) - CDN with Cloudflare
+- [CloudFront CDN Implementation](docs/architecture/cloudfront-cdn-implementation.md) - CDN with Cloudflare DNS
 - [Backend Setup](docs/backend-setup-log.md) - S3 + DynamoDB state backend
 - [Architecture Docs](docs/architecture/) - AWS architecture diagrams
 

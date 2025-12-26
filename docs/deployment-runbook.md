@@ -2,12 +2,15 @@
 
 Step-by-step procedures for deploying the DavidShaevel.com platform.
 
+**Last Updated:** December 26, 2025
+
 ## Quick Reference
 
 **Automated Deployment:** Push to main triggers automatic deployment
 **Manual Trigger:** `gh workflow run backend-deploy.yml --field environment=dev`
 **Rollback:** `git revert <commit>` then push, or manual ECS service update
 **Monitoring:** `gh run watch <id>` or `aws ecs describe-services`
+**Grafana:** https://grafana.davidshaevel.com
 
 ---
 
@@ -227,16 +230,111 @@ aws elbv2 describe-target-health --profile davidshaevel-dev --target-group-arn <
 - **Frontend Health:** https://davidshaevel.com/health
 - **Backend API:** https://davidshaevel.com/api/health
 - **Projects API:** https://davidshaevel.com/api/projects
+- **Grafana:** https://grafana.davidshaevel.com
+- **Prometheus (via Grafana):** https://grafana.davidshaevel.com/explore
 
 ## Key Resources
 
 - **ECS Cluster:** dev-davidshaevel-cluster
 - **Backend Service:** dev-davidshaevel-backend
 - **Frontend Service:** dev-davidshaevel-frontend
+- **Prometheus Service:** dev-davidshaevel-prometheus
+- **Grafana Service:** dev-davidshaevel-grafana
 - **CloudFront Distribution:** EJVDEMX0X00IG
 - **Backend Log Group:** /ecs/dev-davidshaevel/backend
 - **Frontend Log Group:** /ecs/dev-davidshaevel/frontend
+- **Prometheus Log Group:** /ecs/dev-davidshaevel/prometheus
+- **Grafana Log Group:** /ecs/dev-davidshaevel/grafana
 
 ---
 
-**Last Updated:** November 6, 2025
+## Observability Stack
+
+### Force Redeploy Observability Services
+
+```bash
+# Redeploy Prometheus
+aws ecs update-service --profile davidshaevel-dev \
+  --cluster dev-davidshaevel-cluster \
+  --service dev-davidshaevel-prometheus \
+  --force-new-deployment
+
+# Redeploy Grafana
+aws ecs update-service --profile davidshaevel-dev \
+  --cluster dev-davidshaevel-cluster \
+  --service dev-davidshaevel-grafana \
+  --force-new-deployment
+```
+
+### Check Observability Service Health
+
+```bash
+# List all ECS services
+aws ecs list-services --profile davidshaevel-dev \
+  --cluster dev-davidshaevel-cluster
+
+# Check Prometheus status
+aws ecs describe-services --profile davidshaevel-dev \
+  --cluster dev-davidshaevel-cluster \
+  --services dev-davidshaevel-prometheus
+
+# Check Grafana status
+aws ecs describe-services --profile davidshaevel-dev \
+  --cluster dev-davidshaevel-cluster \
+  --services dev-davidshaevel-grafana
+```
+
+### View Observability Logs
+
+```bash
+# Tail Prometheus logs
+aws logs tail /ecs/dev-davidshaevel/prometheus --since 30m --follow --profile davidshaevel-dev
+
+# Tail Grafana logs
+aws logs tail /ecs/dev-davidshaevel/grafana --since 30m --follow --profile davidshaevel-dev
+```
+
+---
+
+## Node.js Profiling Lab Endpoints
+
+The lab endpoints allow CPU profiling and memory analysis on the backend service.
+
+### Enable Lab Endpoints
+
+Update Terraform variables and apply:
+
+```bash
+cd terraform/environments/dev
+
+# Edit terraform.tfvars
+# Set: lab_enable = true
+# Set: lab_token = "your-secure-token"
+
+terraform apply
+```
+
+**Note:** Terraform apply creates a new task definition and updates the ECS service, which automatically triggers a rolling deployment.
+
+### Disable Lab Endpoints
+
+```bash
+cd terraform/environments/dev
+
+# Edit terraform.tfvars
+# Set: lab_enable = false
+
+terraform apply
+```
+
+### Lab Endpoint Usage
+
+See [Node.js Profiling Lab Documentation](./labs/node-profiling-and-debugging.md) for:
+- CPU profile capture
+- Heap snapshot analysis
+- Memory leak investigation
+- Event loop jam detection
+
+---
+
+**Last Updated:** December 26, 2025

@@ -4,6 +4,8 @@
 **Issue:** TT-16 - Initialize Terraform project structure
 **Strategy:** Build incrementally with working infrastructure at each step
 **Date:** October 24, 2025
+**Last Updated:** December 26, 2025
+**Status:** ✅ All Steps Complete - Platform Live
 
 ---
 
@@ -45,12 +47,7 @@ terraform/
 │       └── backend-config.tfvars.example
 │
 ├── modules/                   # Reusable infrastructure modules
-│   ├── networking/           # VPC, subnets, routing
-│   │   ├── main.tf
-│   │   ├── variables.tf
-│   │   ├── outputs.tf
-│   │   └── README.md
-│   ├── security/             # Security groups
+│   ├── networking/           # VPC, subnets, routing, NAT gateways
 │   │   ├── main.tf
 │   │   ├── variables.tf
 │   │   ├── outputs.tf
@@ -60,12 +57,17 @@ terraform/
 │   │   ├── variables.tf
 │   │   ├── outputs.tf
 │   │   └── README.md
-│   ├── compute/              # ECS Fargate
+│   ├── compute/              # ECS Fargate, ALB, security groups
 │   │   ├── main.tf
 │   │   ├── variables.tf
 │   │   ├── outputs.tf
 │   │   └── README.md
-│   └── cdn/                  # CloudFront + Route53
+│   ├── cdn/                  # CloudFront, ACM certificates
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   ├── outputs.tf
+│   │   └── README.md
+│   └── observability/        # Prometheus, Grafana, EFS, Cloud Map
 │       ├── main.tf
 │       ├── variables.tf
 │       ├── outputs.tf
@@ -83,20 +85,23 @@ terraform/
 
 ## Implementation Phases
 
-### Phase 1: Foundation (Steps 1-3)
+### Phase 1: Foundation (Steps 1-3) ✅
 Basic Terraform setup with no AWS resources
 
-### Phase 2: Networking (Steps 4-5)
+### Phase 2: Networking (Steps 4-5) ✅
 VPC, subnets, and security groups
 
-### Phase 3: Database (Step 6)
+### Phase 3: Database (Step 6-7) ✅
 RDS PostgreSQL instance
 
-### Phase 4: Compute (Steps 7-8)
-ECS cluster and services
+### Phase 4: Compute (Steps 8-9) ✅
+ECS cluster, ALB, and services
 
-### Phase 5: Distribution (Step 9)
-CloudFront and Route53
+### Phase 5: Distribution (Step 10) ✅
+CloudFront and ACM certificates
+
+### Phase 6: Observability (Step 11) ✅
+Prometheus, Grafana, EFS, Cloud Map
 
 ---
 
@@ -543,6 +548,61 @@ related-issues: TT-16, TT-24
 
 ---
 
+### ✅ Step 11: Implement Observability Module
+
+**Goal:** Add Prometheus and Grafana for metrics collection and visualization
+
+**Completed:** November 24, 2025 (TT-25)
+
+**Files created:**
+- `terraform/modules/observability/main.tf`
+- `terraform/modules/observability/variables.tf`
+- `terraform/modules/observability/outputs.tf`
+- `terraform/modules/observability/README.md`
+
+**What this includes:**
+- ECS Fargate services for Prometheus and Grafana
+- EFS file systems for persistent storage
+- AWS Cloud Map for service discovery
+- Security groups for observability services
+- ALB listener rules for Grafana access
+- IAM roles for EFS access
+
+**Resources created:** ~25-30 resources
+
+**Update:**
+- `terraform/environments/dev/main.tf` to use observability module
+
+**Test:**
+```bash
+terraform plan
+terraform apply
+# Access Grafana at https://grafana.davidshaevel.com
+# Verify Prometheus scraping at https://grafana.davidshaevel.com/explore
+```
+
+**Cost:** ~$36/month (2 ECS tasks + EFS storage)
+
+**Commit:**
+```
+feat(terraform): add observability module with Prometheus and Grafana
+
+- Create ECS services for Prometheus and Grafana
+- Configure EFS for persistent metrics storage
+- Set up AWS Cloud Map for service discovery
+- Add security groups for observability stack
+- Configure ALB routing for Grafana access
+- Enable HTTPS via CloudFront CDN
+
+related-issues: TT-25
+```
+
+**PR #6:** Create pull request for observability
+- Title: "feat(terraform): implement observability stack with Prometheus and Grafana"
+- Description: Complete monitoring infrastructure with dashboards
+
+---
+
 ## Testing Strategy
 
 ### Per-Step Testing
@@ -569,22 +629,31 @@ After each PR:
 
 ## Cost Management
 
-### Development Environment (Estimated)
+### Development Environment (Actual - December 2025)
 
 | Phase | Resources | Daily Cost | Monthly Cost |
 |-------|-----------|------------|--------------|
 | Phase 1-2 | Foundation | $0.00 | $0.00 |
-| Phase 3 | + Networking | $2.40 | $72.00 |
-| Phase 4 | + Database | $2.90 | $87.00 |
-| Phase 5 | + Compute | $3.90 | $117.00 |
-| Phase 6 | + CDN | $4.10 | $123.00 |
+| Phase 3 | + Networking | $1.10 | $33.00 |
+| Phase 4 | + Database | $1.50 | $45.00 |
+| Phase 5 | + Compute | $2.80 | $84.00 |
+| Phase 6 | + CDN | $2.85 | $85.00 |
+| Phase 7 | + Observability | **$3.95** | **$118.00** |
 
-### Cost Optimization Strategies
+**Actual Total:** ~$118-125/month
 
-1. **Single NAT Gateway in Dev** - Reduce from $1.08/day to $0.54/day
-2. **Shutdown During Off-Hours** - Save ~70% on ECS costs
-3. **Use db.t4g.micro** - ARM-based instances are cheaper
-4. **CloudFront Caching** - Reduce origin requests
+### Cost Optimization Strategies (Implemented)
+
+1. **ARM-based RDS (t4g.micro)** - ~20% cheaper than t3.micro
+2. **EFS Lifecycle Policies** - Infrequent access after 14 days
+3. **CloudFront Caching** - Reduces origin requests
+4. **S3 Lifecycle Policies** - 7-day expiration for profiling artifacts
+
+### Additional Optimization Options
+
+1. **Single NAT Gateway in Dev** - Save ~$32/month (reduced HA)
+2. **Shutdown During Off-Hours** - Save ~40% on ECS costs
+3. **Fargate Spot for Observability** - Save ~$12/month
 
 ---
 
@@ -723,21 +792,42 @@ TT-16 is complete when:
 - ✅ All tests passing
 - ✅ Documentation complete
 - ✅ PRs reviewed and merged
-- ✅ Costs within budget ($130/month)
+- ✅ Costs within budget (~$118/month actual)
 - ✅ Linear issue updated and closed
 
----
-
-## Next Steps After TT-16
-
-1. **TT-18:** Build Next.js frontend
-2. **TT-19:** Build Nest.js backend
-3. **TT-20:** Docker Compose setup
-4. **TT-23:** CI/CD pipeline
-5. **TT-25:** Observability setup
+**Status:** ✅ All criteria met - Platform live at https://davidshaevel.com
 
 ---
 
-**Ready to start implementation!**
+## Completed Implementation Timeline
 
-Follow the steps sequentially, test thoroughly, and commit frequently.
+| Issue | Description | Completed |
+|-------|-------------|-----------|
+| TT-16 | Initialize Terraform structure | October 2025 |
+| TT-17 | VPC and networking | October 2025 |
+| TT-18 | Next.js frontend | October 2025 |
+| TT-19 | Nest.js backend | October 2025 |
+| TT-21 | RDS PostgreSQL database | October 2025 |
+| TT-22 | ECS cluster and services | October 2025 |
+| TT-23 | Backend deployment | October 2025 |
+| TT-24 | CloudFront CDN | October 2025 |
+| TT-25 | Observability (Prometheus + Grafana) | November 2025 |
+| TT-28 | Automated testing | November 2025 |
+| TT-29 | Frontend deployment | October 2025 |
+| TT-31 | CI/CD workflows | November 2025 |
+| TT-63 | Node.js Profiling Lab | December 2025 |
+
+---
+
+## Related Documentation
+
+- [Architecture Overview](./overview.md) - High-level architecture
+- [Observability Architecture](../observability-architecture.md) - Prometheus + Grafana details
+- [Deployment Runbook](../deployment-runbook.md) - Operational procedures
+- [Node.js Profiling Lab](../labs/node-profiling-and-debugging.md) - Hands-on profiling
+
+---
+
+**Implementation Complete!**
+
+All 11 steps implemented, tested, and deployed. Platform operational at https://davidshaevel.com.
