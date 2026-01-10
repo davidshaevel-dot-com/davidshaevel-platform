@@ -565,10 +565,11 @@ module "observability" {
   grafana_service_registry_arn = module.service_discovery[0].grafana_service_arn
   grafana_admin_password       = var.grafana_admin_password
 
-  # ALB Integration (prefers HTTPS if available)
-  enable_grafana_alb_integration = true
-  alb_listener_arn               = module.compute[0].alb_https_listener_arn != null ? module.compute[0].alb_https_listener_arn : module.compute[0].alb_http_listener_arn
-  alb_security_group_id          = module.networking[0].alb_security_group_id
+  # ALB Integration - disabled for DR (Grafana accessible only via internal service discovery)
+  # To enable public access, set grafana_domain_name and enable_grafana_alb_integration = true
+  enable_grafana_alb_integration = var.grafana_domain_name != ""
+  alb_listener_arn               = var.grafana_domain_name != "" ? (module.compute[0].alb_https_listener_arn != null ? module.compute[0].alb_https_listener_arn : module.compute[0].alb_http_listener_arn) : null
+  alb_security_group_id          = var.grafana_domain_name != "" ? module.networking[0].alb_security_group_id : null
   grafana_domain_name            = var.grafana_domain_name
 
   tags = {

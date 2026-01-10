@@ -210,6 +210,90 @@ if [[ "${DR_ACTIVATED:-false}" == "true" ]]; then
             log_warn "ALB health check: HTTP ${HTTP_CODE}"
         fi
     fi
+
+    # Check 12: Prometheus Service
+    log_info "Checking Prometheus service..."
+    PROMETHEUS_SVC=$(terraform output -raw prometheus_service_name 2>/dev/null || echo "")
+    if [[ -n "${PROMETHEUS_SVC}" && -n "${CLUSTER_NAME}" ]]; then
+        PROM_STATUS=$(aws ecs describe-services \
+            --cluster "${CLUSTER_NAME}" \
+            --services "${PROMETHEUS_SVC}" \
+            --region ${DR_REGION} \
+            --query 'services[0].status' \
+            --output text 2>/dev/null || echo "")
+        if [[ "${PROM_STATUS}" == "ACTIVE" ]]; then
+            RUNNING=$(aws ecs describe-services \
+                --cluster "${CLUSTER_NAME}" \
+                --services "${PROMETHEUS_SVC}" \
+                --region ${DR_REGION} \
+                --query 'services[0].runningCount' \
+                --output text 2>/dev/null || echo "0")
+            if [[ "${RUNNING}" -ge 1 ]]; then
+                log_pass "Prometheus: ${RUNNING} running task(s)"
+            else
+                log_warn "Prometheus: 0 running tasks"
+            fi
+        else
+            log_fail "Prometheus service status: ${PROM_STATUS:-unknown}"
+        fi
+    else
+        log_warn "Prometheus service not configured"
+    fi
+
+    # Check 13: Grafana Service
+    log_info "Checking Grafana service..."
+    GRAFANA_SVC=$(terraform output -raw grafana_service_name 2>/dev/null || echo "")
+    if [[ -n "${GRAFANA_SVC}" && -n "${CLUSTER_NAME}" ]]; then
+        GRAF_STATUS=$(aws ecs describe-services \
+            --cluster "${CLUSTER_NAME}" \
+            --services "${GRAFANA_SVC}" \
+            --region ${DR_REGION} \
+            --query 'services[0].status' \
+            --output text 2>/dev/null || echo "")
+        if [[ "${GRAF_STATUS}" == "ACTIVE" ]]; then
+            RUNNING=$(aws ecs describe-services \
+                --cluster "${CLUSTER_NAME}" \
+                --services "${GRAFANA_SVC}" \
+                --region ${DR_REGION} \
+                --query 'services[0].runningCount' \
+                --output text 2>/dev/null || echo "0")
+            if [[ "${RUNNING}" -ge 1 ]]; then
+                log_pass "Grafana: ${RUNNING} running task(s)"
+            else
+                log_warn "Grafana: 0 running tasks"
+            fi
+        else
+            log_fail "Grafana service status: ${GRAF_STATUS:-unknown}"
+        fi
+    else
+        log_warn "Grafana service not configured"
+    fi
+
+    # Check 14: Service Discovery - Prometheus
+    log_info "Checking service discovery registrations..."
+    PROMETHEUS_ENDPOINT=$(terraform output -raw prometheus_endpoint 2>/dev/null || echo "")
+    if [[ -n "${PROMETHEUS_ENDPOINT}" ]]; then
+        # Check if Prometheus is registered in Cloud Map
+        PROM_SD_NAMESPACE=$(aws servicediscovery list-namespaces \
+            --region ${DR_REGION} \
+            --query "Namespaces[?Name=='davidshaevel.local'].Id" \
+            --output text 2>/dev/null || echo "")
+        if [[ -n "${PROM_SD_NAMESPACE}" ]]; then
+            PROM_INSTANCES=$(aws servicediscovery list-instances \
+                --service-id "$(aws servicediscovery list-services \
+                    --region ${DR_REGION} \
+                    --query "Services[?Name=='prometheus'].Id" \
+                    --output text 2>/dev/null)" \
+                --region ${DR_REGION} \
+                --query 'length(Instances)' \
+                --output text 2>/dev/null || echo "0")
+            if [[ "${PROM_INSTANCES}" -ge 1 ]]; then
+                log_pass "Prometheus service discovery: ${PROM_INSTANCES} instance(s)"
+            else
+                log_warn "Prometheus not registered in service discovery"
+            fi
+        fi
+    fi
 fi
 
 # Summary
