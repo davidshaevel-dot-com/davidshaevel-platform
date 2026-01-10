@@ -152,18 +152,33 @@ if [[ "${DR_ACTIVATED:-false}" == "true" ]]; then
 
     # Check 9: RDS
     log_info "Checking DR RDS instance..."
-    DB_STATUS=$(terraform output -raw db_instance_status 2>/dev/null || echo "")
-    if [[ "${DB_STATUS}" == "available" ]]; then
-        log_pass "RDS instance is available"
+    DB_ENDPOINT=$(terraform output -raw database_endpoint 2>/dev/null || echo "")
+    if [[ -n "${DB_ENDPOINT}" ]]; then
+        # Extract DB identifier from endpoint (format: <identifier>.<random>.region.rds.amazonaws.com:port)
+        DB_HOST=$(echo "${DB_ENDPOINT}" | cut -d: -f1)
+        DB_IDENTIFIER=$(echo "${DB_HOST}" | cut -d. -f1)
+        DB_STATUS=$(aws rds describe-db-instances \
+            --db-instance-identifier "${DB_IDENTIFIER}" \
+            --region ${DR_REGION} \
+            --query 'DBInstances[0].DBInstanceStatus' \
+            --output text 2>/dev/null || echo "unknown")
+        if [[ "${DB_STATUS}" == "available" ]]; then
+            log_pass "RDS instance ${DB_IDENTIFIER} is available"
+        else
+            log_warn "RDS instance status: ${DB_STATUS}"
+        fi
     else
-        log_warn "RDS instance status: ${DB_STATUS:-unknown}"
+        log_warn "RDS instance not configured"
     fi
 
     # Check 10: ECS Services
     log_info "Checking ECS services..."
     CLUSTER_NAME=$(terraform output -raw ecs_cluster_name 2>/dev/null || echo "")
+    FRONTEND_SVC=$(terraform output -raw frontend_service_name 2>/dev/null || echo "")
+    BACKEND_SVC=$(terraform output -raw backend_service_name 2>/dev/null || echo "")
     if [[ -n "${CLUSTER_NAME}" ]]; then
-        for svc in frontend backend; do
+        for svc in "${FRONTEND_SVC}" "${BACKEND_SVC}"; do
+            [[ -z "${svc}" ]] && continue
             SVC_STATUS=$(aws ecs describe-services \
                 --cluster "${CLUSTER_NAME}" \
                 --services "${svc}" \
@@ -177,9 +192,9 @@ if [[ "${DR_ACTIVATED:-false}" == "true" ]]; then
                     --region ${DR_REGION} \
                     --query 'services[0].runningCount' \
                     --output text 2>/dev/null || echo "0")
-                log_pass "ECS ${svc} service: ${RUNNING} running tasks"
+                log_pass "ECS ${svc}: ${RUNNING} running tasks"
             else
-                log_fail "ECS ${svc} service status: ${SVC_STATUS:-unknown}"
+                log_fail "ECS ${svc} status: ${SVC_STATUS:-unknown}"
             fi
         done
     fi

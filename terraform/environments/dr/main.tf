@@ -464,7 +464,8 @@ module "compute" {
   database_endpoint   = module.database[0].db_instance_endpoint
   database_port       = module.database[0].db_instance_port
   database_name       = module.database[0].db_name
-  database_secret_arn = module.database[0].secret_arn
+  # When restoring from snapshot, use the DR secret ARN (RDS doesn't auto-create a managed secret)
+  database_secret_arn = coalesce(module.database[0].secret_arn, var.dr_database_secret_arn)
 
   # Use DR region ECR images (replicated automatically)
   frontend_image = var.frontend_container_image

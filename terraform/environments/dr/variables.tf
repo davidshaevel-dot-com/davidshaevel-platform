@@ -175,6 +175,12 @@ variable "db_snapshot_identifier" {
   default     = null
 }
 
+variable "dr_database_secret_arn" {
+  description = "ARN of the Secrets Manager secret containing DR database credentials. Required when restoring from snapshot since RDS doesn't auto-create a managed secret."
+  type        = string
+  default     = null
+}
+
 # -----------------------------------------------------------------------------
 # Compute Configuration
 # -----------------------------------------------------------------------------
