@@ -105,13 +105,27 @@ FRONTEND_IMAGE=$(aws ecr describe-images \
     --query 'imageDetails | sort_by(@, &imagePushedAt) | [-1].imageTags[0]' \
     --output text 2>/dev/null || echo "")
 
+GRAFANA_IMAGE=$(aws ecr describe-images \
+    --repository-name davidshaevel/grafana \
+    --region ${DR_REGION} \
+    --query 'imageDetails | sort_by(@, &imagePushedAt) | [-1].imageTags[0]' \
+    --output text 2>/dev/null || echo "")
+
 if [[ -z "${BACKEND_IMAGE}" || -z "${FRONTEND_IMAGE}" ]]; then
     log_error "Container images not found in DR region ECR"
     exit 1
 fi
 
+if [[ -z "${GRAFANA_IMAGE}" ]]; then
+    log_warn "Grafana image not found in DR ECR - using default stock image"
+    GRAFANA_IMAGE=""
+fi
+
 log_info "Backend image: ${ECR_REGISTRY}/davidshaevel/backend:${BACKEND_IMAGE}"
 log_info "Frontend image: ${ECR_REGISTRY}/davidshaevel/frontend:${FRONTEND_IMAGE}"
+if [[ -n "${GRAFANA_IMAGE}" ]]; then
+    log_info "Grafana image: ${ECR_REGISTRY}/davidshaevel/grafana:${GRAFANA_IMAGE}"
+fi
 
 # Step 6: Display activation plan
 echo ""
@@ -122,6 +136,9 @@ echo ""
 echo "  Snapshot:  ${LATEST_SNAPSHOT}"
 echo "  Backend:   ${BACKEND_IMAGE}"
 echo "  Frontend:  ${FRONTEND_IMAGE}"
+if [[ -n "${GRAFANA_IMAGE}" ]]; then
+    echo "  Grafana:   ${GRAFANA_IMAGE}"
+fi
 echo ""
 echo "  Terraform will deploy:"
 echo "    - VPC and networking in ${DR_REGION}"
@@ -150,11 +167,20 @@ fi
 log_info "Activating DR infrastructure..."
 cd "${DR_TERRAFORM_DIR}"
 
-terraform apply \
-    -var="dr_activated=true" \
-    -var="db_snapshot_identifier=${LATEST_SNAPSHOT}" \
-    -var="frontend_container_image=${ECR_REGISTRY}/davidshaevel/frontend:${FRONTEND_IMAGE}" \
+# Build terraform apply command with required and optional vars
+TF_VARS=(
+    -var="dr_activated=true"
+    -var="db_snapshot_identifier=${LATEST_SNAPSHOT}"
+    -var="frontend_container_image=${ECR_REGISTRY}/davidshaevel/frontend:${FRONTEND_IMAGE}"
     -var="backend_container_image=${ECR_REGISTRY}/davidshaevel/backend:${BACKEND_IMAGE}"
+)
+
+# Add Grafana image if available in DR ECR
+if [[ -n "${GRAFANA_IMAGE}" ]]; then
+    TF_VARS+=(-var="grafana_image=${ECR_REGISTRY}/davidshaevel/grafana:${GRAFANA_IMAGE}")
+fi
+
+terraform apply "${TF_VARS[@]}"
 
 # Step 8: Get outputs
 log_info "Retrieving DR endpoints..."
