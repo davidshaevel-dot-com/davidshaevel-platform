@@ -355,7 +355,7 @@ resource "aws_vpc_security_group_egress_rule" "grafana_to_internet" {
 # Allow ALB to access Grafana (port 3000)
 # Required for public access and health checks
 resource "aws_vpc_security_group_ingress_rule" "grafana_from_alb" {
-  count = var.enable_grafana && var.alb_security_group_id != null ? 1 : 0
+  count = var.enable_grafana && var.enable_grafana_alb_integration ? 1 : 0
 
   security_group_id            = local.grafana_sg_id
   description                  = "Allow traffic from ALB"
@@ -369,7 +369,7 @@ resource "aws_vpc_security_group_ingress_rule" "grafana_from_alb" {
 # Note: ALB SG is managed in networking module, but we add this rule here
 # to keep Grafana-specific configuration co-located with the service
 resource "aws_vpc_security_group_egress_rule" "alb_to_grafana" {
-  count = var.enable_grafana && var.alb_security_group_id != null ? 1 : 0
+  count = var.enable_grafana && var.enable_grafana_alb_integration ? 1 : 0
 
   security_group_id            = var.alb_security_group_id
   description                  = "Allow traffic to Grafana containers"
@@ -955,7 +955,7 @@ resource "aws_ecs_task_definition" "grafana" {
 
 # Grafana Target Group
 resource "aws_lb_target_group" "grafana" {
-  count = var.enable_grafana && var.alb_listener_arn != null ? 1 : 0
+  count = var.enable_grafana && var.enable_grafana_alb_integration ? 1 : 0
 
   name        = "${local.name_prefix}-grafana-tg"
   port        = local.grafana_port
@@ -988,7 +988,7 @@ resource "aws_lb_target_group" "grafana" {
 # Grafana Listener Rule
 # Routes traffic for grafana.domain.com to the Grafana target group
 resource "aws_lb_listener_rule" "grafana" {
-  count = var.enable_grafana && var.alb_listener_arn != null && var.grafana_domain_name != "" ? 1 : 0
+  count = var.enable_grafana && var.enable_grafana_alb_integration && var.grafana_domain_name != "" ? 1 : 0
 
   listener_arn = var.alb_listener_arn
   priority     = 90 # Higher priority than backend (100)
@@ -1095,9 +1095,9 @@ resource "aws_ecs_service" "grafana" {
     assign_public_ip = false
   }
 
-  # Attach to ALB if listener ARN is provided
+  # Attach to ALB if ALB integration is enabled
   dynamic "load_balancer" {
-    for_each = var.alb_listener_arn != null ? [1] : []
+    for_each = var.enable_grafana_alb_integration ? [1] : []
     content {
       target_group_arn = aws_lb_target_group.grafana[0].arn
       container_name   = "grafana"

@@ -512,3 +512,100 @@ module "compute" {
 
   common_tags = local.common_tags
 }
+
+# Observability Module (deploy-on-demand) - Prometheus & Grafana
+module "observability" {
+  source = "../../modules/observability"
+  count  = var.dr_activated ? 1 : 0
+
+  environment  = var.environment
+  project_name = var.project_name
+
+  # Networking inputs
+  vpc_id                       = module.networking[0].vpc_id
+  private_app_subnet_ids       = module.networking[0].private_app_subnet_ids
+  prometheus_security_group_id = module.networking[0].prometheus_security_group_id
+  backend_security_group_id    = module.networking[0].app_backend_security_group_id
+  frontend_security_group_id   = module.networking[0].app_frontend_security_group_id
+
+  # Container ports
+  backend_metrics_port  = 3001
+  frontend_metrics_port = 3000
+
+  # EFS configuration (cost-optimized for DR)
+  enable_prometheus_efs           = true
+  prometheus_efs_performance_mode = "generalPurpose"
+  prometheus_efs_throughput_mode  = "bursting"
+  efs_transition_to_ia_days       = 7 # Faster transition for DR
+  enable_efs_encryption           = true
+
+  # S3 configuration
+  enable_config_bucket_versioning = true
+  config_bucket_lifecycle_days    = 30 # Shorter lifecycle for DR
+
+  # Prometheus ECS Service
+  aws_region                      = var.aws_region
+  ecs_cluster_id                  = module.compute[0].ecs_cluster_id
+  prometheus_service_registry_arn = module.service_discovery[0].prometheus_service_arn
+  prometheus_image                = var.prometheus_image
+  prometheus_task_cpu             = var.prometheus_task_cpu
+  prometheus_task_memory          = var.prometheus_task_memory
+  prometheus_desired_count        = var.prometheus_desired_count
+  prometheus_retention_time       = var.prometheus_retention_time
+  prometheus_config_s3_key        = "observability/prometheus/prometheus.yml"
+  log_retention_days              = var.ecs_log_retention_days
+  enable_ecs_exec                 = true
+
+  # Grafana ECS Service
+  enable_grafana               = true
+  grafana_image                = var.grafana_image
+  grafana_task_cpu             = var.grafana_task_cpu
+  grafana_task_memory          = var.grafana_task_memory
+  grafana_desired_count        = var.grafana_desired_count
+  grafana_service_registry_arn = module.service_discovery[0].grafana_service_arn
+  grafana_admin_password       = var.grafana_admin_password
+
+  # ALB Integration (prefers HTTPS if available)
+  enable_grafana_alb_integration = true
+  alb_listener_arn               = module.compute[0].alb_https_listener_arn != null ? module.compute[0].alb_https_listener_arn : module.compute[0].alb_http_listener_arn
+  alb_security_group_id          = module.networking[0].alb_security_group_id
+  grafana_domain_name            = var.grafana_domain_name
+
+  tags = {
+    DRRegion   = "true"
+    CostCenter = "Platform Engineering"
+  }
+}
+
+# ==============================================================================
+# Prometheus Configuration for DR
+# ==============================================================================
+
+# Render Prometheus configuration from template for DR environment
+locals {
+  prometheus_config_rendered = var.dr_activated ? templatefile("../../../observability/prometheus/prometheus.yml.tpl", {
+    environment           = var.environment
+    service_prefix        = "${var.environment}-${var.project_name}"
+    platform_name         = var.project_name
+    private_dns_zone      = var.private_dns_namespace
+    backend_service_name  = module.service_discovery[0].backend_service_name
+    frontend_service_name = module.service_discovery[0].frontend_service_name
+  }) : ""
+}
+
+# Upload rendered Prometheus config to S3 for DR
+resource "aws_s3_object" "prometheus_config" {
+  count = var.dr_activated ? 1 : 0
+
+  bucket       = module.observability[0].prometheus_config_bucket_id
+  key          = "observability/prometheus/prometheus.yml"
+  content      = local.prometheus_config_rendered
+  content_type = "text/yaml"
+  etag         = md5(local.prometheus_config_rendered)
+
+  tags = {
+    Name        = "${var.environment}-${var.project_name}-prometheus-config"
+    Environment = var.environment
+    DRRegion    = "true"
+  }
+}

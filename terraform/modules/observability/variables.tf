@@ -15,12 +15,12 @@
 # ------------------------------------------------------------------------------
 
 variable "environment" {
-  description = "Environment name (dev, staging, prod)"
+  description = "Environment name (dev, staging, prod, or dr)"
   type        = string
 
   validation {
-    condition     = can(regex("^(dev|staging|prod)$", var.environment))
-    error_message = "Environment must be dev, staging, or prod."
+    condition     = can(regex("^(dev|staging|prod|dr)$", var.environment))
+    error_message = "Environment must be dev, staging, prod, or dr."
   }
 }
 
@@ -284,6 +284,12 @@ variable "alb_listener_arn" {
   description = "ARN of the ALB listener to attach the Grafana listener rule to (HTTPS preferred)"
   type        = string
   default     = null
+}
+
+variable "enable_grafana_alb_integration" {
+  description = "Explicitly enable ALB integration for Grafana (avoids Terraform plan issues with conditional modules)"
+  type        = bool
+  default     = true
 }
 
 variable "grafana_domain_name" {
