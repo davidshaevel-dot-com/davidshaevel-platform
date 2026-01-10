@@ -165,15 +165,15 @@ resource "aws_iam_role_policy" "snapshot_copy_lambda" {
         Resource = [
           # Source snapshots from primary DB (automated backups)
           "arn:aws:rds:us-east-1:${var.aws_account_id}:snapshot:rds:${var.primary_db_instance_identifier}-*",
-          # Destination snapshots in DR region
-          "arn:aws:rds:${var.aws_region}:${var.aws_account_id}:snapshot:${var.environment}-${var.project_name}-dr-*"
+          # Destination snapshots in DR region (named: {db_identifier}-dr-{timestamp})
+          "arn:aws:rds:${var.aws_region}:${var.aws_account_id}:snapshot:${var.primary_db_instance_identifier}-dr-*"
         ]
       },
       {
         Sid      = "DeleteOldDRSnapshots"
         Effect   = "Allow"
         Action   = ["rds:DeleteDBSnapshot"]
-        Resource = "arn:aws:rds:${var.aws_region}:${var.aws_account_id}:snapshot:${var.environment}-${var.project_name}-dr-*"
+        Resource = "arn:aws:rds:${var.aws_region}:${var.aws_account_id}:snapshot:${var.primary_db_instance_identifier}-dr-*"
       },
       {
         Sid    = "KMSAccess"

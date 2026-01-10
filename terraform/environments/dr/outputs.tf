@@ -103,7 +103,7 @@ output "dr_activation_instructions" {
        aws rds describe-db-snapshots \
          --region ${var.aws_region} \
          --snapshot-type manual \
-         --query 'DBSnapshots[?starts_with(DBSnapshotIdentifier, `${var.environment}-${var.project_name}-dr-`)] | sort_by(@, &SnapshotCreateTime) | [-1].DBSnapshotIdentifier' \
+         --query 'DBSnapshots[?starts_with(DBSnapshotIdentifier, `${var.primary_db_instance_identifier}-dr-`)] | sort_by(@, &SnapshotCreateTime) | [-1].DBSnapshotIdentifier' \
          --output text
 
     2. Activate DR:
