@@ -160,16 +160,46 @@ terraform apply \
 log_info "Retrieving DR endpoints..."
 ALB_DNS=$(terraform output -raw alb_dns_name 2>/dev/null || echo "N/A")
 
+# Step 9: Update CloudFront origin to DR ALB
+log_info "Updating CloudFront distribution origin to DR ALB..."
+CLOUDFRONT_DIST_ID="EJVDEMX0X00IG"
+
+# Get current distribution config
+aws cloudfront get-distribution-config --id "${CLOUDFRONT_DIST_ID}" > /tmp/cf-dist-config.json
+
+# Extract ETag for update
+ETAG=$(jq -r '.ETag' /tmp/cf-dist-config.json)
+
+# Update origin domain name to DR ALB
+jq --arg dr_alb "${ALB_DNS}" '.DistributionConfig.Origins.Items[0].DomainName = $dr_alb' /tmp/cf-dist-config.json | jq '.DistributionConfig' > /tmp/cf-dist-config-updated.json
+
+# Update the distribution
+if aws cloudfront update-distribution --id "${CLOUDFRONT_DIST_ID}" --if-match "${ETAG}" --distribution-config file:///tmp/cf-dist-config-updated.json > /dev/null 2>&1; then
+    log_info "CloudFront origin updated to: ${ALB_DNS}"
+
+    # Invalidate cache
+    log_info "Creating CloudFront cache invalidation..."
+    aws cloudfront create-invalidation --distribution-id "${CLOUDFRONT_DIST_ID}" --paths "/*" > /dev/null 2>&1
+    log_info "Cache invalidation created for all paths"
+else
+    log_warn "Failed to update CloudFront origin automatically"
+    log_warn "Please update manually: CloudFront > ${CLOUDFRONT_DIST_ID} > Origins > alb-origin"
+fi
+
+# Cleanup temp files
+rm -f /tmp/cf-dist-config.json /tmp/cf-dist-config-updated.json
+
 echo ""
 echo "========================================"
 echo "  DR ACTIVATION COMPLETE"
 echo "========================================"
 echo ""
-echo "  ALB DNS: ${ALB_DNS}"
+echo "  DR ALB DNS: ${ALB_DNS}"
+echo "  CloudFront: https://davidshaevel.com (origin updated to DR)"
 echo ""
 echo "  Next steps:"
 echo "    1. Verify services: ./scripts/dr-validation.sh"
-echo "    2. Update DNS to point to DR ALB"
-echo "    3. Invalidate CloudFront cache (if using)"
+echo "    2. Wait for CloudFront deployment (~5-10 min)"
+echo "    3. Test https://davidshaevel.com"
 echo ""
 echo "========================================"
