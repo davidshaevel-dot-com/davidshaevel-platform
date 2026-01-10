@@ -1,0 +1,59 @@
+# DR Environment Configuration
+# Copy this file to terraform.tfvars and update with your values
+#
+# For Pilot Light mode (default):
+#   dr_activated = false
+#   Only ECR replication, snapshot copy, and KMS key are deployed
+#
+# For DR activation:
+#   dr_activated = true
+#   Full infrastructure is deployed (VPC, ECS, ALB, RDS from snapshot)
+
+# -----------------------------------------------------------------------------
+# DR Activation Control
+# -----------------------------------------------------------------------------
+
+# Set to true during DR activation to deploy full infrastructure
+dr_activated = false
+
+# -----------------------------------------------------------------------------
+# AWS Configuration
+# -----------------------------------------------------------------------------
+
+aws_account_id = "123456789012"
+
+# -----------------------------------------------------------------------------
+# Database Configuration (for DR activation)
+# -----------------------------------------------------------------------------
+
+# Snapshot to restore from during DR activation
+# Find latest with: aws rds describe-db-snapshots --region us-west-2 --query 'DBSnapshots | sort_by(@, &SnapshotCreateTime) | [-1].DBSnapshotIdentifier'
+db_snapshot_identifier = ""
+
+# -----------------------------------------------------------------------------
+# Container Images (for DR activation)
+# -----------------------------------------------------------------------------
+
+# Use us-west-2 ECR URLs (images are auto-replicated)
+# frontend_container_image = "123456789012.dkr.ecr.us-west-2.amazonaws.com/davidshaevel/frontend:latest"
+# backend_container_image = "123456789012.dkr.ecr.us-west-2.amazonaws.com/davidshaevel/backend:latest"
+
+frontend_container_image = ""
+backend_container_image  = ""
+
+# -----------------------------------------------------------------------------
+# ACM Certificate (for DR activation with HTTPS)
+# -----------------------------------------------------------------------------
+
+# ARN of ACM certificate in us-west-2 for ALB HTTPS
+# Must be created before DR activation
+dr_acm_certificate_arn = ""
+
+# -----------------------------------------------------------------------------
+# Optional Overrides
+# -----------------------------------------------------------------------------
+
+# Uncomment to override defaults
+# db_instance_class = "db.t4g.micro"
+# desired_count_frontend = 2
+# desired_count_backend = 2

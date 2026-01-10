@@ -123,10 +123,14 @@ resource "aws_db_instance" "main" {
   engine_version = var.engine_version
   instance_class = var.instance_class
 
+  # Snapshot Restore (for DR) - when specified, restores from snapshot
+  snapshot_identifier = var.snapshot_identifier
+
   # Database Configuration
-  db_name                     = var.db_name
-  username                    = var.db_master_username
-  manage_master_user_password = true
+  # Note: When restoring from snapshot, db_name and username come from the snapshot
+  db_name                     = var.snapshot_identifier == null ? var.db_name : null
+  username                    = var.snapshot_identifier == null ? var.db_master_username : null
+  manage_master_user_password = var.snapshot_identifier == null ? true : null
 
   # Storage Configuration
   allocated_storage     = var.allocated_storage

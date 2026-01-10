@@ -1,0 +1,19 @@
+# Backend Configuration for DR Environment
+# Copy this file to backend-config.tfvars and update with your values
+#
+# Usage: terraform init -backend-config=backend-config.tfvars
+
+# S3 bucket for Terraform state (same bucket as dev/prod, different key)
+bucket = "your-terraform-state-bucket"
+
+# State file path (separate from dev/prod)
+key = "dr/terraform.tfstate"
+
+# Region where the S3 bucket is located
+region = "us-east-1"
+
+# DynamoDB table for state locking
+dynamodb_table = "your-terraform-lock-table"
+
+# Encrypt state file at rest
+encrypt = true
