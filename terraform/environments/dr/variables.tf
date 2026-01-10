@@ -66,6 +66,23 @@ variable "aws_account_id" {
 }
 
 # -----------------------------------------------------------------------------
+# Primary Region Configuration (us-east-1)
+# These variables reference resources in the primary region for DR replication
+# -----------------------------------------------------------------------------
+
+variable "primary_db_instance_identifier" {
+  description = "RDS instance identifier of the primary database in us-east-1 (e.g., 'dev-davidshaevel-db')"
+  type        = string
+  default     = "dev-davidshaevel-db"
+}
+
+variable "primary_db_kms_key_arn" {
+  description = "ARN of the KMS key used to encrypt the primary database in us-east-1"
+  type        = string
+  default     = null # Will be set via tfvars or at apply time
+}
+
+# -----------------------------------------------------------------------------
 # Domain Configuration
 # -----------------------------------------------------------------------------
 
@@ -155,7 +172,7 @@ variable "db_master_username" {
 variable "db_snapshot_identifier" {
   description = "Snapshot identifier to restore from (for DR activation)"
   type        = string
-  default     = ""
+  default     = null
 }
 
 # -----------------------------------------------------------------------------
@@ -165,13 +182,13 @@ variable "db_snapshot_identifier" {
 variable "frontend_container_image" {
   description = "Docker image for frontend container (us-west-2 ECR URL)"
   type        = string
-  default     = ""
+  default     = null
 }
 
 variable "backend_container_image" {
   description = "Docker image for backend container (us-west-2 ECR URL)"
   type        = string
-  default     = ""
+  default     = null
 }
 
 variable "frontend_task_cpu" {
@@ -241,7 +258,7 @@ variable "ecs_log_retention_days" {
 variable "dr_acm_certificate_arn" {
   description = "ARN of ACM certificate in us-west-2 for ALB HTTPS"
   type        = string
-  default     = ""
+  default     = null
 }
 
 # -----------------------------------------------------------------------------

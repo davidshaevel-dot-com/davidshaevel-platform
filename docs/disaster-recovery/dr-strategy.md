@@ -197,7 +197,7 @@ curl -s https://davidshaevel.com/api/health || echo "Primary DOWN"
 # 2. Deploy DR infrastructure
 cd terraform/environments/dr
 terraform init
-terraform apply -auto-approve
+terraform apply
 
 # 3. Verify DR services are healthy
 ./scripts/dr-validation.sh
@@ -226,7 +226,7 @@ curl -s https://<primary-alb>/api/health
 
 # 5. (Optional) Destroy DR infrastructure to save costs
 cd terraform/environments/dr
-terraform destroy -auto-approve
+terraform destroy
 ```
 
 ---

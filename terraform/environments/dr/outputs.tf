@@ -99,11 +99,12 @@ output "dr_activation_instructions" {
 
     To activate full DR infrastructure:
 
-    1. Find latest DR snapshot:
+    1. Find latest DR snapshot (copied from primary):
        aws rds describe-db-snapshots \
-         --region us-west-2 \
-         --db-instance-identifier dr-davidshaevel \
-         --query 'DBSnapshots | sort_by(@, &SnapshotCreateTime) | [-1].DBSnapshotIdentifier'
+         --region ${var.aws_region} \
+         --snapshot-type manual \
+         --query 'DBSnapshots[?starts_with(DBSnapshotIdentifier, `${var.environment}-${var.project_name}-dr-`)] | sort_by(@, &SnapshotCreateTime) | [-1].DBSnapshotIdentifier' \
+         --output text
 
     2. Activate DR:
        terraform apply \

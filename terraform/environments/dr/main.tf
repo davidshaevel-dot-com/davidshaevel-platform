@@ -43,6 +43,7 @@ locals {
       Environment = var.environment
       ManagedBy   = "Terraform"
       Repository  = var.repository_name
+      Owner       = "David Shaevel"
       DRRegion    = "true"
     },
     var.tags
@@ -148,17 +149,34 @@ resource "aws_iam_role_policy" "snapshot_copy_lambda" {
     Version = "2012-10-17"
     Statement = [
       {
+        Sid      = "DescribeSnapshots"
+        Effect   = "Allow"
+        Action   = ["rds:DescribeDBSnapshots"]
+        Resource = "*" # DescribeDBSnapshots does not support resource-level permissions
+      },
+      {
+        Sid    = "CopySourceSnapshots"
         Effect = "Allow"
         Action = [
           "rds:CopyDBSnapshot",
-          "rds:DescribeDBSnapshots",
-          "rds:DeleteDBSnapshot",
           "rds:AddTagsToResource",
           "rds:ListTagsForResource"
         ]
-        Resource = "*"
+        Resource = [
+          # Source snapshots from primary DB (automated backups)
+          "arn:aws:rds:us-east-1:${var.aws_account_id}:snapshot:rds:${var.primary_db_instance_identifier}-*",
+          # Destination snapshots in DR region
+          "arn:aws:rds:${var.aws_region}:${var.aws_account_id}:snapshot:${var.environment}-${var.project_name}-dr-*"
+        ]
       },
       {
+        Sid      = "DeleteOldDRSnapshots"
+        Effect   = "Allow"
+        Action   = ["rds:DeleteDBSnapshot"]
+        Resource = "arn:aws:rds:${var.aws_region}:${var.aws_account_id}:snapshot:${var.environment}-${var.project_name}-dr-*"
+      },
+      {
+        Sid    = "KMSAccess"
         Effect = "Allow"
         Action = [
           "kms:CreateGrant",
@@ -167,19 +185,20 @@ resource "aws_iam_role_policy" "snapshot_copy_lambda" {
           "kms:Decrypt",
           "kms:GenerateDataKey*"
         ]
-        Resource = [
+        Resource = compact([
           aws_kms_key.dr_encryption.arn,
-          "arn:aws:kms:us-east-1:${var.aws_account_id}:key/*"
-        ]
+          var.primary_db_kms_key_arn # Primary DB encryption key (null if not set)
+        ])
       },
       {
+        Sid    = "CloudWatchLogs"
         Effect = "Allow"
         Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = "arn:aws:logs:*:*:*"
+        Resource = "arn:aws:logs:us-east-1:${var.aws_account_id}:log-group:/aws/lambda/${var.environment}-${var.project_name}-dr-snapshot-copy:*"
       }
     ]
   })
@@ -205,7 +224,7 @@ resource "aws_lambda_function" "snapshot_copy" {
     variables = {
       TARGET_REGION  = var.aws_region
       TARGET_KMS_KEY = aws_kms_key.dr_encryption.arn
-      DB_IDENTIFIER  = "${var.environment}-${var.project_name}"
+      DB_IDENTIFIER  = var.primary_db_instance_identifier
       MAX_SNAPSHOTS  = "3" # Keep last 3 snapshots in DR region
     }
   }
@@ -219,7 +238,7 @@ resource "aws_lambda_function" "snapshot_copy" {
 # Lambda source code
 data "archive_file" "snapshot_copy_lambda" {
   type        = "zip"
-  output_path = "${path.module}/lambda/snapshot_copy.zip"
+  output_path = "${path.root}/.terraform/tmp/snapshot_copy.zip"
 
   source {
     content  = <<-EOF
@@ -324,7 +343,7 @@ resource "aws_cloudwatch_event_rule" "rds_snapshot" {
       SourceType = ["SNAPSHOT"]
       EventID    = ["RDS-EVENT-0091"] # Automated snapshot created
       SourceIdentifier = [{
-        prefix = "rds:${var.environment}-${var.project_name}"
+        prefix = "rds:${var.primary_db_instance_identifier}"
       }]
     }
   })
@@ -382,13 +401,7 @@ module "networking" {
   backend_metrics_port  = 3001
   frontend_metrics_port = 3000
 
-  common_tags = {
-    Environment = var.environment
-    Project     = var.project_name
-    ManagedBy   = "Terraform"
-    Owner       = "David Shaevel"
-    DRRegion    = "true"
-  }
+  common_tags = local.common_tags
 }
 
 # Database Module (restore from snapshot)
@@ -496,10 +509,5 @@ module "compute" {
   backend_service_registry_arn  = module.service_discovery[0].backend_service_arn
   frontend_service_registry_arn = module.service_discovery[0].frontend_service_arn
 
-  common_tags = {
-    Environment = var.environment
-    Project     = var.project_name
-    ManagedBy   = "Terraform"
-    DRRegion    = "true"
-  }
+  common_tags = local.common_tags
 }
