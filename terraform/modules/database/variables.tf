@@ -146,6 +146,16 @@ variable "performance_insights_retention_period" {
 }
 
 # ------------------------------------------------------------------------------
+# Snapshot Restore (for DR)
+# ------------------------------------------------------------------------------
+
+variable "snapshot_identifier" {
+  description = "Snapshot identifier to restore from (for DR). If specified, the database is restored from this snapshot instead of created fresh."
+  type        = string
+  default     = null
+}
+
+# ------------------------------------------------------------------------------
 # High Availability Configuration
 # ------------------------------------------------------------------------------
 
