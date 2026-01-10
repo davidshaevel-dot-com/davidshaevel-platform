@@ -17,6 +17,7 @@ Step-by-step procedures for activating the DR environment when the primary regio
 | **Estimated Activation Time** | 30-45 minutes |
 | **DR Terraform Directory** | `terraform/environments/dr/` |
 | **Failover Script** | `scripts/dr-failover.sh` |
+| **Failback Script** | `scripts/dr-failback.sh` |
 | **Validation Script** | `scripts/dr-validation.sh` |
 
 ---
@@ -349,9 +350,133 @@ If status is "InProgress", wait for deployment to complete (~5-10 minutes).
 
 ## Failback Procedure
 
-When the primary region is restored, use `scripts/dr-failback.sh` to return traffic to us-east-1.
+When the primary region is restored and healthy, use `scripts/dr-failback.sh` to return traffic to us-east-1.
 
-See [DR Failback Runbook](./dr-failback-runbook.md) (TBD) for detailed failback procedures.
+### Step 1: Verify Primary Region is Healthy
+
+Before initiating failback, confirm the primary region is fully operational:
+
+```bash
+# Check primary region availability
+aws ec2 describe-availability-zones --region us-east-1 --profile davidshaevel-dev
+
+# Check ECS services are running
+aws ecs describe-services \
+  --cluster dev-davidshaevel-cluster \
+  --services dev-davidshaevel-backend dev-davidshaevel-frontend \
+  --region us-east-1 \
+  --profile davidshaevel-dev \
+  --query 'services[*].{name:serviceName,running:runningCount}' \
+  --output table
+
+# Test primary ALB health
+curl -I http://dev-davidshaevel-alb-1965037461.us-east-1.elb.amazonaws.com/api/health
+```
+
+### Step 2: Run Failback Script
+
+#### Option A: Using Failback Script (Recommended)
+
+```bash
+# Dry run first
+./scripts/dr-failback.sh --dry-run
+
+# Execute failback (keeps DR infrastructure running)
+./scripts/dr-failback.sh
+
+# Execute failback AND deactivate DR infrastructure
+./scripts/dr-failback.sh --deactivate-dr
+```
+
+The script will:
+1. Verify primary region and application health
+2. Update CloudFront origin to primary ALB
+3. Invalidate CloudFront cache
+4. Optionally deactivate DR infrastructure
+
+#### Option B: Manual Failback
+
+```bash
+# Get current CloudFront config
+aws cloudfront get-distribution-config \
+  --profile davidshaevel-dev \
+  --id EJVDEMX0X00IG > /tmp/cf-config.json
+
+# Extract ETag
+ETAG=$(jq -r '.ETag' /tmp/cf-config.json)
+
+# Update origin to primary ALB
+PRIMARY_ALB="dev-davidshaevel-alb-1965037461.us-east-1.elb.amazonaws.com"
+jq --arg alb "$PRIMARY_ALB" '.DistributionConfig.Origins.Items[0].DomainName = $alb' /tmp/cf-config.json | \
+  jq '.DistributionConfig' > /tmp/cf-config-updated.json
+
+# Apply update
+aws cloudfront update-distribution \
+  --profile davidshaevel-dev \
+  --id EJVDEMX0X00IG \
+  --if-match "$ETAG" \
+  --distribution-config file:///tmp/cf-config-updated.json
+
+# Invalidate cache
+aws cloudfront create-invalidation \
+  --profile davidshaevel-dev \
+  --distribution-id EJVDEMX0X00IG \
+  --paths "/*"
+```
+
+### Step 3: Update Cloudflare DNS for Grafana
+
+1. **Log into Cloudflare Dashboard**: https://dash.cloudflare.com
+2. **Select Domain**: davidshaevel.com
+3. **Go to DNS Settings**
+4. **Update CNAME record for `grafana`**:
+   - **Name**: `grafana`
+   - **Target**: `dev-davidshaevel-alb-1965037461.us-east-1.elb.amazonaws.com`
+   - **Proxy Status**: Proxied (orange cloud)
+5. **Save Changes**
+
+### Step 4: Verify Primary Application
+
+```bash
+# Wait for CloudFront deployment (~5-10 min)
+aws cloudfront get-distribution \
+  --id EJVDEMX0X00IG \
+  --profile davidshaevel-dev \
+  --query 'Distribution.Status'
+
+# Test endpoints
+curl -I https://davidshaevel.com/api/health
+curl -I https://davidshaevel.com/
+curl -I https://grafana.davidshaevel.com/api/health
+```
+
+### Step 5: Deactivate DR Infrastructure (Optional)
+
+If you didn't use `--deactivate-dr`, you can manually deactivate:
+
+```bash
+cd terraform/environments/dr
+AWS_PROFILE=davidshaevel-dev terraform apply -var="dr_activated=false" -auto-approve
+```
+
+This returns DR to Pilot Light mode:
+- Destroys VPC, ECS, RDS, ALB
+- Keeps ECR replication, snapshot Lambda, KMS key
+
+**Note:** Keep DR infrastructure running for a few hours after failback to ensure stability before deactivating.
+
+---
+
+## Post-Failback Checklist
+
+- [ ] CloudFront deployment complete (status: Deployed)
+- [ ] Primary frontend loads at https://davidshaevel.com/
+- [ ] Primary backend API responds at https://davidshaevel.com/api/health
+- [ ] Grafana accessible at https://grafana.davidshaevel.com
+- [ ] Cloudflare DNS updated for grafana subdomain
+- [ ] DR infrastructure deactivated (optional)
+- [ ] Incident postmortem scheduled
+- [ ] Stakeholders notified of return to normal operations
 
 ---
 
