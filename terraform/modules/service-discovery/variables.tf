@@ -14,12 +14,12 @@
 # ------------------------------------------------------------------------------
 
 variable "environment" {
-  description = "Environment name (dev, staging, prod)"
+  description = "Environment name (dev, staging, prod, or dr)"
   type        = string
 
   validation {
-    condition     = can(regex("^(dev|staging|prod)$", var.environment))
-    error_message = "Environment must be dev, staging, or prod."
+    condition     = can(regex("^(dev|staging|prod|dr)$", var.environment))
+    error_message = "Environment must be dev, staging, prod, or dr."
   }
 }
 

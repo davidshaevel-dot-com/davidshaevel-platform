@@ -46,7 +46,17 @@ backend_container_image  = ""
 # -----------------------------------------------------------------------------
 
 # ARN of ACM certificate in us-west-2 for ALB HTTPS
-# Must be created before DR activation
+# Enables HTTPS listener and routes grafana.davidshaevel.com to Grafana
+#
+# To create a certificate:
+#   aws acm request-certificate \
+#     --domain-name "*.davidshaevel.com" \
+#     --subject-alternative-names "davidshaevel.com" \
+#     --validation-method DNS \
+#     --region us-west-2
+#
+# Example (wildcard certificate for *.davidshaevel.com):
+# dr_acm_certificate_arn = "arn:aws:acm:us-west-2:123456789012:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 dr_acm_certificate_arn = ""
 
 # -----------------------------------------------------------------------------

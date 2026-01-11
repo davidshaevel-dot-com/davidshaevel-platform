@@ -175,6 +175,12 @@ variable "db_snapshot_identifier" {
   default     = null
 }
 
+variable "dr_database_secret_arn" {
+  description = "ARN of the Secrets Manager secret containing DR database credentials. Required when restoring from snapshot since RDS doesn't auto-create a managed secret."
+  type        = string
+  default     = null
+}
+
 # -----------------------------------------------------------------------------
 # Compute Configuration
 # -----------------------------------------------------------------------------
@@ -259,6 +265,77 @@ variable "dr_acm_certificate_arn" {
   description = "ARN of ACM certificate in us-west-2 for ALB HTTPS"
   type        = string
   default     = null
+}
+
+# -----------------------------------------------------------------------------
+# Observability Configuration (Prometheus & Grafana)
+# -----------------------------------------------------------------------------
+
+variable "prometheus_image" {
+  description = "Docker image for Prometheus"
+  type        = string
+  default     = "prom/prometheus:v2.45.0"
+}
+
+variable "prometheus_task_cpu" {
+  description = "CPU units for Prometheus task"
+  type        = number
+  default     = 512
+}
+
+variable "prometheus_task_memory" {
+  description = "Memory (MB) for Prometheus task"
+  type        = number
+  default     = 1024
+}
+
+variable "prometheus_desired_count" {
+  description = "Desired number of Prometheus tasks"
+  type        = number
+  default     = 1
+}
+
+variable "prometheus_retention_time" {
+  description = "Prometheus metrics retention period"
+  type        = string
+  default     = "7d" # Shorter retention for DR
+}
+
+variable "grafana_image" {
+  description = "Docker image for Grafana"
+  type        = string
+  default     = "grafana/grafana:10.4.2"
+}
+
+variable "grafana_task_cpu" {
+  description = "CPU units for Grafana task"
+  type        = number
+  default     = 512
+}
+
+variable "grafana_task_memory" {
+  description = "Memory (MB) for Grafana task"
+  type        = number
+  default     = 1024
+}
+
+variable "grafana_desired_count" {
+  description = "Desired number of Grafana tasks"
+  type        = number
+  default     = 1
+}
+
+variable "grafana_admin_password" {
+  description = "Initial admin password for Grafana"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "grafana_domain_name" {
+  description = "Domain name for Grafana (e.g., grafana-dr.davidshaevel.com)"
+  type        = string
+  default     = ""
 }
 
 # -----------------------------------------------------------------------------
