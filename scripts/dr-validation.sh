@@ -140,7 +140,27 @@ else
     log_fail "EventBridge rule state: ${RULE_STATE}"
 fi
 
-# Check 8: VPC (only if DR activated)
+# Check 8: CloudFront Origin
+log_info "Checking CloudFront origin..."
+CLOUDFRONT_DIST_ID="${CLOUDFRONT_DIST_ID:-EJVDEMX0X00IG}"
+CF_ORIGIN=$(aws cloudfront get-distribution \
+    --id "${CLOUDFRONT_DIST_ID}" \
+    --query 'Distribution.DistributionConfig.Origins.Items[0].DomainName' \
+    --output text 2>/dev/null || echo "unknown")
+
+if [[ "${CF_ORIGIN}" == *"us-west-2"* ]]; then
+    log_pass "CloudFront origin: ${CF_ORIGIN} (DR region)"
+elif [[ "${CF_ORIGIN}" == *"us-east-1"* ]]; then
+    if [[ "${DR_ACTIVATED:-false}" == "true" ]]; then
+        log_warn "CloudFront origin: ${CF_ORIGIN} (primary region - should be DR!)"
+    else
+        log_pass "CloudFront origin: ${CF_ORIGIN} (primary region)"
+    fi
+else
+    log_warn "CloudFront origin: ${CF_ORIGIN}"
+fi
+
+# Check 9: VPC (only if DR activated)
 if [[ "${DR_ACTIVATED:-false}" == "true" ]]; then
     log_info "Checking DR VPC..."
     VPC_ID=$(terraform output -raw vpc_id 2>/dev/null || echo "")
@@ -153,7 +173,7 @@ if [[ "${DR_ACTIVATED:-false}" == "true" ]]; then
         fi
     fi
 
-    # Check 9: RDS
+    # Check 10: RDS
     log_info "Checking DR RDS instance..."
     DB_ENDPOINT=$(terraform output -raw database_endpoint 2>/dev/null || echo "")
     if [[ -n "${DB_ENDPOINT}" ]]; then
@@ -174,7 +194,7 @@ if [[ "${DR_ACTIVATED:-false}" == "true" ]]; then
         log_warn "RDS instance not configured"
     fi
 
-    # Check 10: ECS Services
+    # Check 11: ECS Services
     log_info "Checking ECS services..."
     CLUSTER_NAME=$(terraform output -raw ecs_cluster_name 2>/dev/null || echo "")
     FRONTEND_SVC=$(terraform output -raw frontend_service_name 2>/dev/null || echo "")
@@ -202,7 +222,7 @@ if [[ "${DR_ACTIVATED:-false}" == "true" ]]; then
         done
     fi
 
-    # Check 11: ALB Health (via HTTPS, skipping cert validation for raw ALB DNS)
+    # Check 12: ALB Health (via HTTPS, skipping cert validation for raw ALB DNS)
     log_info "Checking ALB health..."
     ALB_DNS=$(terraform output -raw alb_dns_name 2>/dev/null || echo "")
     if [[ -n "${ALB_DNS}" ]]; then
@@ -214,7 +234,7 @@ if [[ "${DR_ACTIVATED:-false}" == "true" ]]; then
         fi
     fi
 
-    # Check 12: Prometheus Service
+    # Check 13: Prometheus Service
     log_info "Checking Prometheus service..."
     PROMETHEUS_SVC=$(terraform output -raw prometheus_service_name 2>/dev/null || echo "")
     if [[ -n "${PROMETHEUS_SVC}" && -n "${CLUSTER_NAME}" ]]; then
@@ -243,7 +263,7 @@ if [[ "${DR_ACTIVATED:-false}" == "true" ]]; then
         log_warn "Prometheus service not configured"
     fi
 
-    # Check 13: Grafana Service
+    # Check 14: Grafana Service
     log_info "Checking Grafana service..."
     GRAFANA_SVC=$(terraform output -raw grafana_service_name 2>/dev/null || echo "")
     if [[ -n "${GRAFANA_SVC}" && -n "${CLUSTER_NAME}" ]]; then
@@ -272,7 +292,7 @@ if [[ "${DR_ACTIVATED:-false}" == "true" ]]; then
         log_warn "Grafana service not configured"
     fi
 
-    # Check 14: Service Discovery - Prometheus
+    # Check 15: Service Discovery - Prometheus
     log_info "Checking service discovery registrations..."
     PROMETHEUS_ENDPOINT=$(terraform output -raw prometheus_endpoint 2>/dev/null || echo "")
     if [[ -n "${PROMETHEUS_ENDPOINT}" ]]; then
