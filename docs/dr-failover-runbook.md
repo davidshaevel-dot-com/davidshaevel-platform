@@ -115,10 +115,10 @@ Note the snapshot identifier - you'll need it for activation.
 
 ```bash
 # Dry run first to see the plan
-./scripts/dr-failover.sh --dry-run
+AWS_PROFILE=davidshaevel-dev ./scripts/dr-failover.sh --dry-run
 
 # If everything looks good, run without --dry-run
-./scripts/dr-failover.sh
+AWS_PROFILE=davidshaevel-dev ./scripts/dr-failover.sh
 ```
 
 The script will:

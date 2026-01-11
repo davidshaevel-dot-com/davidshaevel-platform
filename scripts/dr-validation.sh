@@ -61,9 +61,9 @@ cd "${DR_TERRAFORM_DIR}"
 if terraform show &>/dev/null; then
     DR_ACTIVATED=$(terraform output -raw dr_activated 2>/dev/null || echo "false")
     if [[ "${DR_ACTIVATED}" == "true" ]]; then
-        log_pass "DR infrastructure is activated"
+        log_pass "DR infrastructure is activated (full DR mode)"
     else
-        log_warn "DR is in Pilot Light mode (not fully activated)"
+        log_pass "DR infrastructure is in Pilot Light mode"
     fi
 else
     log_fail "Cannot read Terraform state"
@@ -305,9 +305,14 @@ echo "========================================"
 echo "  VALIDATION SUMMARY"
 echo "========================================"
 echo ""
-echo -e "  ${GREEN}Passed:${NC}  ${PASS_COUNT}"
+if [[ "${DR_ACTIVATED:-false}" == "true" ]]; then
+    echo -e "  Mode:      ${GREEN}Full DR (activated)${NC}"
+else
+    echo -e "  Mode:      ${YELLOW}Pilot Light${NC}"
+fi
+echo -e "  ${GREEN}Passed:${NC}   ${PASS_COUNT}"
 echo -e "  ${YELLOW}Warnings:${NC} ${WARN_COUNT}"
-echo -e "  ${RED}Failed:${NC}  ${FAIL_COUNT}"
+echo -e "  ${RED}Failed:${NC}   ${FAIL_COUNT}"
 echo ""
 
 if [[ ${FAIL_COUNT} -gt 0 ]]; then
@@ -317,6 +322,10 @@ elif [[ ${WARN_COUNT} -gt 0 ]]; then
     echo -e "${YELLOW}DR environment has warnings - review before activation${NC}"
     exit 0
 else
-    echo -e "${GREEN}DR environment is healthy${NC}"
+    if [[ "${DR_ACTIVATED:-false}" == "true" ]]; then
+        echo -e "${GREEN}DR environment is healthy and fully activated${NC}"
+    else
+        echo -e "${GREEN}DR Pilot Light components are healthy${NC}"
+    fi
     exit 0
 fi
