@@ -24,7 +24,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 PRIMARY_REGION="us-east-1"
 DR_REGION="us-west-2"
 DR_TERRAFORM_DIR="${REPO_ROOT}/terraform/environments/dr"
-PRIMARY_ALB_DNS="dev-davidshaevel-alb-1965037461.us-east-1.elb.amazonaws.com"
+PRIMARY_ALB_DNS="dev-davidshaevel-alb-85034469.us-east-1.elb.amazonaws.com"
 CLOUDFRONT_DIST_ID="EJVDEMX0X00IG"
 
 # Colors for output

@@ -370,7 +370,7 @@ aws ecs describe-services \
   --output table
 
 # Test primary ALB health
-curl -I http://dev-davidshaevel-alb-1965037461.us-east-1.elb.amazonaws.com/api/health
+curl -I http://dev-davidshaevel-alb-85034469.us-east-1.elb.amazonaws.com/api/health
 ```
 
 ### Step 2: Run Failback Script
@@ -406,7 +406,7 @@ aws cloudfront get-distribution-config \
 ETAG=$(jq -r '.ETag' /tmp/cf-config.json)
 
 # Update origin to primary ALB
-PRIMARY_ALB="dev-davidshaevel-alb-1965037461.us-east-1.elb.amazonaws.com"
+PRIMARY_ALB="dev-davidshaevel-alb-85034469.us-east-1.elb.amazonaws.com"
 jq --arg alb "$PRIMARY_ALB" '.DistributionConfig.Origins.Items[0].DomainName = $alb' /tmp/cf-config.json | \
   jq '.DistributionConfig' > /tmp/cf-config-updated.json
 
@@ -431,7 +431,7 @@ aws cloudfront create-invalidation \
 3. **Go to DNS Settings**
 4. **Update CNAME record for `grafana`**:
    - **Name**: `grafana`
-   - **Target**: `dev-davidshaevel-alb-1965037461.us-east-1.elb.amazonaws.com`
+   - **Target**: `dev-davidshaevel-alb-85034469.us-east-1.elb.amazonaws.com`
    - **Proxy Status**: Proxied (orange cloud)
 5. **Save Changes**
 
