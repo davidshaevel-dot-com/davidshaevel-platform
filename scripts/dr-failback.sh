@@ -129,14 +129,42 @@ if [[ "${FRONTEND_RUNNING}" -lt 1 ]]; then
 fi
 log_info "Primary frontend service: ${FRONTEND_RUNNING} running task(s)"
 
-# Step 4: Check primary ALB health
+# Check prometheus service (warning only - not critical for failback)
+PROMETHEUS_RUNNING=$(aws ecs describe-services \
+    --cluster dev-davidshaevel-cluster \
+    --services dev-davidshaevel-prometheus \
+    --region ${PRIMARY_REGION} \
+    --query 'services[0].runningCount' \
+    --output text 2>/dev/null || echo "0")
+
+if [[ "${PROMETHEUS_RUNNING}" -lt 1 ]]; then
+    log_warn "Primary prometheus service has no running tasks"
+else
+    log_info "Primary prometheus service: ${PROMETHEUS_RUNNING} running task(s)"
+fi
+
+# Check grafana service (warning only - not critical for failback)
+GRAFANA_RUNNING=$(aws ecs describe-services \
+    --cluster dev-davidshaevel-cluster \
+    --services dev-davidshaevel-grafana \
+    --region ${PRIMARY_REGION} \
+    --query 'services[0].runningCount' \
+    --output text 2>/dev/null || echo "0")
+
+if [[ "${GRAFANA_RUNNING}" -lt 1 ]]; then
+    log_warn "Primary grafana service has no running tasks"
+else
+    log_info "Primary grafana service: ${GRAFANA_RUNNING} running task(s)"
+fi
+
+# Step 4: Check primary ALB health (via HTTPS, skipping cert validation for raw ALB DNS)
 log_info "Checking primary ALB health..."
-PRIMARY_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" "http://${PRIMARY_ALB_DNS}/api/health" --connect-timeout 10 2>/dev/null || echo "000")
+PRIMARY_HEALTH=$(curl -sk -o /dev/null -w "%{http_code}" "https://${PRIMARY_ALB_DNS}/api/health" --connect-timeout 10 2>/dev/null || echo "000")
 if [[ "${PRIMARY_HEALTH}" != "200" ]]; then
-    log_warn "Primary ALB health check returned: HTTP ${PRIMARY_HEALTH}"
+    log_warn "Primary ALB health check returned: HTTPS ${PRIMARY_HEALTH}"
     log_warn "Proceeding with caution - verify primary is truly healthy"
 else
-    log_info "Primary ALB health check: HTTP ${PRIMARY_HEALTH}"
+    log_info "Primary ALB health check: HTTPS ${PRIMARY_HEALTH}"
 fi
 
 # Step 5: Get current CloudFront origin

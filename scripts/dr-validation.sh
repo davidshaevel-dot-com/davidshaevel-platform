@@ -202,15 +202,15 @@ if [[ "${DR_ACTIVATED:-false}" == "true" ]]; then
         done
     fi
 
-    # Check 11: ALB Health
+    # Check 11: ALB Health (via HTTPS, skipping cert validation for raw ALB DNS)
     log_info "Checking ALB health..."
     ALB_DNS=$(terraform output -raw alb_dns_name 2>/dev/null || echo "")
     if [[ -n "${ALB_DNS}" ]]; then
-        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://${ALB_DNS}/api/health" --connect-timeout 5 2>/dev/null || echo "000")
+        HTTP_CODE=$(curl -sk -o /dev/null -w "%{http_code}" "https://${ALB_DNS}/api/health" --connect-timeout 5 2>/dev/null || echo "000")
         if [[ "${HTTP_CODE}" == "200" ]]; then
-            log_pass "ALB health check: HTTP ${HTTP_CODE}"
+            log_pass "ALB health check: HTTPS ${HTTP_CODE}"
         else
-            log_warn "ALB health check: HTTP ${HTTP_CODE}"
+            log_warn "ALB health check: HTTPS ${HTTP_CODE}"
         fi
     fi
 

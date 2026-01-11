@@ -85,7 +85,7 @@ Run the validation script to ensure DR components are healthy:
 
 ```bash
 cd /path/to/davidshaevel-platform
-./scripts/dr-validation.sh --verbose
+AWS_PROFILE=davidshaevel-dev ./scripts/dr-validation.sh --verbose
 ```
 
 Expected output in Pilot Light mode:
@@ -236,7 +236,7 @@ Grafana uses a separate CNAME that points directly to the ALB.
 Run the validation script again:
 
 ```bash
-./scripts/dr-validation.sh --verbose
+AWS_PROFILE=davidshaevel-dev ./scripts/dr-validation.sh --verbose
 ```
 
 Expected results when DR is activated:
@@ -496,14 +496,14 @@ aws ec2 describe-availability-zones --region us-east-1 --profile davidshaevel-de
 # Check ECS services are running
 aws ecs describe-services \
   --cluster dev-davidshaevel-cluster \
-  --services dev-davidshaevel-backend dev-davidshaevel-frontend \
+  --services dev-davidshaevel-backend dev-davidshaevel-frontend dev-davidshaevel-prometheus dev-davidshaevel-grafana \
   --region us-east-1 \
   --profile davidshaevel-dev \
   --query 'services[*].{name:serviceName,running:runningCount}' \
   --output table
 
-# Test primary ALB health
-curl -I http://dev-davidshaevel-alb-85034469.us-east-1.elb.amazonaws.com/api/health
+# Test primary ALB health (HTTPS with -k to skip cert validation for raw ALB DNS)
+curl -Ik https://dev-davidshaevel-alb-85034469.us-east-1.elb.amazonaws.com/api/health
 ```
 
 ### Step 2: Run Failback Script
@@ -512,13 +512,13 @@ curl -I http://dev-davidshaevel-alb-85034469.us-east-1.elb.amazonaws.com/api/hea
 
 ```bash
 # Dry run first
-./scripts/dr-failback.sh --dry-run
+AWS_PROFILE=davidshaevel-dev ./scripts/dr-failback.sh --dry-run
 
 # Execute failback (keeps DR infrastructure running)
-./scripts/dr-failback.sh
+AWS_PROFILE=davidshaevel-dev ./scripts/dr-failback.sh
 
 # Execute failback AND deactivate DR infrastructure
-./scripts/dr-failback.sh --deactivate-dr
+AWS_PROFILE=davidshaevel-dev ./scripts/dr-failback.sh --deactivate-dr
 ```
 
 The script will:
