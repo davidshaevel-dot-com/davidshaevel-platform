@@ -561,6 +561,68 @@ aws cloudfront get-distribution \
 
 If status is "InProgress", wait for deployment to complete (~5-10 minutes).
 
+### CloudFront Still Pointing to Primary ALB After DR Activation
+
+If `terraform apply` fails (e.g., due to CloudWatch Log Group already exists error), the `dr-failover.sh` script won't reach the CloudFront update step. You'll need to manually update CloudFront to point to the DR ALB.
+
+**Check current CloudFront origin:**
+
+```bash
+aws cloudfront get-distribution \
+  --id EJVDEMX0X00IG \
+  --profile davidshaevel-dev \
+  --query 'Distribution.DistributionConfig.Origins.Items[0].DomainName' \
+  --output text
+```
+
+**Get the DR ALB DNS name:**
+
+```bash
+aws elbv2 describe-load-balancers \
+  --names dr-davidshaevel-alb \
+  --region us-west-2 \
+  --profile davidshaevel-dev \
+  --query 'LoadBalancers[0].DNSName' \
+  --output text
+```
+
+**Update CloudFront origin to DR ALB:**
+
+```bash
+# Set the DR ALB DNS (use value from above command)
+DR_ALB_DNS="dr-davidshaevel-alb-XXXXXXXXX.us-west-2.elb.amazonaws.com"
+
+# Get current config and ETag
+aws cloudfront get-distribution-config \
+  --id EJVDEMX0X00IG \
+  --profile davidshaevel-dev > /tmp/cf-config.json
+
+ETAG=$(jq -r '.ETag' /tmp/cf-config.json)
+
+# Update the origin domain name
+jq --arg dr_alb "${DR_ALB_DNS}" \
+  '.DistributionConfig.Origins.Items[0].DomainName = $dr_alb' \
+  /tmp/cf-config.json | jq '.DistributionConfig' > /tmp/cf-config-updated.json
+
+# Apply the update
+aws cloudfront update-distribution \
+  --id EJVDEMX0X00IG \
+  --if-match "${ETAG}" \
+  --distribution-config file:///tmp/cf-config-updated.json \
+  --profile davidshaevel-dev
+
+# Create cache invalidation
+aws cloudfront create-invalidation \
+  --distribution-id EJVDEMX0X00IG \
+  --paths "/*" \
+  --profile davidshaevel-dev
+
+# Clean up temp files
+rm /tmp/cf-config.json /tmp/cf-config-updated.json
+```
+
+**Note:** CloudFront deployments take ~5-10 minutes to complete.
+
 ---
 
 ## Failback Procedure
