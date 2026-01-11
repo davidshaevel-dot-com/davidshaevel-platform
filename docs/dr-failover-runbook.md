@@ -220,12 +220,30 @@ aws cloudfront create-invalidation \
 
 Grafana uses a separate CNAME that points directly to the ALB.
 
+**Get the DR ALB DNS name:**
+
+```bash
+# Option A: From Terraform output (if in terraform/environments/dr directory)
+cd terraform/environments/dr
+AWS_PROFILE=davidshaevel-dev terraform output -raw alb_dns_name
+
+# Option B: Using AWS CLI directly
+aws elbv2 describe-load-balancers \
+  --names dr-davidshaevel-alb \
+  --region us-west-2 \
+  --profile davidshaevel-dev \
+  --query 'LoadBalancers[0].DNSName' \
+  --output text
+```
+
+**Update Cloudflare:**
+
 1. **Log into Cloudflare Dashboard**: https://dash.cloudflare.com
 2. **Select Domain**: davidshaevel.com
 3. **Go to DNS Settings**
 4. **Update CNAME record for `grafana`**:
    - **Name**: `grafana`
-   - **Target**: `<DR-ALB-DNS-NAME>` (e.g., `dr-davidshaevel-alb-536355098.us-west-2.elb.amazonaws.com`)
+   - **Target**: `<DR-ALB-DNS-NAME>` (from command above, e.g., `dr-davidshaevel-alb-536355098.us-west-2.elb.amazonaws.com`)
    - **Proxy Status**: Proxied (orange cloud)
 5. **Save Changes**
 
@@ -451,6 +469,70 @@ aws ecs describe-tasks \
   --region us-west-2 \
   --profile davidshaevel-dev \
   --query 'tasks[0].stoppedReason'
+```
+
+### Database Authentication Failed
+
+If you see the following error in the DR backend ECS logs:
+
+```
+[Nest] 1 - ERROR [ExceptionHandler] error: password authentication failed for user "dbadmin"
+```
+
+**Root Cause:** The DR database secret credentials don't match the credentials in the restored RDS snapshot. When RDS restores from a snapshot, it preserves the credentials from the snapshot time. If the primary database password was changed after the snapshot was taken, or if the DR secret was never synced, authentication will fail.
+
+**Fix:**
+
+1. Retrieve the current credentials from the primary RDS-managed secret:
+
+```bash
+# Find the primary database secret ARN
+aws rds describe-db-instances \
+  --db-instance-identifier davidshaevel-dev-db \
+  --region us-east-1 \
+  --profile davidshaevel-dev \
+  --query 'DBInstances[0].MasterUserSecret.SecretArn' \
+  --output text
+
+# Get the credentials (replace ARN with actual value from above)
+aws secretsmanager get-secret-value \
+  --secret-id "rds!db-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" \
+  --region us-east-1 \
+  --profile davidshaevel-dev \
+  --query 'SecretString' \
+  --output text | jq .
+```
+
+2. Update the DR secret with the correct credentials:
+
+```bash
+aws secretsmanager put-secret-value \
+  --secret-id davidshaevel-dr-db-credentials \
+  --region us-west-2 \
+  --profile davidshaevel-dev \
+  --secret-string '{"username":"dbadmin","password":"<password-from-step-1>"}'
+```
+
+3. Force the backend service to redeploy and pick up the new credentials:
+
+```bash
+aws ecs update-service \
+  --cluster dr-davidshaevel-cluster \
+  --service dr-davidshaevel-backend \
+  --force-new-deployment \
+  --region us-west-2 \
+  --profile davidshaevel-dev
+```
+
+4. Monitor the new task deployment:
+
+```bash
+aws ecs describe-services \
+  --cluster dr-davidshaevel-cluster \
+  --services dr-davidshaevel-backend \
+  --region us-west-2 \
+  --profile davidshaevel-dev \
+  --query 'services[0].{running:runningCount,desired:desiredCount,pending:pendingCount}'
 ```
 
 ### Grafana Login Issues
