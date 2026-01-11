@@ -16,6 +16,9 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 DR_REGION="us-west-2"
 DR_TERRAFORM_DIR="${REPO_ROOT}/terraform/environments/dr"
 
+# ECR repositories to validate (add new repos here when services are added)
+ECR_REPOS=("backend" "frontend" "grafana")
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -77,7 +80,7 @@ fi
 
 # Check 4: ECR Repositories
 log_info "Checking ECR repositories in ${DR_REGION}..."
-for repo in backend frontend grafana; do
+for repo in "${ECR_REPOS[@]}"; do
     if aws ecr describe-repositories --repository-names "davidshaevel/${repo}" --region ${DR_REGION} &>/dev/null; then
         IMAGE_COUNT=$(aws ecr describe-images --repository-name "davidshaevel/${repo}" --region ${DR_REGION} --query 'length(imageDetails)' --output text 2>/dev/null || echo "0")
         log_pass "ECR repo davidshaevel/${repo} exists (${IMAGE_COUNT} images)"

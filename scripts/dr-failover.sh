@@ -16,12 +16,22 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-# Configuration
+# Configuration (can be overridden via environment variables)
 DR_REGION="us-west-2"
 PRIMARY_REGION="us-east-1"
 DR_TERRAFORM_DIR="${REPO_ROOT}/terraform/environments/dr"
 PRIMARY_DB_IDENTIFIER="davidshaevel-dev-db"
 ECR_REGISTRY="108581769167.dkr.ecr.${DR_REGION}.amazonaws.com"
+CLOUDFRONT_DIST_ID="${CLOUDFRONT_DIST_ID:-EJVDEMX0X00IG}"
+
+# Temp file management
+TEMP_DIR=""
+cleanup() {
+    if [[ -n "${TEMP_DIR}" && -d "${TEMP_DIR}" ]]; then
+        rm -rf "${TEMP_DIR}"
+    fi
+}
+trap cleanup EXIT
 
 # Colors for output
 RED='\033[0;31m'
@@ -188,19 +198,23 @@ ALB_DNS=$(terraform output -raw alb_dns_name 2>/dev/null || echo "N/A")
 
 # Step 9: Update CloudFront origin to DR ALB
 log_info "Updating CloudFront distribution origin to DR ALB..."
-CLOUDFRONT_DIST_ID="EJVDEMX0X00IG"
+
+# Create secure temp directory
+TEMP_DIR=$(mktemp -d)
+CF_CONFIG="${TEMP_DIR}/cf-dist-config.json"
+CF_CONFIG_UPDATED="${TEMP_DIR}/cf-dist-config-updated.json"
 
 # Get current distribution config
-aws cloudfront get-distribution-config --id "${CLOUDFRONT_DIST_ID}" > /tmp/cf-dist-config.json
+aws cloudfront get-distribution-config --id "${CLOUDFRONT_DIST_ID}" > "${CF_CONFIG}"
 
 # Extract ETag for update
-ETAG=$(jq -r '.ETag' /tmp/cf-dist-config.json)
+ETAG=$(jq -r '.ETag' "${CF_CONFIG}")
 
 # Update origin domain name to DR ALB
-jq --arg dr_alb "${ALB_DNS}" '.DistributionConfig.Origins.Items[0].DomainName = $dr_alb' /tmp/cf-dist-config.json | jq '.DistributionConfig' > /tmp/cf-dist-config-updated.json
+jq --arg dr_alb "${ALB_DNS}" '.DistributionConfig.Origins.Items[0].DomainName = $dr_alb' "${CF_CONFIG}" | jq '.DistributionConfig' > "${CF_CONFIG_UPDATED}"
 
 # Update the distribution
-if aws cloudfront update-distribution --id "${CLOUDFRONT_DIST_ID}" --if-match "${ETAG}" --distribution-config file:///tmp/cf-dist-config-updated.json > /dev/null 2>&1; then
+if aws cloudfront update-distribution --id "${CLOUDFRONT_DIST_ID}" --if-match "${ETAG}" --distribution-config "file://${CF_CONFIG_UPDATED}" > /dev/null 2>&1; then
     log_info "CloudFront origin updated to: ${ALB_DNS}"
 
     # Invalidate cache
@@ -211,9 +225,6 @@ else
     log_warn "Failed to update CloudFront origin automatically"
     log_warn "Please update manually: CloudFront > ${CLOUDFRONT_DIST_ID} > Origins > alb-origin"
 fi
-
-# Cleanup temp files
-rm -f /tmp/cf-dist-config.json /tmp/cf-dist-config-updated.json
 
 echo ""
 echo "========================================"

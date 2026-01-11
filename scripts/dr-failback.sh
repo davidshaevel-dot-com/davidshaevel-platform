@@ -20,12 +20,21 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-# Configuration
+# Configuration (can be overridden via environment variables)
 PRIMARY_REGION="us-east-1"
 DR_REGION="us-west-2"
 DR_TERRAFORM_DIR="${REPO_ROOT}/terraform/environments/dr"
-PRIMARY_ALB_DNS="dev-davidshaevel-alb-85034469.us-east-1.elb.amazonaws.com"
-CLOUDFRONT_DIST_ID="EJVDEMX0X00IG"
+PRIMARY_ALB_DNS="${PRIMARY_ALB_DNS:-dev-davidshaevel-alb-85034469.us-east-1.elb.amazonaws.com}"
+CLOUDFRONT_DIST_ID="${CLOUDFRONT_DIST_ID:-EJVDEMX0X00IG}"
+
+# Temp file management
+TEMP_DIR=""
+cleanup() {
+    if [[ -n "${TEMP_DIR}" && -d "${TEMP_DIR}" ]]; then
+        rm -rf "${TEMP_DIR}"
+    fi
+}
+trap cleanup EXIT
 
 # Colors for output
 RED='\033[0;31m'
@@ -180,17 +189,22 @@ fi
 # Step 7: Update CloudFront origin to primary ALB
 log_info "Updating CloudFront distribution origin to primary ALB..."
 
+# Create secure temp directory
+TEMP_DIR=$(mktemp -d)
+CF_CONFIG="${TEMP_DIR}/cf-dist-config.json"
+CF_CONFIG_UPDATED="${TEMP_DIR}/cf-dist-config-updated.json"
+
 # Get current distribution config
-aws cloudfront get-distribution-config --id "${CLOUDFRONT_DIST_ID}" > /tmp/cf-dist-config.json
+aws cloudfront get-distribution-config --id "${CLOUDFRONT_DIST_ID}" > "${CF_CONFIG}"
 
 # Extract ETag for update
-ETAG=$(jq -r '.ETag' /tmp/cf-dist-config.json)
+ETAG=$(jq -r '.ETag' "${CF_CONFIG}")
 
 # Update origin domain name to primary ALB
-jq --arg primary_alb "${PRIMARY_ALB_DNS}" '.DistributionConfig.Origins.Items[0].DomainName = $primary_alb' /tmp/cf-dist-config.json | jq '.DistributionConfig' > /tmp/cf-dist-config-updated.json
+jq --arg primary_alb "${PRIMARY_ALB_DNS}" '.DistributionConfig.Origins.Items[0].DomainName = $primary_alb' "${CF_CONFIG}" | jq '.DistributionConfig' > "${CF_CONFIG_UPDATED}"
 
 # Update the distribution
-if aws cloudfront update-distribution --id "${CLOUDFRONT_DIST_ID}" --if-match "${ETAG}" --distribution-config file:///tmp/cf-dist-config-updated.json > /dev/null 2>&1; then
+if aws cloudfront update-distribution --id "${CLOUDFRONT_DIST_ID}" --if-match "${ETAG}" --distribution-config "file://${CF_CONFIG_UPDATED}" > /dev/null 2>&1; then
     log_info "CloudFront origin updated to: ${PRIMARY_ALB_DNS}"
 
     # Invalidate cache
@@ -203,19 +217,23 @@ else
     exit 1
 fi
 
-# Cleanup temp files
-rm -f /tmp/cf-dist-config.json /tmp/cf-dist-config-updated.json
-
 # Step 8: Deactivate DR infrastructure (optional)
 if [[ "${DEACTIVATE_DR}" == "true" ]]; then
     log_info "Deactivating DR infrastructure..."
     cd "${DR_TERRAFORM_DIR}"
 
-    terraform apply \
-        -var="dr_activated=false" \
-        -auto-approve
+    # Show plan first
+    log_info "Generating Terraform plan..."
+    terraform plan -var="dr_activated=false" -out="${TEMP_DIR}/dr-deactivate.tfplan"
 
-    log_info "DR infrastructure deactivated (Pilot Light mode)"
+    echo ""
+    read -p "Apply the above plan to deactivate DR? (yes/no): " TF_CONFIRM
+    if [[ "${TF_CONFIRM}" != "yes" ]]; then
+        log_warn "DR deactivation cancelled"
+    else
+        terraform apply "${TEMP_DIR}/dr-deactivate.tfplan"
+        log_info "DR infrastructure deactivated (Pilot Light mode)"
+    fi
 fi
 
 echo ""
