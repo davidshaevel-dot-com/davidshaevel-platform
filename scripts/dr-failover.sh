@@ -3,7 +3,11 @@
 # DR Failover Script
 # Activates the Disaster Recovery environment in us-west-2
 #
-# Usage: ./dr-failover.sh [--dry-run]
+# Usage: ./dr-failover.sh [--dry-run] [--yes]
+#
+# Options:
+#   --dry-run  Show what would be done without making changes
+#   --yes      Skip confirmation prompts (use with caution)
 #
 # Prerequisites:
 #   - AWS CLI configured with appropriate credentials
@@ -41,8 +45,19 @@ NC='\033[0m' # No Color
 
 # Parse arguments
 DRY_RUN=false
-if [[ "${1:-}" == "--dry-run" ]]; then
-    DRY_RUN=true
+AUTO_APPROVE=false
+for arg in "$@"; do
+    case $arg in
+        --dry-run)
+            DRY_RUN=true
+            ;;
+        --yes)
+            AUTO_APPROVE=true
+            ;;
+    esac
+done
+
+if [[ "${DRY_RUN}" == "true" ]]; then
     echo -e "${YELLOW}=== DRY RUN MODE - No changes will be made ===${NC}"
 fi
 
@@ -167,10 +182,14 @@ if [[ "${DRY_RUN}" == "true" ]]; then
 fi
 
 # Confirm activation
-read -p "Proceed with DR activation? (yes/no): " CONFIRM
-if [[ "${CONFIRM}" != "yes" ]]; then
-    log_warn "DR activation cancelled"
-    exit 0
+if [[ "${AUTO_APPROVE}" != "true" ]]; then
+    read -p "Proceed with DR activation? (yes/no): " CONFIRM
+    if [[ "${CONFIRM}" != "yes" ]]; then
+        log_warn "DR activation cancelled"
+        exit 0
+    fi
+else
+    log_warn "Auto-approve enabled - proceeding without confirmation"
 fi
 
 # Step 7: Run Terraform apply
@@ -188,6 +207,11 @@ TF_VARS=(
 # Add Grafana image if available in DR ECR
 if [[ -n "${GRAFANA_IMAGE}" ]]; then
     TF_VARS+=(-var="grafana_image=${ECR_REGISTRY}/davidshaevel/grafana:${GRAFANA_IMAGE}")
+fi
+
+# Add auto-approve if --yes flag was passed
+if [[ "${AUTO_APPROVE}" == "true" ]]; then
+    TF_VARS+=(-auto-approve)
 fi
 
 terraform apply "${TF_VARS[@]}"

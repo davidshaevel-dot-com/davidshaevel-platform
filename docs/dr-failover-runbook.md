@@ -131,7 +131,33 @@ The script will:
 7. Update CloudFront origin to DR ALB
 8. Invalidate CloudFront cache
 
-#### Option B: Manual Terraform Activation
+#### Option B: Update terraform.tfvars and Apply
+
+Edit `terraform/environments/dr/terraform.tfvars` to set the activation values:
+
+```hcl
+# Set to true to activate full DR infrastructure
+dr_activated = true
+
+# Use the latest DR snapshot (from Step 3)
+db_snapshot_identifier = "davidshaevel-dev-db-dr-YYYYMMDD-HHMMSS"
+
+# Container images (use latest tags from DR ECR)
+frontend_container_image = "108581769167.dkr.ecr.us-west-2.amazonaws.com/davidshaevel/frontend:<tag>"
+backend_container_image  = "108581769167.dkr.ecr.us-west-2.amazonaws.com/davidshaevel/backend:<tag>"
+grafana_image            = "108581769167.dkr.ecr.us-west-2.amazonaws.com/davidshaevel/grafana:<tag>"
+```
+
+Then run:
+
+```bash
+cd terraform/environments/dr
+AWS_PROFILE=davidshaevel-dev terraform apply
+```
+
+**Note:** Review the plan carefully before typing "yes" to confirm.
+
+#### Option C: Manual Terraform Activation with CLI Variables
 
 ```bash
 cd terraform/environments/dr
@@ -238,6 +264,111 @@ curl -I https://davidshaevel.com/
 curl -I https://grafana.davidshaevel.com/api/health
 ```
 
+### Comprehensive Validation Tests
+
+Run these tests to fully validate DR is operational:
+
+```bash
+# 1. Verify backend is running in DR region (check environment in response)
+curl -s https://davidshaevel.com/api/health | jq '.environment'
+# Expected: "dr"
+
+# 2. Verify database connectivity
+curl -s https://davidshaevel.com/api/health | jq '.database.status'
+# Expected: "connected"
+
+# 3. Test DR ALB directly (bypassing CloudFront)
+DR_ALB=$(cd terraform/environments/dr && AWS_PROFILE=davidshaevel-dev terraform output -raw alb_dns_name)
+curl -s -k "https://${DR_ALB}/api/health" | jq '{environment, database}'
+
+# 4. Verify ECS task count
+aws ecs describe-services \
+  --cluster dr-davidshaevel-cluster \
+  --services dr-davidshaevel-frontend dr-davidshaevel-backend dr-davidshaevel-prometheus dr-davidshaevel-grafana \
+  --region us-west-2 \
+  --profile davidshaevel-dev \
+  --query 'services[*].{name:serviceName,running:runningCount,desired:desiredCount}' \
+  --output table
+
+# 5. Verify RDS is available
+aws rds describe-db-instances \
+  --db-instance-identifier davidshaevel-dr-db \
+  --region us-west-2 \
+  --profile davidshaevel-dev \
+  --query 'DBInstances[0].DBInstanceStatus'
+# Expected: "available"
+
+# 6. Check CloudFront origin is pointing to DR
+aws cloudfront get-distribution \
+  --id EJVDEMX0X00IG \
+  --profile davidshaevel-dev \
+  --query 'Distribution.DistributionConfig.Origins.Items[0].DomainName'
+# Expected: Contains "us-west-2"
+
+# 7. Verify Grafana is accessible via DR ALB
+curl -s -k "https://${DR_ALB}/grafana/api/health" | jq '.'
+# Note: Requires Cloudflare DNS update for grafana subdomain
+
+# 8. Check Prometheus is scraping metrics
+# (Access via Grafana Explore tab and run: up{job="backend"})
+```
+
+### Observability Stack Validation
+
+After DR activation, verify the observability stack:
+
+1. **Prometheus Verification**:
+   - Access Grafana at https://grafana.davidshaevel.com (after DNS update)
+   - Go to Explore → Select Prometheus datasource
+   - Query: `up{job="backend"}` - should return value of 1
+   - Query: `process_cpu_seconds_total` - should show backend/frontend metrics
+
+2. **Grafana Dashboard Verification**:
+   - Login to Grafana (credentials in AWS Secrets Manager)
+   - Check that provisioned dashboards are available
+   - Verify dashboards show live data from DR environment
+
+3. **Get Grafana Admin Password**:
+
+   > **⚠️ IMPORTANT:** The Grafana admin password is **regenerated each time DR is activated**.
+   > You must retrieve the current password from Secrets Manager after each activation.
+   > The secret name includes a timestamp suffix, so use the commands below to find and retrieve it.
+
+   **Username:** `admin`
+
+   **Find and retrieve the password:**
+   ```bash
+   # Step 1: Find the current Grafana password secret name
+   aws secretsmanager list-secrets \
+     --region us-west-2 \
+     --profile davidshaevel-dev \
+     --query "SecretList[?contains(Name, 'grafana-admin-password')].Name" \
+     --output text
+
+   # Step 2: Get the password (replace SECRET_NAME with output from Step 1)
+   aws secretsmanager get-secret-value \
+     --secret-id SECRET_NAME \
+     --region us-west-2 \
+     --profile davidshaevel-dev \
+     --query 'SecretString' \
+     --output text
+   ```
+
+   **One-liner to get the password:**
+   ```bash
+   SECRET_NAME=$(aws secretsmanager list-secrets \
+     --region us-west-2 \
+     --profile davidshaevel-dev \
+     --query "SecretList[?contains(Name, 'grafana-admin-password')].Name" \
+     --output text) && \
+   aws secretsmanager get-secret-value \
+     --secret-id "${SECRET_NAME}" \
+     --region us-west-2 \
+     --profile davidshaevel-dev \
+     --query 'SecretString' \
+     --output text
+   ```
+
 ---
 
 ## Post-Activation Checklist
@@ -246,6 +377,8 @@ curl -I https://grafana.davidshaevel.com/api/health
 - [ ] RDS instance status is "available"
 - [ ] Frontend loads at https://davidshaevel.com/
 - [ ] Backend API responds at https://davidshaevel.com/api/health
+- [ ] Cloudflare DNS updated for grafana.davidshaevel.com → DR ALB
+- [ ] Grafana admin password retrieved from Secrets Manager (regenerated each activation!)
 - [ ] Grafana accessible at https://grafana.davidshaevel.com
 - [ ] Grafana dashboards showing data
 - [ ] CloudFront distribution deployed (check status)
