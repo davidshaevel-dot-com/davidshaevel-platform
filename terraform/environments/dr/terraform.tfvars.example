@@ -13,7 +13,8 @@
 # DR Activation Control
 # -----------------------------------------------------------------------------
 
-# Set to true during DR activation to deploy full infrastructure
+# false = Pilot Light mode (ECR replication, snapshot Lambda, KMS key only)
+# true  = Full DR infrastructure (VPC, ECS, ALB, RDS from snapshot)
 dr_activated = false
 
 # -----------------------------------------------------------------------------
@@ -23,30 +24,53 @@ dr_activated = false
 aws_account_id = "123456789012"
 
 # -----------------------------------------------------------------------------
+# Primary Region Configuration (us-east-1)
+# -----------------------------------------------------------------------------
+
+# Primary database identifier (for snapshot replication)
+primary_db_instance_identifier = "your-primary-db-identifier"
+
+# Primary database KMS key (for cross-region snapshot encryption)
+# Find with: aws kms describe-key --key-id alias/aws/rds --region us-east-1 --query 'KeyMetadata.Arn'
+primary_db_kms_key_arn = "arn:aws:kms:us-east-1:123456789012:key/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# -----------------------------------------------------------------------------
 # Database Configuration (for DR activation)
 # -----------------------------------------------------------------------------
 
 # Snapshot to restore from during DR activation
-# Find latest with: aws rds describe-db-snapshots --region us-west-2 --query 'DBSnapshots | sort_by(@, &SnapshotCreateTime) | [-1].DBSnapshotIdentifier'
+# Find latest with: aws rds describe-db-snapshots --region us-west-2 --snapshot-type manual \
+#   --query "DBSnapshots[?starts_with(DBSnapshotIdentifier, \`your-db-dr-\`)] | sort_by(@, &SnapshotCreateTime) | [-1].DBSnapshotIdentifier"
 db_snapshot_identifier = ""
+
+# DR database secret ARN (contains credentials for restored database)
+# Create in Secrets Manager with username/password for the DR database
+dr_database_secret_arn = ""
 
 # -----------------------------------------------------------------------------
 # Container Images (for DR activation)
 # -----------------------------------------------------------------------------
 
-# Use us-west-2 ECR URLs (images are auto-replicated)
-# frontend_container_image = "123456789012.dkr.ecr.us-west-2.amazonaws.com/davidshaevel/frontend:latest"
-# backend_container_image = "123456789012.dkr.ecr.us-west-2.amazonaws.com/davidshaevel/backend:latest"
-
+# Use us-west-2 ECR URLs (images are auto-replicated from us-east-1)
+# Find latest tags with: aws ecr describe-images --repository-name your-repo --region us-west-2 \
+#   --query 'imageDetails | sort_by(@, &imagePushedAt) | [-1].imageTags[0]'
 frontend_container_image = ""
 backend_container_image  = ""
+grafana_image            = ""
 
 # -----------------------------------------------------------------------------
-# ACM Certificate (for DR activation with HTTPS)
+# ACM Certificate (for HTTPS on DR ALB)
 # -----------------------------------------------------------------------------
 
 # ARN of ACM certificate in us-west-2 for ALB HTTPS
-# Must be created before DR activation
+# Enables HTTPS listener and routes grafana.davidshaevel.com to Grafana
+#
+# To create a certificate:
+#   aws acm request-certificate \
+#     --domain-name "*.yourdomain.com" \
+#     --subject-alternative-names "yourdomain.com" \
+#     --validation-method DNS \
+#     --region us-west-2
 dr_acm_certificate_arn = ""
 
 # -----------------------------------------------------------------------------

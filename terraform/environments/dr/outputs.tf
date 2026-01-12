@@ -103,7 +103,7 @@ output "dr_activation_instructions" {
        aws rds describe-db-snapshots \
          --region ${var.aws_region} \
          --snapshot-type manual \
-         --query 'DBSnapshots[?starts_with(DBSnapshotIdentifier, `${var.environment}-${var.project_name}-dr-`)] | sort_by(@, &SnapshotCreateTime) | [-1].DBSnapshotIdentifier' \
+         --query 'DBSnapshots[?starts_with(DBSnapshotIdentifier, `${var.primary_db_instance_identifier}-dr-`)] | sort_by(@, &SnapshotCreateTime) | [-1].DBSnapshotIdentifier' \
          --output text
 
     2. Activate DR:
@@ -119,4 +119,28 @@ output "dr_activation_instructions" {
 
     ========================================
   EOF
+}
+
+# -----------------------------------------------------------------------------
+# Observability Outputs (only when dr_activated = true)
+# -----------------------------------------------------------------------------
+
+output "prometheus_service_name" {
+  description = "Name of the Prometheus ECS service"
+  value       = var.dr_activated ? module.observability[0].prometheus_service_name : null
+}
+
+output "grafana_service_name" {
+  description = "Name of the Grafana ECS service"
+  value       = var.dr_activated ? module.observability[0].grafana_service_name : null
+}
+
+output "prometheus_endpoint" {
+  description = "Prometheus endpoint (internal)"
+  value       = var.dr_activated ? "http://prometheus.${var.private_dns_namespace}:9090" : null
+}
+
+output "grafana_endpoint" {
+  description = "Grafana endpoint (internal)"
+  value       = var.dr_activated ? "http://grafana.${var.private_dns_namespace}:3000" : null
 }
