@@ -81,6 +81,39 @@ This project serves as both a personal website and a demonstration of production
   - Grafana: https://grafana.davidshaevel.com (Operational, Publicly Accessible)
   - Metrics: Backend (9 metrics), Frontend (5 metrics) with prom-client integration
 
+### Disaster Recovery Environment (us-west-2)
+
+**Status:** ✅ COMPLETE (TT-73 - January 11, 2026)
+
+A Pilot Light DR strategy implementation providing cross-region failover capability:
+
+**DR Infrastructure:**
+- ✅ VPC (10.1.0.0/16) with 6 subnets across 2 AZs in us-west-2
+- ✅ RDS PostgreSQL (restored from cross-region snapshot)
+- ✅ ECS Fargate cluster with all 4 services (frontend, backend, prometheus, grafana)
+- ✅ Application Load Balancer with health checks
+- ✅ Automated RDS snapshot replication (EventBridge + Lambda)
+- ✅ KMS key for cross-region encryption
+
+**Operational Scripts:**
+- `scripts/dr-failover.sh` - Activate DR and switch traffic
+- `scripts/dr-failback.sh` - Return to primary region
+- `scripts/dr-validation.sh` - Validate DR readiness (18 checks)
+
+**Key Documents:**
+- [DR Failover Runbook](docs/dr-failover-runbook.md) - Step-by-step procedures
+- [DR Architecture](terraform/environments/dr/README.md) - Infrastructure details
+
+**Failover Process:**
+1. Run `dr-validation.sh` to verify DR readiness
+2. Run `dr-failover.sh` to activate DR infrastructure
+3. Update Cloudflare DNS for grafana.davidshaevel.com
+4. CloudFront automatically updated to DR ALB
+
+**Recovery Metrics:**
+- RTO: ~15-20 minutes (infrastructure activation + DNS propagation)
+- RPO: ~1 hour (snapshot frequency)
+
 ## 📁 Repository Structure
 
 ```
@@ -98,6 +131,7 @@ davidshaevel-platform/
 │   │   └── observability/   # Prometheus/Grafana infrastructure (v1.0 - NEW)
 │   ├── environments/
 │   │   ├── dev/            # Development environment (deployed)
+│   │   ├── dr/             # Disaster Recovery environment (us-west-2)
 │   │   └── prod/           # Production environment (future)
 │   ├── scripts/            # Helper scripts (validate, cost-estimate)
 │   ├── versions.tf
@@ -107,10 +141,15 @@ davidshaevel-platform/
 │   └── README.md           # Terraform documentation
 ├── docs/
 │   ├── architecture/       # AWS architecture diagrams and decisions
+│   ├── dr-failover-runbook.md  # DR procedures and troubleshooting
 │   ├── terraform-local-setup.md
 │   ├── terraform-implementation-plan.md  # 10-step plan (complete)
 │   ├── backend-setup-log.md
 │   └── 2025-10-*_*.md     # Session agendas, summaries, PR descriptions
+├── scripts/
+│   ├── dr-failover.sh      # Activate DR environment
+│   ├── dr-failback.sh      # Return to primary region
+│   └── dr-validation.sh    # Validate DR readiness
 ├── frontend/               # Next.js 16 application (TT-18 - Complete)
 │   ├── app/               # Next.js App Router pages
 │   ├── components/        # React components
@@ -727,9 +766,10 @@ Austin, Texas
 - Database & Migration System: October 30, 2025 (Complete)
 - Frontend Deployment: October 30-31, 2025 (Complete)
 - PR Feedback & Security Fixes: October 31, 2025 (Complete)
+- Disaster Recovery Environment: January 9-11, 2026 (Complete)
 
-**Status:** ✅ PRODUCTION DEPLOYMENT COMPLETE + Observability Complete + Node.js Profiling Lab Complete (TT-63)
-**Last Updated:** December 17, 2025
+**Status:** ✅ PRODUCTION DEPLOYMENT COMPLETE + Observability Complete + DR Environment Complete (TT-73)
+**Last Updated:** January 11, 2026
 
 ## 🤖 AI Agent Sessions
 
@@ -757,6 +797,7 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - Dec 15: TT-63 Node.js Profiling Lab - ECS artifact export (PR #70)
 - Dec 15: TT-63 Node.js Profiling Lab - Part 3 Remote Debugging (PR #71)
 - Dec 16-17: TT-63 Node.js Profiling Lab - S3 artifact export, interview docs (PR #72, #73)
+- Jan 9-11: TT-73 Disaster Recovery Environment - Full DR implementation (PR #77)
 
 **Infrastructure Milestones:**
 - ✅ TT-16 (Steps 1-3): Foundation
@@ -774,7 +815,8 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - ✅ TT-31: CI/CD Workflows (Complete - Nov 6, 2025)
 - ✅ TT-25: Observability (Complete - Nov 24, 2025)
 - ✅ TT-63: Node.js Profiling Lab (Complete - Dec 17, 2025) - 7 PRs (#67-#73)
+- ✅ TT-73: Disaster Recovery Environment (Complete - Jan 11, 2026) - PR #77
 - ⏳ TT-20: Local Development (Planned - 6-8 hours)
 - ⏳ TT-26: Documentation (Planned - 4-6 hours)
 
-**Current Phase:** Production operational with automated CI/CD, full Observability Stack (Prometheus + Grafana), and enhanced application metrics. Node.js Profiling Lab complete (TT-63) with interview preparation materials.
+**Current Phase:** Production operational with automated CI/CD, full Observability Stack (Prometheus + Grafana), enhanced application metrics, and Disaster Recovery Environment (us-west-2). Pilot Light DR strategy with automated failover/failback scripts.
