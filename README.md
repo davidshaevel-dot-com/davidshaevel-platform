@@ -140,12 +140,14 @@ davidshaevel-platform/
 │   ├── outputs.tf
 │   └── README.md           # Terraform documentation
 ├── docs/
-│   ├── architecture/       # AWS architecture diagrams and decisions
-│   ├── dr-failover-runbook.md  # DR procedures and troubleshooting
-│   ├── terraform-local-setup.md
-│   ├── terraform-implementation-plan.md  # 10-step plan (complete)
-│   ├── backend-setup-log.md
-│   └── 2025-10-*_*.md     # Session agendas, summaries, PR descriptions
+│   ├── architecture/       # AWS architecture, Terraform setup, naming conventions
+│   ├── disaster-recovery/  # DR strategy documentation
+│   ├── internal-notes/     # Session agendas, summaries, PR descriptions
+│   ├── labs/               # Hands-on labs (Node.js profiling)
+│   ├── deployment-runbook.md
+│   ├── dr-failover-runbook.md
+│   ├── observability-architecture.md
+│   └── observability-runbook.md
 ├── scripts/
 │   ├── dr-failover.sh      # Activate DR environment
 │   ├── dr-failback.sh      # Return to primary region
