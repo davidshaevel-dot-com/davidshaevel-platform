@@ -1,0 +1,145 @@
+# Local Project Context - Template
+
+> Copy this file to `CLAUDE.local.md` and fill in your environment-specific values.
+> CLAUDE.local.md is gitignored and will not be committed.
+
+---
+
+## AWS Account Details
+
+| Property | Value |
+|----------|-------|
+| **Account ID** | `<your-aws-account-id>` |
+| **Region** | `<your-aws-region>` |
+| **Profile** | `<your-aws-profile>` |
+
+---
+
+## Deployed Infrastructure
+
+### VPC & Networking
+
+| Resource | ID |
+|----------|-----|
+| **VPC** | `vpc-xxxxxxxxxxxxxxxxx` |
+| **Internet Gateway** | `igw-xxxxxxxxxxxxxxxxx` |
+
+#### Subnets
+
+| Type | AZ | CIDR | ID |
+|------|-----|------|-----|
+| Public | <az-a> | 10.0.1.0/24 | `subnet-xxxxxxxxxxxxxxxxx` |
+| Public | <az-b> | 10.0.2.0/24 | `subnet-xxxxxxxxxxxxxxxxx` |
+| Private App | <az-a> | 10.0.11.0/24 | `subnet-xxxxxxxxxxxxxxxxx` |
+| Private App | <az-b> | 10.0.12.0/24 | `subnet-xxxxxxxxxxxxxxxxx` |
+| Private DB | <az-a> | 10.0.21.0/24 | `subnet-xxxxxxxxxxxxxxxxx` |
+| Private DB | <az-b> | 10.0.22.0/24 | `subnet-xxxxxxxxxxxxxxxxx` |
+
+#### NAT Gateways
+
+| AZ | ID | Elastic IP |
+|-----|-----|------------|
+| <az-a> | `nat-xxxxxxxxxxxxxxxxx` | x.x.x.x |
+| <az-b> | `nat-xxxxxxxxxxxxxxxxx` | x.x.x.x |
+
+### Security Groups
+
+| Name | ID | Purpose |
+|------|-----|---------|
+| ALB | `sg-xxxxxxxxxxxxxxxxx` | HTTP/HTTPS from internet |
+| Frontend App | `sg-xxxxxxxxxxxxxxxxx` | Port 3000 from ALB |
+| Backend App | `sg-xxxxxxxxxxxxxxxxx` | Port 3001 from ALB/Frontend |
+| Database | `sg-xxxxxxxxxxxxxxxxx` | Port 5432 from Backend only |
+
+### Database (RDS)
+
+| Property | Value |
+|----------|-------|
+| **Identifier** | `<project>-<env>-db` |
+| **Engine** | PostgreSQL 15.x |
+| **Instance Class** | db.t3.micro |
+| **Database Name** | `<database-name>` |
+| **Master Username** | `<username>` |
+| **Credentials** | Stored in AWS Secrets Manager |
+
+### Compute (ECS Fargate)
+
+| Property | Value |
+|----------|-------|
+| **Cluster** | `<env>-<project>-cluster` |
+| **Frontend Service** | X tasks |
+| **Backend Service** | X tasks |
+| **ALB DNS** | `<alb-dns>.elb.amazonaws.com` |
+
+### CDN (CloudFront)
+
+| Property | Value |
+|----------|-------|
+| **Distribution ID** | `<distribution-id>` |
+| **CloudFront Domain** | `<id>.cloudfront.net` |
+| **ACM Certificate** | `arn:aws:acm:<region>:<account>:certificate/<id>` |
+| **Custom Domains** | `<domain>.com`, `www.<domain>.com` |
+
+---
+
+## Cost Summary
+
+| Component | Monthly Cost |
+|-----------|-------------|
+| NAT Gateways | ~$XX |
+| RDS PostgreSQL | ~$XX |
+| ECS Fargate | ~$XX |
+| ALB | ~$XX |
+| CloudFront | ~$XX |
+| **Total** | **~$XXX** |
+
+---
+
+## Terraform Backend
+
+| Property | Value |
+|----------|-------|
+| **State Bucket** | `<account-id>-terraform-state-<project>` |
+| **Lock Table** | `terraform-state-lock-<project>` |
+| **State Path** | `<env>/terraform.tfstate` |
+
+---
+
+## Environment Variables (in .envrc)
+
+```bash
+export TF_VAR_aws_account_id="<your-account-id>"
+export TF_VAR_project_name="<your-project>"
+export TF_VAR_domain_name="<your-domain>.com"
+export AWS_PROFILE="<your-profile>"
+export AWS_REGION="<your-region>"
+```
+
+---
+
+## GitHub Repository
+
+- **Organization:** `<your-org>`
+- **Repository:** `<your-repo>`
+- **URL:** `https://github.com/<org>/<repo>`
+
+---
+
+## Linear Project
+
+- **Team:** `<your-team>`
+- **Project URL:** `<linear-project-url>`
+
+---
+
+## Current Status
+
+**Infrastructure:** X% Complete
+**Applications:** _describe current state_
+**Observability:** _describe current state_
+
+---
+
+## Session Notes
+
+_Add session-specific notes, current work items, and context here._
