@@ -234,7 +234,7 @@ terraform output  # View all outputs
 - **Primary Domain:** https://davidshaevel.com
 - **Alternate Domain:** https://www.davidshaevel.com
 - **Grafana:** https://grafana.davidshaevel.com
-- **CloudFront Distribution:** `EJVDEMX0X00IG`
+- **CloudFront Distribution:** `<CLOUDFRONT_DISTRIBUTION_ID>`
 - **ECS Cluster:** `dev-davidshaevel-cluster`
 - **Applications:** Frontend, Backend, Prometheus, Grafana
 - **Testing:** 14 automated integration tests passing
@@ -511,15 +511,15 @@ docker build -t backend:$(git rev-parse --short HEAD) .
 
 # 2. Tag for ECR
 docker tag backend:$(git rev-parse --short HEAD) \
-  108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend:$(git rev-parse --short HEAD)
+  <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend:$(git rev-parse --short HEAD)
 
 # 3. Login to ECR
 aws ecr get-login-password --region us-east-1 | \
   docker login --username AWS --password-stdin \
-  108581769167.dkr.ecr.us-east-1.amazonaws.com
+  <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
 
 # 4. Push to ECR
-docker push 108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend:$(git rev-parse --short HEAD)
+docker push <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend:$(git rev-parse --short HEAD)
 
 # 5. Update Terraform with new image tag
 cd terraform/environments/dev
@@ -541,16 +541,16 @@ curl https://davidshaevel.com/api/health
 cd frontend
 docker build -t frontend:$(git rev-parse --short HEAD) .
 docker tag frontend:$(git rev-parse --short HEAD) \
-  108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend:$(git rev-parse --short HEAD)
+  <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend:$(git rev-parse --short HEAD)
 aws ecr get-login-password --region us-east-1 | \
   docker login --username AWS --password-stdin \
-  108581769167.dkr.ecr.us-east-1.amazonaws.com
-docker push 108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend:$(git rev-parse --short HEAD)
+  <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
+docker push <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend:$(git rev-parse --short HEAD)
 
 # Update Terraform and deploy
 cd terraform/environments/dev
 # Set the frontend_container_image variable with full ECR image URI
-terraform apply -var 'frontend_container_image=108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend:<git-sha>'
+terraform apply -var 'frontend_container_image=<AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend:<git-sha>'
 
 # CRITICAL: Invalidate CloudFront cache for changes to be visible
 aws cloudfront create-invalidation --distribution-id <distribution-id> --paths "/*"
@@ -688,8 +688,8 @@ AWS_SECRET_ACCESS_KEY      # IAM user secret key
 AWS_REGION                 # us-east-1
 
 # ECR Repositories (full URIs)
-ECR_BACKEND_REPOSITORY     # 108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend
-ECR_FRONTEND_REPOSITORY    # 108581769167.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend
+ECR_BACKEND_REPOSITORY     # <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/backend
+ECR_FRONTEND_REPOSITORY    # <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/davidshaevel/frontend
 
 # ECS Configuration
 ECS_CLUSTER                # dev-davidshaevel-cluster

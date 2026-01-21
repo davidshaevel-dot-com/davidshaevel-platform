@@ -73,6 +73,7 @@ secrets/
 temp/
 tmp/
 
-# AI Agent Handoff
+# Claude Code context files
 .claude/
+CLAUDE.local.md
 
