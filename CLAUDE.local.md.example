@@ -24,7 +24,8 @@
 | **VPC** | `vpc-xxxxxxxxxxxxxxxxx` |
 | **Internet Gateway** | `igw-xxxxxxxxxxxxxxxxx` |
 
-**Subnets:**
+#### Subnets
+
 | Type | AZ | CIDR | ID |
 |------|-----|------|-----|
 | Public | <az-a> | 10.0.1.0/24 | `subnet-xxxxxxxxxxxxxxxxx` |
@@ -34,7 +35,8 @@
 | Private DB | <az-a> | 10.0.21.0/24 | `subnet-xxxxxxxxxxxxxxxxx` |
 | Private DB | <az-b> | 10.0.22.0/24 | `subnet-xxxxxxxxxxxxxxxxx` |
 
-**NAT Gateways:**
+#### NAT Gateways
+
 | AZ | ID | Elastic IP |
 |-----|-----|------------|
 | <az-a> | `nat-xxxxxxxxxxxxxxxxx` | x.x.x.x |
