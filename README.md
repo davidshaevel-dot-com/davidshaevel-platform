@@ -118,8 +118,8 @@ A Pilot Light DR strategy implementation providing cross-region failover capabil
 
 ```
 davidshaevel-platform/
-├── .claude/
-│   └── AGENT_HANDOFF.md     # AI agent context (local only, not committed)
+├── CLAUDE.md                # AI agent context (public, committed)
+├── CLAUDE.local.md          # AI agent context (sensitive, gitignored)
 ├── .github/
 │   └── workflows/           # GitHub Actions CI/CD (future)
 ├── terraform/
@@ -769,11 +769,11 @@ Austin, Texas
 - Disaster Recovery Environment: January 9-11, 2026 (Complete)
 
 **Status:** ✅ PRODUCTION DEPLOYMENT COMPLETE + Observability Complete + DR Environment Complete (TT-73)
-**Last Updated:** January 11, 2026
+**Last Updated:** January 21, 2026
 
 ## 🤖 AI Agent Sessions
 
-This project is developed with AI assistance (Claude Code). Session context is preserved in `.claude/AGENT_HANDOFF.md` (local only, not committed to git).
+This project is developed with AI assistance (Claude Code). Session context is preserved in `CLAUDE.md` (public, committed) and `CLAUDE.local.md` (sensitive details, gitignored).
 
 **Completed Sessions:**
 - Oct 26 Session 1: TT-22 (Steps 8-9) - Compute Module
