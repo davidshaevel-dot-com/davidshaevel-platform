@@ -26,3 +26,9 @@ variable "aws_region" {
   type        = string
   default     = "us-east-1"
 }
+
+variable "cloudfront_distribution_id" {
+  description = "CloudFront distribution ID for cache invalidation permissions (optional)"
+  type        = string
+  default     = ""
+}

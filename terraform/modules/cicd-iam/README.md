@@ -54,6 +54,13 @@ This policy follows AWS least-privilege best practices by scoping resources to t
 **Log group-scoped:**
 - Create and write logs - Scoped to `/ecs/davidshaevel/*`
 
+### CloudFront (Optional)
+
+**Distribution-scoped:**
+- `cloudfront:CreateInvalidation`, `cloudfront:GetInvalidation` - Scoped to specific distribution
+- Only granted if `cloudfront_distribution_id` is provided
+- Required for frontend deployments to invalidate CDN cache
+
 ### Security Benefits
 
 ✅ Cannot push to arbitrary ECR repositories (only our 2 repos)
@@ -76,6 +83,9 @@ module "cicd_iam" {
   project_name   = "davidshaevel"
   aws_account_id = "108581769167"
   aws_region     = "us-east-1"
+
+  # Optional: CloudFront distribution ID for cache invalidation
+  cloudfront_distribution_id = module.cdn.cloudfront_distribution_id
 }
 ```
 
@@ -122,6 +132,7 @@ terraform apply
    - `ECS_CLUSTER` = `dev-davidshaevel-cluster`
    - `ECS_BACKEND_SERVICE` = `dev-davidshaevel-backend`
    - `ECS_FRONTEND_SERVICE` = `dev-davidshaevel-frontend`
+   - `CLOUDFRONT_DISTRIBUTION_ID` = (CloudFront distribution ID, e.g., `EJVDEMX0X00IG`)
 
 ### Step 5: Delete Temporary Credentials
 
@@ -182,6 +193,7 @@ Edit `terraform/modules/cicd-iam/main.tf` policy:
 | project_name | Project name for resource naming | string | "davidshaevel" | no |
 | aws_account_id | AWS Account ID for IAM ARNs | string | - | yes |
 | aws_region | AWS Region for CloudWatch ARNs | string | "us-east-1" | no |
+| cloudfront_distribution_id | CloudFront distribution ID for cache invalidation | string | "" | no |
 
 ## Outputs
 
