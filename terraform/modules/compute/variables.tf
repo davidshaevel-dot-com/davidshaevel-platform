@@ -401,6 +401,28 @@ variable "lab_token" {
 }
 
 # ------------------------------------------------------------------------------
+# Contact Form Configuration (TT-78)
+# ------------------------------------------------------------------------------
+
+variable "resend_api_key_secret_arn" {
+  description = "ARN of the AWS Secrets Manager secret containing the Resend API key (optional, enables contact form email)"
+  type        = string
+  default     = ""
+}
+
+variable "contact_form_to" {
+  description = "Email address to receive contact form submissions"
+  type        = string
+  default     = "david+contact@davidshaevel.com"
+}
+
+variable "contact_form_from" {
+  description = "Email address shown as the sender for contact form emails (must be verified in Resend)"
+  type        = string
+  default     = "david+noreply@davidshaevel.com"
+}
+
+# ------------------------------------------------------------------------------
 # Tags
 # ------------------------------------------------------------------------------
 

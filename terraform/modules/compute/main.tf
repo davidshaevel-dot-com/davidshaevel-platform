@@ -553,7 +553,7 @@ resource "aws_ecs_task_definition" "backend" {
           name  = "DB_NAME"
           value = var.database_name
         }
-      ],
+        ],
         # Lab endpoints configuration (TT-63 Node.js Profiling Lab)
         # Only include LAB_* environment variables when lab_enable is true
         # LAB_ALLOW_PROD is required because NODE_ENV=production (for SSL/RDS)
@@ -579,10 +579,22 @@ resource "aws_ecs_task_definition" "backend" {
             name  = "NODE_OPTIONS"
             value = "--inspect=0.0.0.0:9229"
           }
+        ] : [],
+        # Contact Form Configuration (TT-78)
+        # Include email configuration for Resend integration
+        var.resend_api_key_secret_arn != "" ? [
+          {
+            name  = "CONTACT_FORM_TO"
+            value = var.contact_form_to
+          },
+          {
+            name  = "CONTACT_FORM_FROM"
+            value = var.contact_form_from
+          }
         ] : []
       )
 
-      secrets = [
+      secrets = concat([
         {
           name      = "DB_PASSWORD"
           valueFrom = "${var.database_secret_arn}:password::"
@@ -591,7 +603,15 @@ resource "aws_ecs_task_definition" "backend" {
           name      = "DB_USERNAME"
           valueFrom = "${var.database_secret_arn}:username::"
         }
-      ]
+        ],
+        # Resend API Key for contact form (TT-78)
+        var.resend_api_key_secret_arn != "" ? [
+          {
+            name      = "RESEND_API_KEY"
+            valueFrom = var.resend_api_key_secret_arn
+          }
+        ] : []
+      )
 
       logConfiguration = {
         logDriver = "awslogs"

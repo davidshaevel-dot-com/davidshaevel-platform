@@ -9,6 +9,7 @@ import { MetricsModule } from './metrics/metrics.module';
 import { MetricsInterceptor } from './metrics/metrics.interceptor';
 import { ProjectsModule } from './projects/projects.module';
 import { LabModule } from './lab/lab.module';
+import { ContactFormModule } from './contact-form/contact-form.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { LabModule } from './lab/lab.module';
     MetricsModule,
     ProjectsModule,
     LabModule,
+    ContactFormModule,
   ],
   controllers: [AppController],
   providers: [
