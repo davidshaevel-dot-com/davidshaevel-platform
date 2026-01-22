@@ -775,7 +775,7 @@ Austin, Texas
 - PR Feedback & Security Fixes: October 31, 2025 (Complete)
 - Disaster Recovery Environment: January 9-11, 2026 (Complete)
 
-**Status:** ✅ PRODUCTION DEPLOYMENT COMPLETE + Observability Complete + DR Environment Complete (TT-73) + Contact Form Backend (TT-78)
+**Status:** ✅ PRODUCTION DEPLOYMENT COMPLETE + Observability Complete + DR Environment Complete (TT-73) + Contact Form Feature (TT-78, TT-84, TT-85)
 **Last Updated:** January 22, 2026
 
 ## 🤖 AI Agent Sessions
@@ -806,7 +806,8 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - Dec 16-17: TT-63 Node.js Profiling Lab - S3 artifact export, interview docs (PR #72, #73)
 - Jan 9-11: TT-73 Disaster Recovery Environment - Full DR implementation (PR #77)
 - Jan 21-22: TT-78 Contact Form Feature - Resend API integration (PR #79)
-- Jan 22: TT-84 Contact Form Frontend Fix - CloudFront cache invalidation
+- Jan 22: TT-84 Contact Form Frontend Fix - CloudFront cache invalidation (PR #80)
+- Jan 22: TT-85 CloudFront IAM Permissions - CI/CD cache invalidation permissions (PR #81)
 
 **Infrastructure Milestones:**
 - ✅ TT-16 (Steps 1-3): Foundation
@@ -826,7 +827,8 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - ✅ TT-63: Node.js Profiling Lab (Complete - Dec 17, 2025) - 7 PRs (#67-#73)
 - ✅ TT-73: Disaster Recovery Environment (Complete - Jan 11, 2026) - PR #77
 - ✅ TT-78: Contact Form Email (Complete - Jan 22, 2026) - PR #79
-- ✅ TT-84: Contact Form Frontend Fix (Complete - Jan 22, 2026) - CloudFront cache invalidation
+- ✅ TT-84: Contact Form Frontend Fix (Complete - Jan 22, 2026) - PR #80, CloudFront cache invalidation
+- ✅ TT-85: CloudFront IAM Permissions (Complete - Jan 22, 2026) - PR #81
 - ⏳ TT-20: Local Development (Planned - 6-8 hours)
 - ⏳ TT-26: Documentation (Planned - 4-6 hours)
 

@@ -416,8 +416,10 @@ See `docs/dr-failover-runbook.md` for procedures and troubleshooting.
 - TT-65: Pilot Light DR environment in us-west-2
 - TT-73: DR deployment testing with failover/failback scripts
 
-**Contact Form (TT-78):**
+**Contact Form (TT-78, TT-84, TT-85):**
 - TT-78: Contact form email functionality (Resend API integration)
+- TT-84: Contact form frontend fix (CloudFront cache causing stale assets)
+- TT-85: CloudFront IAM permissions for CI/CD cache invalidation
 
 ---
 
