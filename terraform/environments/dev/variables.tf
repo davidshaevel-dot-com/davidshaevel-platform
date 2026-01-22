@@ -438,10 +438,11 @@ variable "grafana_admin_password" {
 # Contact Form Configuration (TT-78)
 # -----------------------------------------------------------------------------
 
-variable "resend_api_key_secret_arn" {
-  description = "ARN of the AWS Secrets Manager secret containing the Resend API key"
+variable "resend_api_key" {
+  description = "Resend API key for sending contact form emails (plain text, not Secrets Manager)"
   type        = string
   default     = ""
+  sensitive   = true
 }
 
 variable "contact_form_to" {

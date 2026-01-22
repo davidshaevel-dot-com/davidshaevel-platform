@@ -581,8 +581,12 @@ resource "aws_ecs_task_definition" "backend" {
           }
         ] : [],
         # Contact Form Configuration (TT-78)
-        # Include email configuration for Resend integration
-        var.resend_api_key_secret_arn != "" ? [
+        # Include Resend API key and email configuration as plain environment variables
+        var.resend_api_key != "" ? [
+          {
+            name  = "RESEND_API_KEY"
+            value = var.resend_api_key
+          },
           {
             name  = "CONTACT_FORM_TO"
             value = var.contact_form_to
@@ -594,7 +598,7 @@ resource "aws_ecs_task_definition" "backend" {
         ] : []
       )
 
-      secrets = concat([
+      secrets = [
         {
           name      = "DB_PASSWORD"
           valueFrom = "${var.database_secret_arn}:password::"
@@ -603,15 +607,7 @@ resource "aws_ecs_task_definition" "backend" {
           name      = "DB_USERNAME"
           valueFrom = "${var.database_secret_arn}:username::"
         }
-        ],
-        # Resend API Key for contact form (TT-78)
-        var.resend_api_key_secret_arn != "" ? [
-          {
-            name      = "RESEND_API_KEY"
-            valueFrom = var.resend_api_key_secret_arn
-          }
-        ] : []
-      )
+      ]
 
       logConfiguration = {
         logDriver = "awslogs"

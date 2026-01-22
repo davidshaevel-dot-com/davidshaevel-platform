@@ -6,7 +6,7 @@ import { CreateContactDto } from './dto/create-contact.dto';
 @Injectable()
 export class ContactFormService {
   private readonly logger = new Logger(ContactFormService.name);
-  private readonly resend: Resend;
+  private readonly resend: Resend | null;
   private readonly toEmail: string;
   private readonly fromEmail: string;
 
@@ -14,8 +14,10 @@ export class ContactFormService {
     const apiKey = this.configService.get<string>('RESEND_API_KEY');
     if (!apiKey) {
       this.logger.warn('RESEND_API_KEY not configured - contact form will not send emails');
+      this.resend = null;
+    } else {
+      this.resend = new Resend(apiKey);
     }
-    this.resend = new Resend(apiKey);
 
     this.toEmail = this.configService.get<string>('CONTACT_FORM_TO') || 'david+contact@davidshaevel.com';
     this.fromEmail = this.configService.get<string>('CONTACT_FORM_FROM') || 'david+noreply@davidshaevel.com';
@@ -23,6 +25,11 @@ export class ContactFormService {
 
   async sendContactEmail(dto: CreateContactDto): Promise<{ success: boolean; messageId?: string }> {
     this.logger.log(`Processing contact form submission from ${dto.email}`);
+
+    if (!this.resend) {
+      this.logger.error('Cannot send email: RESEND_API_KEY is not configured');
+      throw new ServiceUnavailableException('Email service is not configured. Please try again later.');
+    }
 
     try {
       const { data, error } = await this.resend.emails.send({

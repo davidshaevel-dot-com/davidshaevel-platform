@@ -404,10 +404,11 @@ variable "lab_token" {
 # Contact Form Configuration (TT-78)
 # ------------------------------------------------------------------------------
 
-variable "resend_api_key_secret_arn" {
-  description = "ARN of the AWS Secrets Manager secret containing the Resend API key (optional, enables contact form email)"
+variable "resend_api_key" {
+  description = "Resend API key for sending contact form emails (plain text environment variable)"
   type        = string
   default     = ""
+  sensitive   = true
 }
 
 variable "contact_form_to" {

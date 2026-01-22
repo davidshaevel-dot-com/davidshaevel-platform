@@ -198,9 +198,9 @@ module "compute" {
   lab_token  = var.lab_token
 
   # Contact Form Configuration (TT-78)
-  resend_api_key_secret_arn = var.resend_api_key_secret_arn
-  contact_form_to           = var.contact_form_to
-  contact_form_from         = var.contact_form_from
+  resend_api_key    = var.resend_api_key
+  contact_form_to   = var.contact_form_to
+  contact_form_from = var.contact_form_from
 
   # Service Discovery (AWS Cloud Map) - from service_discovery module
   backend_service_registry_arn  = module.service_discovery.backend_service_arn
