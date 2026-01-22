@@ -156,6 +156,20 @@ resource "aws_iam_policy" "github_actions_deployment" {
           "elasticloadbalancing:DescribeLoadBalancers"
         ]
         Resource = "*"
+      },
+      # CloudFront: Cache invalidation for frontend deployments
+      # Only included if cloudfront_distribution_id is provided
+      # Required for CI/CD to invalidate CDN cache after deploying new frontend assets
+      {
+        Sid    = "CloudFrontCacheInvalidation"
+        Effect = "Allow"
+        Action = [
+          "cloudfront:CreateInvalidation",
+          "cloudfront:GetInvalidation"
+        ]
+        Resource = var.cloudfront_distribution_id != "" ? [
+          "arn:aws:cloudfront::${var.aws_account_id}:distribution/${var.cloudfront_distribution_id}"
+        ] : []
       }
     ]
   })

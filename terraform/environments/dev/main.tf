@@ -264,6 +264,9 @@ module "cicd_iam" {
   project_name   = var.project_name
   aws_account_id = var.aws_account_id
   aws_region     = var.aws_region
+
+  # CloudFront distribution ID for cache invalidation permissions
+  cloudfront_distribution_id = module.cdn.cloudfront_distribution_id
 }
 
 # ==============================================================================
