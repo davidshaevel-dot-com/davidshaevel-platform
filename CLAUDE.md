@@ -227,6 +227,7 @@ terraform show
 | `/api/*` | Backend API routes (proxied through CloudFront) |
 | `/api/health` | Backend health check |
 | `/api/metrics` | Prometheus metrics endpoint |
+| `/api/contact` | Contact form email submission (POST) |
 
 ---
 
@@ -414,6 +415,9 @@ See `docs/dr-failover-runbook.md` for procedures and troubleshooting.
 **Disaster Recovery (TT-65, TT-73):**
 - TT-65: Pilot Light DR environment in us-west-2
 - TT-73: DR deployment testing with failover/failback scripts
+
+**Contact Form (TT-78):**
+- TT-78: Contact form email functionality (Resend API integration)
 
 ---
 

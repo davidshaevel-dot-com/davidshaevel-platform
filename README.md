@@ -697,7 +697,12 @@ ECR_FRONTEND_REPOSITORY    # <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/da
 ECS_CLUSTER                # dev-davidshaevel-cluster
 ECS_BACKEND_SERVICE        # dev-davidshaevel-backend
 ECS_FRONTEND_SERVICE       # dev-davidshaevel-frontend
+
+# CDN Configuration (frontend deployments only)
+CLOUDFRONT_DISTRIBUTION_ID # CloudFront distribution ID (e.g., EJVDEMX0X00IG)
 ```
+
+**Note:** The `CLOUDFRONT_DISTRIBUTION_ID` secret is required for frontend deployments. After ECS deployment completes, the workflow automatically invalidates the CloudFront cache to ensure users receive the latest assets. Without this, users may see stale cached content.
 
 See [docs/prod-environment-setup.md](docs/prod-environment-setup.md) for production setup instructions.
 
@@ -770,8 +775,8 @@ Austin, Texas
 - PR Feedback & Security Fixes: October 31, 2025 (Complete)
 - Disaster Recovery Environment: January 9-11, 2026 (Complete)
 
-**Status:** ✅ PRODUCTION DEPLOYMENT COMPLETE + Observability Complete + DR Environment Complete (TT-73)
-**Last Updated:** January 21, 2026
+**Status:** ✅ PRODUCTION DEPLOYMENT COMPLETE + Observability Complete + DR Environment Complete (TT-73) + Contact Form Backend (TT-78)
+**Last Updated:** January 22, 2026
 
 ## 🤖 AI Agent Sessions
 
@@ -800,6 +805,8 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - Dec 15: TT-63 Node.js Profiling Lab - Part 3 Remote Debugging (PR #71)
 - Dec 16-17: TT-63 Node.js Profiling Lab - S3 artifact export, interview docs (PR #72, #73)
 - Jan 9-11: TT-73 Disaster Recovery Environment - Full DR implementation (PR #77)
+- Jan 21-22: TT-78 Contact Form Feature - Resend API integration (PR #79)
+- Jan 22: TT-84 Contact Form Frontend Fix - CloudFront cache invalidation
 
 **Infrastructure Milestones:**
 - ✅ TT-16 (Steps 1-3): Foundation
@@ -818,6 +825,8 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - ✅ TT-25: Observability (Complete - Nov 24, 2025)
 - ✅ TT-63: Node.js Profiling Lab (Complete - Dec 17, 2025) - 7 PRs (#67-#73)
 - ✅ TT-73: Disaster Recovery Environment (Complete - Jan 11, 2026) - PR #77
+- ✅ TT-78: Contact Form Email (Complete - Jan 22, 2026) - PR #79
+- ✅ TT-84: Contact Form Frontend Fix (Complete - Jan 22, 2026) - CloudFront cache invalidation
 - ⏳ TT-20: Local Development (Planned - 6-8 hours)
 - ⏳ TT-26: Documentation (Planned - 4-6 hours)
 
