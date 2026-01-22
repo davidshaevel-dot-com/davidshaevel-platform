@@ -85,7 +85,7 @@ module "cicd_iam" {
   aws_region     = "us-east-1"
 
   # Optional: CloudFront distribution ID for cache invalidation
-  cloudfront_distribution_id = module.cdn.distribution_id
+  cloudfront_distribution_id = module.cdn.cloudfront_distribution_id
 }
 ```
 
