@@ -401,6 +401,29 @@ variable "lab_token" {
 }
 
 # ------------------------------------------------------------------------------
+# Contact Form Configuration (TT-78)
+# ------------------------------------------------------------------------------
+
+variable "resend_api_key" {
+  description = "Resend API key for sending contact form emails (plain text environment variable)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "contact_form_to" {
+  description = "Email address to receive contact form submissions"
+  type        = string
+  default     = "david+contact@davidshaevel.com"
+}
+
+variable "contact_form_from" {
+  description = "Email address shown as the sender for contact form emails (must be verified in Resend)"
+  type        = string
+  default     = "david+noreply@davidshaevel.com"
+}
+
+# ------------------------------------------------------------------------------
 # Tags
 # ------------------------------------------------------------------------------
 

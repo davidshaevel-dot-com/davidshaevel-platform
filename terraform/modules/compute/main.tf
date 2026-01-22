@@ -553,7 +553,7 @@ resource "aws_ecs_task_definition" "backend" {
           name  = "DB_NAME"
           value = var.database_name
         }
-      ],
+        ],
         # Lab endpoints configuration (TT-63 Node.js Profiling Lab)
         # Only include LAB_* environment variables when lab_enable is true
         # LAB_ALLOW_PROD is required because NODE_ENV=production (for SSL/RDS)
@@ -578,6 +578,22 @@ resource "aws_ecs_task_definition" "backend" {
           {
             name  = "NODE_OPTIONS"
             value = "--inspect=0.0.0.0:9229"
+          }
+        ] : [],
+        # Contact Form Configuration (TT-78)
+        # Include Resend API key and email configuration as plain environment variables
+        var.resend_api_key != "" ? [
+          {
+            name  = "RESEND_API_KEY"
+            value = var.resend_api_key
+          },
+          {
+            name  = "CONTACT_FORM_TO"
+            value = var.contact_form_to
+          },
+          {
+            name  = "CONTACT_FORM_FROM"
+            value = var.contact_form_from
           }
         ] : []
       )

@@ -3,22 +3,54 @@
 import { useState } from 'react';
 
 export default function Contact() {
-  const [formState, setFormState] = useState<'idle' | 'submitting' | 'submitted'>('idle');
+  const [formState, setFormState] = useState<'idle' | 'submitting' | 'submitted' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormState('submitting');
-    
-    // Simulate form submission (will be connected to backend API later)
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setFormState('submitted');
-    
-    // Reset after 3 seconds
-    setTimeout(() => {
-      setFormState('idle');
-      (e.target as HTMLFormElement).reset();
-    }, 3000);
+    setErrorMessage('');
+
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      name: formData.get('name') as string,
+      email: formData.get('email') as string,
+      subject: formData.get('subject') as string,
+      message: formData.get('message') as string,
+    };
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/contact`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to send message');
+      }
+
+      setFormState('submitted');
+
+      // Reset after 3 seconds
+      setTimeout(() => {
+        setFormState('idle');
+        (e.target as HTMLFormElement).reset();
+      }, 3000);
+    } catch (error) {
+      setFormState('error');
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to send message. Please try again.');
+
+      // Reset error state after 5 seconds
+      setTimeout(() => {
+        setFormState('idle');
+        setErrorMessage('');
+      }, 5000);
+    }
   };
 
   return (
@@ -49,7 +81,7 @@ export default function Contact() {
                   required
                   className="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-zinc-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
                   placeholder="Your name"
-                  disabled={formState !== 'idle'}
+                  disabled={formState === 'submitting' || formState === 'submitted'}
                 />
               </div>
 
@@ -64,7 +96,7 @@ export default function Contact() {
                   required
                   className="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-zinc-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
                   placeholder="your.email@example.com"
-                  disabled={formState !== 'idle'}
+                  disabled={formState === 'submitting' || formState === 'submitted'}
                 />
               </div>
 
@@ -79,7 +111,7 @@ export default function Contact() {
                   required
                   className="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-zinc-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
                   placeholder="What would you like to discuss?"
-                  disabled={formState !== 'idle'}
+                  disabled={formState === 'submitting' || formState === 'submitted'}
                 />
               </div>
 
@@ -94,23 +126,30 @@ export default function Contact() {
                   required
                   className="mt-2 block w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-zinc-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
                   placeholder="Tell me about your project or question..."
-                  disabled={formState !== 'idle'}
+                  disabled={formState === 'submitting' || formState === 'submitted'}
                 />
               </div>
 
               <button
                 type="submit"
-                disabled={formState !== 'idle'}
+                disabled={formState !== 'idle' && formState !== 'error'}
                 className="w-full rounded-full bg-zinc-900 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-zinc-700 disabled:opacity-50 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
               >
                 {formState === 'idle' && 'Send Message'}
                 {formState === 'submitting' && 'Sending...'}
                 {formState === 'submitted' && '✓ Message Sent!'}
+                {formState === 'error' && 'Try Again'}
               </button>
 
               {formState === 'submitted' && (
                 <p className="text-center text-sm text-green-600 dark:text-green-400">
                   Thank you! I&apos;ll get back to you soon.
+                </p>
+              )}
+
+              {formState === 'error' && (
+                <p className="text-center text-sm text-red-600 dark:text-red-400">
+                  {errorMessage}
                 </p>
               )}
             </form>

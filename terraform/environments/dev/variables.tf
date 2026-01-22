@@ -433,3 +433,26 @@ variable "grafana_admin_password" {
   default     = "" # If empty, a random password will be generated
   sensitive   = true
 }
+
+# -----------------------------------------------------------------------------
+# Contact Form Configuration (TT-78)
+# -----------------------------------------------------------------------------
+
+variable "resend_api_key" {
+  description = "Resend API key for sending contact form emails (plain text, not Secrets Manager)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "contact_form_to" {
+  description = "Email address to receive contact form submissions"
+  type        = string
+  default     = "david+contact@davidshaevel.com"
+}
+
+variable "contact_form_from" {
+  description = "Email address shown as sender for contact form emails"
+  type        = string
+  default     = "david+noreply@davidshaevel.com"
+}
