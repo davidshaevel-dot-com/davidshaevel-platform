@@ -2,7 +2,7 @@
 
 Step-by-step procedures for deploying the DavidShaevel.com platform.
 
-**Last Updated:** December 26, 2025
+**Last Updated:** January 22, 2026
 
 ## Quick Reference
 
@@ -145,7 +145,8 @@ aws ecs describe-services --profile davidshaevel-dev \
 - Check database connectivity
 
 **Frontend Not Updating:**
-- Invalidate CloudFront cache:
+- **Note:** CI/CD automatically invalidates CloudFront cache after frontend deployment (requires `CLOUDFRONT_DISTRIBUTION_ID` secret)
+- Manual invalidation (if needed):
   ```bash
   # Option 1: Use known distribution ID
   aws cloudfront create-invalidation --profile davidshaevel-dev \
@@ -337,4 +338,4 @@ See [Node.js Profiling Lab Documentation](./labs/node-profiling-and-debugging.md
 
 ---
 
-**Last Updated:** December 26, 2025
+**Last Updated:** January 22, 2026
