@@ -58,6 +58,10 @@ backend_container_image = "123456789012.dkr.ecr.us-east-1.amazonaws.com/myprojec
 # Format: <account-id>.dkr.ecr.<region>.amazonaws.com/<project-name>/frontend:<git-sha>
 frontend_container_image = "123456789012.dkr.ecr.us-east-1.amazonaws.com/myproject/frontend:abc1234"
 
+# Grafana container image
+# Format: <account-id>.dkr.ecr.<region>.amazonaws.com/<project-name>/grafana:<git-sha>
+grafana_image = "123456789012.dkr.ecr.us-east-1.amazonaws.com/myproject/grafana:abc1234"
+
 # -----------------------------------------------------------------------------
 # Prometheus Observability Configuration
 # -----------------------------------------------------------------------------
@@ -116,6 +120,20 @@ lab_token = "your-secure-random-token-here"
 # to the backend task role for uploading artifacts via ECS Exec
 # Use with scripts/export-backend-ecs-artifact.sh to download profiles locally
 enable_profiling_artifacts_bucket = false
+
+# -----------------------------------------------------------------------------
+# Contact Form / Resend Configuration (TT-78)
+# -----------------------------------------------------------------------------
+
+# Resend API key for sending contact form emails
+# Sign up at https://resend.com and create an API key
+# Get from: https://resend.com/api-keys
+resend_api_key = "re_xxxxxxxxxxxx"
+
+# Email addresses for contact form
+# These should match your verified domain in Resend
+contact_form_to   = "your-email+contact@example.com"
+contact_form_from = "your-email+noreply@example.com"
 
 # -----------------------------------------------------------------------------
 # Additional Tags (Optional)
