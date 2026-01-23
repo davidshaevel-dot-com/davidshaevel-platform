@@ -424,6 +424,16 @@ variable "contact_form_from" {
 }
 
 # ------------------------------------------------------------------------------
+# ECR Configuration
+# ------------------------------------------------------------------------------
+
+variable "create_ecr_repos" {
+  description = "Whether to create ECR repositories. Set to false in DR environment where ECR repos are managed separately as always-on resources."
+  type        = bool
+  default     = true
+}
+
+# ------------------------------------------------------------------------------
 # Tags
 # ------------------------------------------------------------------------------
 

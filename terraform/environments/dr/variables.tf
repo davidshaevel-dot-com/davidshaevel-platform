@@ -339,6 +339,29 @@ variable "grafana_domain_name" {
 }
 
 # -----------------------------------------------------------------------------
+# Contact Form Configuration
+# -----------------------------------------------------------------------------
+
+variable "resend_api_key" {
+  description = "Resend API key for sending contact form emails (plain text, not Secrets Manager)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "contact_form_to" {
+  description = "Email address to receive contact form submissions"
+  type        = string
+  default     = "david+contact@davidshaevel.com"
+}
+
+variable "contact_form_from" {
+  description = "Email address shown as sender for contact form emails"
+  type        = string
+  default     = "david+noreply@davidshaevel.com"
+}
+
+# -----------------------------------------------------------------------------
 # Common Tags
 # -----------------------------------------------------------------------------
 

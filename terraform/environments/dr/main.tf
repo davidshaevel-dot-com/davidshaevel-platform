@@ -116,6 +116,131 @@ resource "aws_ecr_replication_configuration" "cross_region" {
 }
 
 # ==============================================================================
+# ECR Repositories in DR Region (Always-On)
+# These repositories receive replicated images from us-east-1.
+# They must persist in Pilot Light mode to ensure images are available for DR.
+# See TT-75: ECR repos were previously in module.compute and incorrectly
+# targeted for destruction during DR deactivation.
+# ==============================================================================
+
+resource "aws_ecr_repository" "backend" {
+  name                 = "${var.project_name}/backend"
+  image_tag_mutability = "IMMUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  encryption_configuration {
+    encryption_type = "AES256"
+  }
+
+  tags = merge(local.common_tags, {
+    Name        = "${var.project_name}-backend-ecr"
+    Application = "backend"
+  })
+}
+
+resource "aws_ecr_lifecycle_policy" "backend" {
+  repository = aws_ecr_repository.backend.name
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Keep last 10 images"
+        selection = {
+          tagStatus   = "any"
+          countType   = "imageCountMoreThan"
+          countNumber = 10
+        }
+        action = {
+          type = "expire"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_ecr_repository" "frontend" {
+  name                 = "${var.project_name}/frontend"
+  image_tag_mutability = "IMMUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  encryption_configuration {
+    encryption_type = "AES256"
+  }
+
+  tags = merge(local.common_tags, {
+    Name        = "${var.project_name}-frontend-ecr"
+    Application = "frontend"
+  })
+}
+
+resource "aws_ecr_lifecycle_policy" "frontend" {
+  repository = aws_ecr_repository.frontend.name
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Keep last 10 images"
+        selection = {
+          tagStatus   = "any"
+          countType   = "imageCountMoreThan"
+          countNumber = 10
+        }
+        action = {
+          type = "expire"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_ecr_repository" "grafana" {
+  name                 = "${var.project_name}/grafana"
+  image_tag_mutability = "IMMUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  encryption_configuration {
+    encryption_type = "AES256"
+  }
+
+  tags = merge(local.common_tags, {
+    Name        = "${var.project_name}-grafana-ecr"
+    Application = "grafana"
+  })
+}
+
+resource "aws_ecr_lifecycle_policy" "grafana" {
+  repository = aws_ecr_repository.grafana.name
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Keep last 10 images"
+        selection = {
+          tagStatus   = "any"
+          countType   = "imageCountMoreThan"
+          countNumber = 10
+        }
+        action = {
+          type = "expire"
+        }
+      }
+    ]
+  })
+}
+
+# ==============================================================================
 # RDS Automated Snapshot Copy (Event-Driven)
 # Copies snapshots from us-east-1 to us-west-2
 # ==============================================================================
@@ -454,6 +579,9 @@ module "compute" {
   environment  = var.environment
   project_name = var.project_name
 
+  # Don't create ECR repos - they're managed as always-on resources above (TT-75)
+  create_ecr_repos = false
+
   vpc_id                     = module.networking[0].vpc_id
   public_subnet_ids          = module.networking[0].public_subnet_ids
   private_app_subnet_ids     = module.networking[0].private_app_subnet_ids
@@ -461,9 +589,9 @@ module "compute" {
   frontend_security_group_id = module.networking[0].app_frontend_security_group_id
   backend_security_group_id  = module.networking[0].app_backend_security_group_id
 
-  database_endpoint   = module.database[0].db_instance_endpoint
-  database_port       = module.database[0].db_instance_port
-  database_name       = module.database[0].db_name
+  database_endpoint = module.database[0].db_instance_endpoint
+  database_port     = module.database[0].db_instance_port
+  database_name     = module.database[0].db_name
   # When restoring from snapshot, use the DR secret ARN (RDS doesn't auto-create a managed secret)
   database_secret_arn = coalesce(module.database[0].secret_arn, var.dr_database_secret_arn)
 
@@ -505,6 +633,11 @@ module "compute" {
   # No profiling bucket in DR
   enable_profiling_artifacts_bucket = false
   enable_backend_inspector          = false
+
+  # Contact Form Configuration
+  resend_api_key    = var.resend_api_key
+  contact_form_to   = var.contact_form_to
+  contact_form_from = var.contact_form_from
 
   # Service Discovery
   backend_service_registry_arn  = module.service_discovery[0].backend_service_arn

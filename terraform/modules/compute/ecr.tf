@@ -3,10 +3,17 @@
 #
 # This file creates ECR repositories for frontend and backend container images
 # with image scanning, encryption, and lifecycle policies
+#
+# Note: These resources are conditional based on var.create_ecr_repos.
+# In DR environments, ECR repos are managed separately as always-on resources
+# to prevent accidental destruction during DR deactivation.
+# See TT-75 for details.
 # ------------------------------------------------------------------------------
 
 # Backend ECR Repository
 resource "aws_ecr_repository" "backend" {
+  count = var.create_ecr_repos ? 1 : 0
+
   name                 = "${var.project_name}/backend"
   image_tag_mutability = "IMMUTABLE"
 
@@ -26,7 +33,9 @@ resource "aws_ecr_repository" "backend" {
 
 # Backend ECR Lifecycle Policy - Keep last 10 images
 resource "aws_ecr_lifecycle_policy" "backend" {
-  repository = aws_ecr_repository.backend.name
+  count = var.create_ecr_repos ? 1 : 0
+
+  repository = aws_ecr_repository.backend[0].name
 
   policy = jsonencode({
     rules = [
@@ -48,6 +57,8 @@ resource "aws_ecr_lifecycle_policy" "backend" {
 
 # Frontend ECR Repository
 resource "aws_ecr_repository" "frontend" {
+  count = var.create_ecr_repos ? 1 : 0
+
   name                 = "${var.project_name}/frontend"
   image_tag_mutability = "IMMUTABLE"
 
@@ -67,7 +78,9 @@ resource "aws_ecr_repository" "frontend" {
 
 # Frontend ECR Lifecycle Policy - Keep last 10 images
 resource "aws_ecr_lifecycle_policy" "frontend" {
-  repository = aws_ecr_repository.frontend.name
+  count = var.create_ecr_repos ? 1 : 0
+
+  repository = aws_ecr_repository.frontend[0].name
 
   policy = jsonencode({
     rules = [
@@ -89,6 +102,8 @@ resource "aws_ecr_lifecycle_policy" "frontend" {
 
 # Grafana ECR Repository
 resource "aws_ecr_repository" "grafana" {
+  count = var.create_ecr_repos ? 1 : 0
+
   name                 = "${var.project_name}/grafana"
   image_tag_mutability = "IMMUTABLE"
 
@@ -108,7 +123,9 @@ resource "aws_ecr_repository" "grafana" {
 
 # Grafana ECR Lifecycle Policy - Keep last 10 images
 resource "aws_ecr_lifecycle_policy" "grafana" {
-  repository = aws_ecr_repository.grafana.name
+  count = var.create_ecr_repos ? 1 : 0
+
+  repository = aws_ecr_repository.grafana[0].name
 
   policy = jsonencode({
     rules = [
@@ -127,4 +144,3 @@ resource "aws_ecr_lifecycle_policy" "grafana" {
     ]
   })
 }
-

@@ -180,48 +180,48 @@ output "backend_log_group_name" {
 # ------------------------------------------------------------------------------
 
 output "backend_ecr_repository_url" {
-  description = "URL of the backend ECR repository"
-  value       = aws_ecr_repository.backend.repository_url
+  description = "URL of the backend ECR repository (null if create_ecr_repos is false)"
+  value       = var.create_ecr_repos ? aws_ecr_repository.backend[0].repository_url : null
 }
 
 output "backend_ecr_repository_arn" {
-  description = "ARN of the backend ECR repository"
-  value       = aws_ecr_repository.backend.arn
+  description = "ARN of the backend ECR repository (null if create_ecr_repos is false)"
+  value       = var.create_ecr_repos ? aws_ecr_repository.backend[0].arn : null
 }
 
 output "backend_ecr_repository_name" {
-  description = "Name of the backend ECR repository"
-  value       = aws_ecr_repository.backend.name
+  description = "Name of the backend ECR repository (null if create_ecr_repos is false)"
+  value       = var.create_ecr_repos ? aws_ecr_repository.backend[0].name : null
 }
 
 output "frontend_ecr_repository_url" {
-  description = "URL of the frontend ECR repository"
-  value       = aws_ecr_repository.frontend.repository_url
+  description = "URL of the frontend ECR repository (null if create_ecr_repos is false)"
+  value       = var.create_ecr_repos ? aws_ecr_repository.frontend[0].repository_url : null
 }
 
 output "frontend_ecr_repository_arn" {
-  description = "ARN of the frontend ECR repository"
-  value       = aws_ecr_repository.frontend.arn
+  description = "ARN of the frontend ECR repository (null if create_ecr_repos is false)"
+  value       = var.create_ecr_repos ? aws_ecr_repository.frontend[0].arn : null
 }
 
 output "frontend_ecr_repository_name" {
-  description = "Name of the frontend ECR repository"
-  value       = aws_ecr_repository.frontend.name
+  description = "Name of the frontend ECR repository (null if create_ecr_repos is false)"
+  value       = var.create_ecr_repos ? aws_ecr_repository.frontend[0].name : null
 }
 
 output "grafana_ecr_repository_url" {
-  description = "URL of the Grafana ECR repository"
-  value       = aws_ecr_repository.grafana.repository_url
+  description = "URL of the Grafana ECR repository (null if create_ecr_repos is false)"
+  value       = var.create_ecr_repos ? aws_ecr_repository.grafana[0].repository_url : null
 }
 
 output "grafana_ecr_repository_arn" {
-  description = "ARN of the Grafana ECR repository"
-  value       = aws_ecr_repository.grafana.arn
+  description = "ARN of the Grafana ECR repository (null if create_ecr_repos is false)"
+  value       = var.create_ecr_repos ? aws_ecr_repository.grafana[0].arn : null
 }
 
 output "grafana_ecr_repository_name" {
-  description = "Name of the Grafana ECR repository"
-  value       = aws_ecr_repository.grafana.name
+  description = "Name of the Grafana ECR repository (null if create_ecr_repos is false)"
+  value       = var.create_ecr_repos ? aws_ecr_repository.grafana[0].name : null
 }
 
 # ------------------------------------------------------------------------------

@@ -333,6 +333,10 @@ davidshaevel-platform/
 │   └── dr-failover-runbook.md         # DR procedures and troubleshooting
 │
 ├── scripts/                           # Root-level operational scripts
+│   ├── dr-failover.sh                 # Activate DR environment
+│   ├── dr-failback.sh                 # Return to primary region
+│   ├── dr-validation.sh               # Validate DR readiness (18 checks)
+│   └── grafana-dns-switch.sh          # Switch Grafana DNS between dev/DR
 │
 └── .github/
     └── workflows/                     # GitHub Actions CI/CD
@@ -386,6 +390,7 @@ The platform implements a **Pilot Light** DR strategy in us-west-2:
 - `scripts/dr-validation.sh` - 18 readiness checks
 - `scripts/dr-failover.sh` - Activates DR, updates CloudFront
 - `scripts/dr-failback.sh` - Returns to primary region
+- `scripts/grafana-dns-switch.sh` - Switch Grafana DNS between dev/DR via Cloudflare API
 
 **Recovery Metrics:**
 - **RTO:** ~15-20 minutes
@@ -412,9 +417,11 @@ See `docs/dr-failover-runbook.md` for procedures and troubleshooting.
 **Observability (TT-25):**
 - Phase 1-6: Docker configs, templating, EFS, Cloud Map, services
 
-**Disaster Recovery (TT-65, TT-73):**
+**Disaster Recovery (TT-65, TT-73, TT-75, TT-87):**
 - TT-65: Pilot Light DR environment in us-west-2
 - TT-73: DR deployment testing with failover/failback scripts
+- TT-75: Fix ECR repos incorrectly targeted for destruction during DR activation
+- TT-87: DR cutover exercise with Resend configuration and grafana-dns-switch.sh script
 
 **Contact Form (TT-78, TT-84, TT-85):**
 - TT-78: Contact form email functionality (Resend API integration)
