@@ -81,12 +81,12 @@ check_requirements() {
     fi
 
     if ! command -v curl &> /dev/null; then
-        log_error "curl is required but not installed"
+        log_error "curl is required but not installed (try: brew install curl)"
         exit 1
     fi
 
     if ! command -v jq &> /dev/null; then
-        log_error "jq is required but not installed"
+        log_error "jq is required but not installed (try: brew install jq)"
         exit 1
     fi
 }
