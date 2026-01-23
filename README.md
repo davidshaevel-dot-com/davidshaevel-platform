@@ -99,6 +99,7 @@ A Pilot Light DR strategy implementation providing cross-region failover capabil
 - `scripts/dr-failover.sh` - Activate DR and switch traffic
 - `scripts/dr-failback.sh` - Return to primary region
 - `scripts/dr-validation.sh` - Validate DR readiness (18 checks)
+- `scripts/grafana-dns-switch.sh` - Switch Grafana DNS between dev/DR via Cloudflare API
 
 **Key Documents:**
 - [DR Failover Runbook](docs/dr-failover-runbook.md) - Step-by-step procedures
@@ -151,7 +152,8 @@ davidshaevel-platform/
 ├── scripts/
 │   ├── dr-failover.sh      # Activate DR environment
 │   ├── dr-failback.sh      # Return to primary region
-│   └── dr-validation.sh    # Validate DR readiness
+│   ├── dr-validation.sh    # Validate DR readiness
+│   └── grafana-dns-switch.sh # Switch Grafana DNS between dev/DR
 ├── frontend/               # Next.js 16 application (TT-18 - Complete)
 │   ├── app/               # Next.js App Router pages
 │   ├── components/        # React components
@@ -775,8 +777,8 @@ Austin, Texas
 - PR Feedback & Security Fixes: October 31, 2025 (Complete)
 - Disaster Recovery Environment: January 9-11, 2026 (Complete)
 
-**Status:** ✅ PRODUCTION DEPLOYMENT COMPLETE + Observability Complete + DR Environment Complete (TT-73) + Contact Form Feature (TT-78, TT-84, TT-85)
-**Last Updated:** January 22, 2026
+**Status:** ✅ PRODUCTION DEPLOYMENT COMPLETE + Observability Complete + DR Environment Complete (TT-73, TT-75, TT-87) + Contact Form Feature (TT-78, TT-84, TT-85)
+**Last Updated:** January 23, 2026
 
 ## 🤖 AI Agent Sessions
 
@@ -808,6 +810,7 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - Jan 21-22: TT-78 Contact Form Feature - Resend API integration (PR #79)
 - Jan 22: TT-84 Contact Form Frontend Fix - CloudFront cache invalidation (PR #80)
 - Jan 22: TT-85 CloudFront IAM Permissions - CI/CD cache invalidation permissions (PR #81)
+- Jan 23: TT-87 DR Cutover Exercise - Resend config, grafana-dns-switch.sh, TT-75 fix (PR #82)
 
 **Infrastructure Milestones:**
 - ✅ TT-16 (Steps 1-3): Foundation
@@ -829,6 +832,8 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - ✅ TT-78: Contact Form Email (Complete - Jan 22, 2026) - PR #79
 - ✅ TT-84: Contact Form Frontend Fix (Complete - Jan 22, 2026) - PR #80, CloudFront cache invalidation
 - ✅ TT-85: CloudFront IAM Permissions (Complete - Jan 22, 2026) - PR #81
+- ✅ TT-75: ECR Repos Fix (Complete - Jan 23, 2026) - PR #82, ECR repos always-on in DR
+- ✅ TT-87: DR Cutover Exercise (Complete - Jan 23, 2026) - PR #82, grafana-dns-switch.sh
 - ⏳ TT-20: Local Development (Planned - 6-8 hours)
 - ⏳ TT-26: Documentation (Planned - 4-6 hours)
 

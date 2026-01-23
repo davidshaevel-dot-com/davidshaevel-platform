@@ -2,7 +2,7 @@
 
 Step-by-step procedures for activating the DR environment when the primary region (us-east-1) is unavailable.
 
-**Last Updated:** January 10, 2026
+**Last Updated:** January 23, 2026
 
 ---
 
@@ -19,6 +19,7 @@ Step-by-step procedures for activating the DR environment when the primary regio
 | **Failover Script** | `scripts/dr-failover.sh` |
 | **Failback Script** | `scripts/dr-failback.sh` |
 | **Validation Script** | `scripts/dr-validation.sh` |
+| **Grafana DNS Script** | `scripts/grafana-dns-switch.sh` |
 
 ---
 
@@ -28,13 +29,21 @@ Before initiating DR failover, ensure you have:
 
 1. **AWS CLI** configured with `davidshaevel-dev` profile
 2. **Terraform** installed (version 1.x+)
-3. **Cloudflare Access** - Login credentials for DNS management
+3. **Cloudflare Environment Variables** - For Grafana DNS switching:
+   - `CLOUDFLARE_API_TOKEN` - API token with DNS edit permissions
+   - `CLOUDFLARE_ZONE_ID` - Zone ID for davidshaevel.com
+   - These should be configured in your `.envrc` file
 4. **AWS Console Access** - For CloudFront configuration verification
 5. **Repository Access** - Clone of davidshaevel-platform repo
 
 Verify AWS credentials:
 ```bash
 aws sts get-caller-identity --profile davidshaevel-dev
+```
+
+Verify Cloudflare credentials:
+```bash
+./scripts/grafana-dns-switch.sh --status
 ```
 
 ---
@@ -218,32 +227,33 @@ aws cloudfront create-invalidation \
 
 ### Step 6: Update Cloudflare DNS for Grafana
 
-Grafana uses a separate CNAME that points directly to the ALB.
+Grafana uses a separate CNAME that points directly to the ALB. Use the `grafana-dns-switch.sh` script to update the DNS record.
 
-**Get the DR ALB DNS name:**
+#### Option A: Using Script (Recommended)
 
 ```bash
-# Option A: From Terraform output (if in terraform/environments/dr directory)
-cd terraform/environments/dr
-AWS_PROFILE=davidshaevel-dev terraform output -raw alb_dns_name
+# Check current DNS configuration
+./scripts/grafana-dns-switch.sh --status
 
-# Option B: Using AWS CLI directly
-aws elbv2 describe-load-balancers \
-  --names dr-davidshaevel-alb \
-  --region us-west-2 \
-  --profile davidshaevel-dev \
-  --query 'LoadBalancers[0].DNSName' \
-  --output text
+# Preview the change
+./scripts/grafana-dns-switch.sh --to-dr --dry-run
+
+# Switch Grafana DNS to DR ALB
+./scripts/grafana-dns-switch.sh --to-dr
 ```
 
-**Update Cloudflare:**
+The script updates the `grafana.davidshaevel.com` CNAME record to point to the DR ALB (`dr-davidshaevel-alb-1754623288.us-west-2.elb.amazonaws.com`).
+
+**Requirements:** `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ZONE_ID` environment variables must be set (see Pre-Requisites).
+
+#### Option B: Manual Update via Cloudflare Dashboard
 
 1. **Log into Cloudflare Dashboard**: https://dash.cloudflare.com
 2. **Select Domain**: davidshaevel.com
 3. **Go to DNS Settings**
 4. **Update CNAME record for `grafana`**:
    - **Name**: `grafana`
-   - **Target**: `<DR-ALB-DNS-NAME>` (from command above, e.g., `dr-davidshaevel-alb-536355098.us-west-2.elb.amazonaws.com`)
+   - **Target**: `dr-davidshaevel-alb-1754623288.us-west-2.elb.amazonaws.com`
    - **Proxy Status**: Proxied (orange cloud)
 5. **Save Changes**
 
@@ -703,6 +713,23 @@ aws cloudfront create-invalidation \
 
 ### Step 3: Update Cloudflare DNS for Grafana
 
+#### Option A: Using Script (Recommended)
+
+```bash
+# Check current DNS configuration
+./scripts/grafana-dns-switch.sh --status
+
+# Preview the change
+./scripts/grafana-dns-switch.sh --to-primary --dry-run
+
+# Switch Grafana DNS to primary ALB
+./scripts/grafana-dns-switch.sh --to-primary
+```
+
+The script updates the `grafana.davidshaevel.com` CNAME record to point to the primary ALB (`dev-davidshaevel-alb-85034469.us-east-1.elb.amazonaws.com`).
+
+#### Option B: Manual Update via Cloudflare Dashboard
+
 1. **Log into Cloudflare Dashboard**: https://dash.cloudflare.com
 2. **Select Domain**: davidshaevel.com
 3. **Go to DNS Settings**
@@ -769,5 +796,6 @@ This returns DR to Pilot Light mode:
 
 | Date | Author | Changes |
 |------|--------|---------|
+| 2026-01-23 | David Shaevel | Added grafana-dns-switch.sh script for automated Grafana DNS switching |
 | 2026-01-10 | David Shaevel | Initial version |
 

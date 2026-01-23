@@ -74,6 +74,19 @@ grafana_image            = ""
 dr_acm_certificate_arn = ""
 
 # -----------------------------------------------------------------------------
+# Contact Form Configuration
+# -----------------------------------------------------------------------------
+
+# Resend API key for sending contact form emails
+# Sign up at https://resend.com and create an API key
+# The same API key works in both primary and DR regions
+resend_api_key = ""
+
+# Contact form email addresses (should match primary environment)
+contact_form_to   = "you+contact@yourdomain.com"
+contact_form_from = "you+noreply@yourdomain.com"
+
+# -----------------------------------------------------------------------------
 # Optional Overrides
 # -----------------------------------------------------------------------------
 
