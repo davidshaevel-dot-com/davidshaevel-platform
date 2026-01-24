@@ -777,7 +777,7 @@ Austin, Texas
 - PR Feedback & Security Fixes: October 31, 2025 (Complete)
 - Disaster Recovery Environment: January 9-11, 2026 (Complete)
 
-**Status:** ✅ PRODUCTION DEPLOYMENT COMPLETE + Observability Complete + DR Environment Complete (TT-73, TT-75, TT-87) + Contact Form Feature (TT-78, TT-84, TT-85)
+**Status:** ✅ PRODUCTION DEPLOYMENT COMPLETE + Observability Complete + DR Environment Complete (TT-73, TT-75, TT-87) + Contact Form Feature (TT-78, TT-84, TT-85) + Vercel Migration In Progress (TT-89, TT-90, TT-91)
 **Last Updated:** January 23, 2026
 
 ## 🤖 AI Agent Sessions
@@ -811,6 +811,7 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - Jan 22: TT-84 Contact Form Frontend Fix - CloudFront cache invalidation (PR #80)
 - Jan 22: TT-85 CloudFront IAM Permissions - CI/CD cache invalidation permissions (PR #81)
 - Jan 23: TT-87 DR Cutover Exercise - Resend config, grafana-dns-switch.sh, TT-75 fix (PR #82)
+- Jan 23: TT-89, TT-90, TT-91 Vercel Migration Phase 1 - Neon database, serverless adapter, frontend deployment
 
 **Infrastructure Milestones:**
 - ✅ TT-16 (Steps 1-3): Foundation
@@ -834,6 +835,9 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - ✅ TT-85: CloudFront IAM Permissions (Complete - Jan 22, 2026) - PR #81
 - ✅ TT-75: ECR Repos Fix (Complete - Jan 23, 2026) - PR #82, ECR repos always-on in DR
 - ✅ TT-87: DR Cutover Exercise (Complete - Jan 23, 2026) - PR #82, grafana-dns-switch.sh
+- ✅ TT-89: Neon Database Setup (Complete - Jan 23, 2026) - Free tier PostgreSQL 15
+- ✅ TT-90: NestJS Vercel Serverless (Complete - Jan 23, 2026) - @vendia/serverless-express adapter
+- ⏳ TT-91: Vercel Deployment (In Progress) - Frontend deployed, backend pending
 - ⏳ TT-20: Local Development (Planned - 6-8 hours)
 - ⏳ TT-26: Documentation (Planned - 4-6 hours)
 
