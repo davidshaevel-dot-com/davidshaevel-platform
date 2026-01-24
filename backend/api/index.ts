@@ -1,16 +1,15 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import serverlessExpress from '@vendia/serverless-express';
-import express from 'express';
-import type { Handler, APIGatewayProxyEvent, Context } from 'aws-lambda';
+import express, { Express } from 'express';
+import type { IncomingMessage, ServerResponse } from 'http';
 import { AppModule } from '../src/app.module.js';
 
-let cachedServer: Handler;
+let cachedApp: Express;
 
-async function bootstrap(): Promise<Handler> {
-  if (cachedServer) {
-    return cachedServer;
+async function bootstrap(): Promise<Express> {
+  if (cachedApp) {
+    return cachedApp;
   }
 
   const expressApp = express();
@@ -37,14 +36,14 @@ async function bootstrap(): Promise<Handler> {
 
   await app.init();
 
-  cachedServer = serverlessExpress({ app: expressApp });
-  return cachedServer;
+  cachedApp = expressApp;
+  return cachedApp;
 }
 
 export default async function handler(
-  event: APIGatewayProxyEvent,
-  context: Context,
-): Promise<unknown> {
-  const server = await bootstrap();
-  return server(event, context, () => {});
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> {
+  const app = await bootstrap();
+  app(req, res);
 }
