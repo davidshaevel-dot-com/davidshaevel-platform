@@ -31,7 +31,7 @@ import { ContactFormModule } from './contact-form/contact-form.module';
             entities: [__dirname + '/**/*.entity{.ts,.js}'],
             synchronize: configService.get('NODE_ENV') === 'development',
             logging: configService.get('NODE_ENV') === 'development',
-            ssl: { rejectUnauthorized: false },
+            ssl: true,
           };
         }
 
@@ -47,7 +47,7 @@ import { ContactFormModule } from './contact-form/contact-form.module';
           logging: configService.get('NODE_ENV') === 'development',
           ssl:
             configService.get('NODE_ENV') === 'production'
-              ? { rejectUnauthorized: false }
+              ? true
               : false,
         };
       },
