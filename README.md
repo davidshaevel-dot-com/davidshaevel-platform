@@ -777,8 +777,8 @@ Austin, Texas
 - PR Feedback & Security Fixes: October 31, 2025 (Complete)
 - Disaster Recovery Environment: January 9-11, 2026 (Complete)
 
-**Status:** ✅ PRODUCTION DEPLOYMENT COMPLETE + Observability Complete + DR Environment Complete (TT-73, TT-75, TT-87) + Contact Form Feature (TT-78, TT-84, TT-85)
-**Last Updated:** January 23, 2026
+**Status:** ✅ PRODUCTION DEPLOYMENT COMPLETE + Observability Complete + DR Environment Complete (TT-73, TT-75, TT-87) + Contact Form Feature (TT-78, TT-84, TT-85) + Vercel Migration Complete (TT-89, TT-90, TT-91, TT-92)
+**Last Updated:** January 24, 2026
 
 ## 🤖 AI Agent Sessions
 
@@ -811,6 +811,8 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - Jan 22: TT-84 Contact Form Frontend Fix - CloudFront cache invalidation (PR #80)
 - Jan 22: TT-85 CloudFront IAM Permissions - CI/CD cache invalidation permissions (PR #81)
 - Jan 23: TT-87 DR Cutover Exercise - Resend config, grafana-dns-switch.sh, TT-75 fix (PR #82)
+- Jan 23: TT-89, TT-90, TT-91 Vercel Migration Phase 1 - Neon database, serverless adapter, frontend deployment
+- Jan 24: TT-91, TT-92 Vercel Migration Phase 1 Completion - Backend deployment, custom domain, DNS switch
 
 **Infrastructure Milestones:**
 - ✅ TT-16 (Steps 1-3): Foundation
@@ -834,7 +836,11 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - ✅ TT-85: CloudFront IAM Permissions (Complete - Jan 22, 2026) - PR #81
 - ✅ TT-75: ECR Repos Fix (Complete - Jan 23, 2026) - PR #82, ECR repos always-on in DR
 - ✅ TT-87: DR Cutover Exercise (Complete - Jan 23, 2026) - PR #82, grafana-dns-switch.sh
+- ✅ TT-89: Neon Database Setup (Complete - Jan 23, 2026) - Free tier PostgreSQL 15
+- ✅ TT-90: NestJS Vercel Serverless (Complete - Jan 23, 2026) - @vendia/serverless-express adapter
+- ✅ TT-91: Vercel Frontend + Backend Deployment (Complete - Jan 24, 2026) - Full deployment with custom domain
+- ✅ TT-92: Custom Domain + DNS Switch (Complete - Jan 24, 2026) - vercel-dns-switch.sh, Cloudflare API
 - ⏳ TT-20: Local Development (Planned - 6-8 hours)
 - ⏳ TT-26: Documentation (Planned - 4-6 hours)
 
-**Current Phase:** Production operational with automated CI/CD, full Observability Stack (Prometheus + Grafana), enhanced application metrics, and Disaster Recovery Environment (us-west-2). Pilot Light DR strategy with automated failover/failback scripts.
+**Current Phase:** Production migrated to Vercel (frontend + backend serverless) with Neon PostgreSQL. AWS infrastructure available for DR/skills practice. Automated DNS switching between Vercel and AWS CloudFront via `scripts/vercel-dns-switch.sh`.

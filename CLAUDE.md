@@ -428,6 +428,12 @@ See `docs/dr-failover-runbook.md` for procedures and troubleshooting.
 - TT-84: Contact form frontend fix (CloudFront cache causing stale assets)
 - TT-85: CloudFront IAM permissions for CI/CD cache invalidation
 
+**Vercel Migration (TT-89, TT-90, TT-91, TT-92 complete):**
+- TT-89: Neon database setup (free tier PostgreSQL 15)
+- TT-90: NestJS backend adapted for Vercel serverless (native request/response handler)
+- TT-91: Vercel deployment (frontend + backend deployed, custom domain configured)
+- TT-92: Custom domain + DNS switch (davidshaevel.com → Vercel via Cloudflare API)
+
 ---
 
 ## References
