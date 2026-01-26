@@ -1,0 +1,157 @@
+#!/bin/bash
+#
+# Dev Environment Deactivation Script (Pilot Light Mode)
+# Tears down expensive compute resources while preserving data and networking
+#
+# Usage: ./dev-deactivate.sh [--dry-run] [--yes]
+#
+# Options:
+#   --dry-run  Show what would be done without making changes
+#   --yes      Skip confirmation prompts (use with caution)
+#
+# Prerequisites:
+#   - AWS CLI configured with appropriate credentials
+#   - Terraform installed
+#   - terraform.tfvars configured in terraform/environments/dev/
+
+set -euo pipefail
+
+# Find repo root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# Configuration
+DEV_REGION="us-east-1"
+DEV_TERRAFORM_DIR="${REPO_ROOT}/terraform/environments/dev"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Parse arguments
+DRY_RUN=false
+AUTO_APPROVE=false
+for arg in "$@"; do
+    case $arg in
+        --dry-run)
+            DRY_RUN=true
+            ;;
+        --yes)
+            AUTO_APPROVE=true
+            ;;
+    esac
+done
+
+if [[ "${DRY_RUN}" == "true" ]]; then
+    echo -e "${YELLOW}=== DRY RUN MODE - No changes will be made ===${NC}"
+fi
+
+log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
+log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+
+echo ""
+echo "========================================"
+echo "  DEV ENVIRONMENT DEACTIVATION"
+echo "  Entering Pilot Light Mode"
+echo "========================================"
+echo ""
+
+# Step 1: Verify AWS credentials
+log_info "Verifying AWS credentials..."
+ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
+log_info "Using AWS Account: ${ACCOUNT_ID}"
+
+# Step 2: Check current activation status
+log_info "Checking current dev_activated status..."
+cd "${DEV_TERRAFORM_DIR}"
+CURRENT_STATUS=$(terraform output -raw dev_activated 2>/dev/null || echo "unknown")
+log_info "Current dev_activated: ${CURRENT_STATUS}"
+
+if [[ "${CURRENT_STATUS}" == "false" ]]; then
+    log_warn "Dev environment is already in Pilot Light mode"
+    exit 0
+fi
+
+# Step 3: Verify we're not serving production traffic
+log_info "Checking current production traffic routing..."
+log_warn "Ensure Vercel is serving davidshaevel.com before deactivating AWS"
+echo ""
+echo "  Verify with: curl -sI https://davidshaevel.com | grep -i server"
+echo "  Expected:    server: Vercel"
+echo ""
+
+# Step 4: Show what will be destroyed
+echo ""
+echo "========================================"
+echo "  DEACTIVATION PLAN"
+echo "========================================"
+echo ""
+echo "  Resources to be DESTROYED:"
+echo "    - ECS Cluster and Services (4 services)"
+echo "    - Application Load Balancer"
+echo "    - CloudFront Distribution"
+echo "    - Observability (Prometheus, Grafana, EFS)"
+echo "    - Service Discovery (Cloud Map)"
+echo "    - CI/CD IAM resources"
+echo ""
+echo "  Resources to be PRESERVED:"
+echo "    - VPC and Networking (including NAT Gateways)"
+echo "    - RDS PostgreSQL instance"
+echo "    - ECR repositories (in compute module)"
+echo "    - S3 buckets"
+echo ""
+echo "  Estimated monthly savings: ~\$50-60"
+echo "  (NAT Gateways ~\$65 remain - networking module refactoring needed for full savings)"
+echo ""
+echo "========================================"
+
+if [[ "${DRY_RUN}" == "true" ]]; then
+    log_info "Generating Terraform plan..."
+    terraform plan -var="dev_activated=false"
+    echo ""
+    log_info "Dry run complete. Run without --dry-run to deactivate."
+    exit 0
+fi
+
+# Confirm deactivation
+if [[ "${AUTO_APPROVE}" != "true" ]]; then
+    echo ""
+    read -p "Proceed with dev environment deactivation? (yes/no): " CONFIRM
+    if [[ "${CONFIRM}" != "yes" ]]; then
+        log_warn "Deactivation cancelled"
+        exit 0
+    fi
+fi
+
+# Step 5: Run Terraform apply
+log_info "Deactivating dev environment..."
+
+TF_VARS=(
+    -var="dev_activated=false"
+)
+
+if [[ "${AUTO_APPROVE}" == "true" ]]; then
+    TF_VARS+=(-auto-approve)
+fi
+
+terraform apply "${TF_VARS[@]}"
+
+echo ""
+echo "========================================"
+echo "  DEACTIVATION COMPLETE"
+echo "========================================"
+echo ""
+echo "  Dev environment is now in Pilot Light mode."
+echo ""
+echo "  Preserved resources:"
+echo "    - VPC: Still active (including NAT Gateways)"
+echo "    - RDS: davidshaevel-dev-db"
+echo "    - ECR: davidshaevel/backend, davidshaevel/frontend, davidshaevel/grafana"
+echo ""
+echo "  To reactivate, run:"
+echo "    ./scripts/dev-activate.sh"
+echo ""
+echo "========================================"
