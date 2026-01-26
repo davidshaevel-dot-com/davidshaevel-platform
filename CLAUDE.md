@@ -470,18 +470,39 @@ davidshaevel-platform/
 
 ### Working with Worktrees
 
-This repo uses a bare repository with git worktrees, allowing multiple branches to be checked out simultaneously:
+This repo uses a bare repository with git worktrees, allowing multiple branches to be checked out simultaneously.
+
+**IMPORTANT: Flattened Folder Structure**
+
+Worktrees are created directly in `davidshaevel-platform/`, NOT in nested subdirectories. The worktree folder name should be the issue ID or feature name (e.g., `tt-95-pilot-light-mode`), while the branch name follows the standard convention (`claude/tt-95-pilot-light-mode`).
+
+```bash
+# Correct structure:
+davidshaevel-platform/
+├── .bare                       # Bare repository
+├── main                        # Main branch worktree
+├── tt-95-pilot-light-mode      # Feature worktree (flat!)
+└── tt-100-another-feature      # Another feature (flat!)
+
+# WRONG - do not create nested structures like:
+davidshaevel-platform/claude/tt-95-pilot-light-mode  # NO!
+```
+
+**Commands:**
 
 ```bash
 # List all worktrees (run from davidshaevel-platform/ or davidshaevel-platform/main/)
 git worktree list
 
-# Create a new feature branch worktree
+# Create a new feature branch worktree (FLAT structure!)
 cd /Users/dshaevel/workspace-ds/davidshaevel-platform
-git worktree add feature-branch -b feature-branch
+git worktree add <issue-id>-<brief-description> -b claude/<issue-id>-<brief-description>
+
+# Example:
+git worktree add tt-95-pilot-light-mode -b claude/tt-95-pilot-light-mode
 
 # Remove a worktree when done
-git worktree remove feature-branch
+git worktree remove <worktree-folder-name>
 ```
 
 ### Worktree Cleanup - IMPORTANT
