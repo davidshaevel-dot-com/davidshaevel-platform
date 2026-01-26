@@ -73,47 +73,47 @@ output "database_secret_arn" {
 
 output "ecs_cluster_name" {
   description = "Name of the ECS cluster"
-  value       = module.compute.ecs_cluster_name
+  value       = module.compute[0].ecs_cluster_name
 }
 
 output "ecs_cluster_arn" {
   description = "ARN of the ECS cluster"
-  value       = module.compute.ecs_cluster_arn
+  value       = module.compute[0].ecs_cluster_arn
 }
 
 output "alb_dns_name" {
   description = "DNS name of the Application Load Balancer (use this to access the application)"
-  value       = module.compute.alb_dns_name
+  value       = module.compute[0].alb_dns_name
 }
 
 output "alb_arn" {
   description = "ARN of the Application Load Balancer"
-  value       = module.compute.alb_arn
+  value       = module.compute[0].alb_arn
 }
 
 output "frontend_service_name" {
   description = "Name of the frontend ECS service"
-  value       = module.compute.frontend_service_name
+  value       = module.compute[0].frontend_service_name
 }
 
 output "backend_service_name" {
   description = "Name of the backend ECS service"
-  value       = module.compute.backend_service_name
+  value       = module.compute[0].backend_service_name
 }
 
 output "application_url" {
   description = "URL to access the application"
-  value       = module.compute.application_url
+  value       = module.compute[0].application_url
 }
 
 output "frontend_url" {
   description = "URL to access the frontend"
-  value       = module.compute.frontend_url
+  value       = module.compute[0].frontend_url
 }
 
 output "backend_url" {
   description = "URL to access the backend API"
-  value       = module.compute.backend_url
+  value       = module.compute[0].backend_url
 }
 
 # -----------------------------------------------------------------------------
@@ -122,32 +122,32 @@ output "backend_url" {
 
 output "backend_ecr_repository_url" {
   description = "URL of the backend ECR repository (use for docker push)"
-  value       = module.compute.backend_ecr_repository_url
+  value       = module.compute[0].backend_ecr_repository_url
 }
 
 output "backend_ecr_repository_name" {
   description = "Name of the backend ECR repository"
-  value       = module.compute.backend_ecr_repository_name
+  value       = module.compute[0].backend_ecr_repository_name
 }
 
 output "frontend_ecr_repository_url" {
   description = "URL of the frontend ECR repository (use for docker push)"
-  value       = module.compute.frontend_ecr_repository_url
+  value       = module.compute[0].frontend_ecr_repository_url
 }
 
 output "frontend_ecr_repository_name" {
   description = "Name of the frontend ECR repository"
-  value       = module.compute.frontend_ecr_repository_name
+  value       = module.compute[0].frontend_ecr_repository_name
 }
 
 output "grafana_ecr_repository_url" {
   description = "URL of the Grafana ECR repository (use for docker push)"
-  value       = module.compute.grafana_ecr_repository_url
+  value       = module.compute[0].grafana_ecr_repository_url
 }
 
 output "grafana_ecr_repository_name" {
   description = "Name of the Grafana ECR repository"
-  value       = module.compute.grafana_ecr_repository_name
+  value       = module.compute[0].grafana_ecr_repository_name
 }
 
 # -----------------------------------------------------------------------------
@@ -238,5 +238,5 @@ output "cicd_iam_policy_name" {
 
 output "profiling_artifacts_bucket_name" {
   description = "Name of the S3 bucket for profiling artifacts (empty if not enabled)"
-  value       = module.compute.profiling_artifacts_bucket_name
+  value       = module.compute[0].profiling_artifacts_bucket_name
 }

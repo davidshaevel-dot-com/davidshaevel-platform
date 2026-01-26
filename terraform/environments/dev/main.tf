@@ -92,8 +92,8 @@ module "networking" {
   flow_logs_retention_days = 7
 
   # Container ports (from compute module)
-  backend_metrics_port  = module.compute.backend_port
-  frontend_metrics_port = module.compute.frontend_port
+  backend_metrics_port  = module.compute[0].backend_port
+  frontend_metrics_port = module.compute[0].frontend_port
 
   common_tags = {
     Environment = var.environment
@@ -138,6 +138,7 @@ module "database" {
 
 module "compute" {
   source = "../../modules/compute"
+  count  = var.dev_activated ? 1 : 0
 
   # Environment configuration
   environment  = var.environment
@@ -238,7 +239,7 @@ module "cdn" {
   alternate_domain_names = var.cdn_alternate_domain_names
 
   # ALB origin (from compute module)
-  alb_dns_name = module.compute.alb_dns_name
+  alb_dns_name = module.compute[0].alb_dns_name
 
   # CloudFront configuration
   enable_ipv6         = var.cdn_enable_ipv6
@@ -289,8 +290,8 @@ module "observability" {
   frontend_security_group_id   = module.networking[0].app_frontend_security_group_id
 
   # Container ports (from compute module)
-  backend_metrics_port  = module.compute.backend_port
-  frontend_metrics_port = module.compute.frontend_port
+  backend_metrics_port  = module.compute[0].backend_port
+  frontend_metrics_port = module.compute[0].frontend_port
 
   # EFS configuration
   enable_prometheus_efs           = true
@@ -305,7 +306,7 @@ module "observability" {
 
   # Prometheus ECS Service configuration (Phase 5 - TT-25)
   aws_region                      = var.aws_region
-  ecs_cluster_id                  = module.compute.ecs_cluster_id
+  ecs_cluster_id                  = module.compute[0].ecs_cluster_id
   prometheus_service_registry_arn = module.service_discovery.prometheus_service_arn
   prometheus_image                = var.prometheus_image
   prometheus_task_cpu             = var.prometheus_task_cpu
@@ -326,7 +327,7 @@ module "observability" {
   grafana_admin_password       = var.grafana_admin_password
 
   # ALB Integration for Public Access (prefers HTTPS listener if available)
-  alb_listener_arn      = module.compute.alb_https_listener_arn != null ? module.compute.alb_https_listener_arn : module.compute.alb_http_listener_arn
+  alb_listener_arn      = module.compute[0].alb_https_listener_arn != null ? module.compute[0].alb_https_listener_arn : module.compute[0].alb_http_listener_arn
   alb_security_group_id = module.networking[0].alb_security_group_id
   grafana_domain_name   = "grafana.${var.domain_name}"
 
