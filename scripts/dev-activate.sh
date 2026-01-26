@@ -89,15 +89,16 @@ fi
 
 # Step 3: Find latest backend image
 log_info "Finding latest backend container image..."
+# Query filters for images that have tags and sorts by push date
 BACKEND_IMAGE=$(aws ecr describe-images \
     --repository-name "${BACKEND_ECR_REPO}" \
     --region ${DEV_REGION} \
-    --query 'imageDetails | sort_by(@, &imagePushedAt) | [-1].imageTags[0]' \
+    --query 'imageDetails[?imageTags != `null` && length(imageTags) > `0`] | sort_by(@, &imagePushedAt) | [-1].imageTags[0]' \
     --output text 2>/dev/null || echo "")
 
-if [[ -z "${BACKEND_IMAGE}" || "${BACKEND_IMAGE}" == "None" ]]; then
-    log_error "No backend images found in ECR"
-    log_error "Push an image before activating"
+if [[ -z "${BACKEND_IMAGE}" || "${BACKEND_IMAGE}" == "None" || "${BACKEND_IMAGE}" == "null" ]]; then
+    log_error "No tagged backend images found in ECR"
+    log_error "Push a tagged image before activating"
     exit 1
 fi
 
@@ -106,15 +107,16 @@ log_info "Backend image: ${FULL_BACKEND_IMAGE}"
 
 # Step 4: Find latest frontend image
 log_info "Finding latest frontend container image..."
+# Query filters for images that have tags and sorts by push date
 FRONTEND_IMAGE=$(aws ecr describe-images \
     --repository-name "${FRONTEND_ECR_REPO}" \
     --region ${DEV_REGION} \
-    --query 'imageDetails | sort_by(@, &imagePushedAt) | [-1].imageTags[0]' \
+    --query 'imageDetails[?imageTags != `null` && length(imageTags) > `0`] | sort_by(@, &imagePushedAt) | [-1].imageTags[0]' \
     --output text 2>/dev/null || echo "")
 
-if [[ -z "${FRONTEND_IMAGE}" || "${FRONTEND_IMAGE}" == "None" ]]; then
-    log_error "No frontend images found in ECR"
-    log_error "Push an image before activating"
+if [[ -z "${FRONTEND_IMAGE}" || "${FRONTEND_IMAGE}" == "None" || "${FRONTEND_IMAGE}" == "null" ]]; then
+    log_error "No tagged frontend images found in ECR"
+    log_error "Push a tagged image before activating"
     exit 1
 fi
 

@@ -48,7 +48,9 @@ locals {
   )
 
   # Default container ports (used when dev_activated=false and compute module not available)
-  # These match the port configuration in the compute module
+  # IMPORTANT: These values MUST match the port configuration in the compute module
+  # (see terraform/modules/compute/variables.tf: backend_port and frontend_port defaults)
+  # If compute module port defaults change, update these values to prevent security group misconfigurations
   default_backend_port  = 3001
   default_frontend_port = 3000
 }

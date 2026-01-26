@@ -86,11 +86,26 @@ fi
 
 # Step 3: Verify we're not serving production traffic
 log_info "Checking current production traffic routing..."
-log_warn "Ensure Vercel is serving davidshaevel.com before deactivating AWS"
-echo ""
-echo "  Verify with: curl -sI https://davidshaevel.com | grep -i server"
-echo "  Expected:    server: Vercel"
-echo ""
+
+# Automated check for Vercel serving production
+PROD_SERVER=$(curl -sI https://davidshaevel.com 2>/dev/null | grep -i "^server:" | awk '{print tolower($2)}' || echo "unknown")
+
+if [[ "${PROD_SERVER}" == *"vercel"* ]]; then
+    log_info "Production is served by Vercel - safe to deactivate AWS"
+else
+    log_warn "Production server: ${PROD_SERVER}"
+    log_warn "Expected: Vercel"
+    echo ""
+    echo "  Manual verification: curl -sI https://davidshaevel.com | grep -i server"
+    echo ""
+    if [[ "${AUTO_APPROVE}" != "true" ]]; then
+        read -p "Production may not be on Vercel. Continue anyway? (yes/no): " PROD_CONFIRM
+        if [[ "${PROD_CONFIRM}" != "yes" ]]; then
+            log_error "Deactivation cancelled - verify Vercel is serving production first"
+            exit 1
+        fi
+    fi
+fi
 
 # Step 4: Show what will be destroyed
 echo ""

@@ -109,7 +109,7 @@ related-issues: TT-XXX
 - **DO NOT** use issue numbers (e.g., `TT-95`) as the scope - issue numbers go in `related-issues:`
 - **DO NOT** use generic technology names (e.g., `terraform`) - be specific to the feature
 - Good scopes: `pilot-light`, `vercel`, `contact-form`, `dr-failover`, `observability`
-- Bad scopes: `TT-95`, `terraform`, `aws`, `fix`
+- Bad scopes: `TT-95`, `terraform`, `aws`
 
 **Examples:**
 ```
