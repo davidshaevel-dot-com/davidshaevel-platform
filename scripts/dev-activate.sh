@@ -21,10 +21,17 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-# Configuration
-DEV_REGION="us-east-1"
+# Configuration (can be overridden via environment variables)
+DEV_REGION="${AWS_REGION:-us-east-1}"
 DEV_TERRAFORM_DIR="${REPO_ROOT}/terraform/environments/dev"
-ECR_REGISTRY="108581769167.dkr.ecr.${DEV_REGION}.amazonaws.com"
+PROJECT_NAME="${PROJECT_NAME:-davidshaevel}"
+
+# ECR configuration - derived from project name
+BACKEND_ECR_REPO="${PROJECT_NAME}/backend"
+FRONTEND_ECR_REPO="${PROJECT_NAME}/frontend"
+
+# RDS configuration - follows naming convention: ${project_name}-${environment}-db
+RDS_INSTANCE_ID="${PROJECT_NAME}-dev-db"
 
 # Colors for output
 RED='\033[0;31m'
@@ -61,10 +68,13 @@ echo "  Exiting Pilot Light Mode"
 echo "========================================"
 echo ""
 
-# Step 1: Verify AWS credentials
+# Step 1: Verify AWS credentials and set ECR registry
 log_info "Verifying AWS credentials..."
 ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
 log_info "Using AWS Account: ${ACCOUNT_ID}"
+
+# Derive ECR registry from account ID (dynamic, not hardcoded)
+ECR_REGISTRY="${ACCOUNT_ID}.dkr.ecr.${DEV_REGION}.amazonaws.com"
 
 # Step 2: Check current activation status
 log_info "Checking current dev_activated status..."
@@ -80,7 +90,7 @@ fi
 # Step 3: Find latest backend image
 log_info "Finding latest backend container image..."
 BACKEND_IMAGE=$(aws ecr describe-images \
-    --repository-name davidshaevel/backend \
+    --repository-name "${BACKEND_ECR_REPO}" \
     --region ${DEV_REGION} \
     --query 'imageDetails | sort_by(@, &imagePushedAt) | [-1].imageTags[0]' \
     --output text 2>/dev/null || echo "")
@@ -91,13 +101,13 @@ if [[ -z "${BACKEND_IMAGE}" || "${BACKEND_IMAGE}" == "None" ]]; then
     exit 1
 fi
 
-FULL_BACKEND_IMAGE="${ECR_REGISTRY}/davidshaevel/backend:${BACKEND_IMAGE}"
+FULL_BACKEND_IMAGE="${ECR_REGISTRY}/${BACKEND_ECR_REPO}:${BACKEND_IMAGE}"
 log_info "Backend image: ${FULL_BACKEND_IMAGE}"
 
 # Step 4: Find latest frontend image
 log_info "Finding latest frontend container image..."
 FRONTEND_IMAGE=$(aws ecr describe-images \
-    --repository-name davidshaevel/frontend \
+    --repository-name "${FRONTEND_ECR_REPO}" \
     --region ${DEV_REGION} \
     --query 'imageDetails | sort_by(@, &imagePushedAt) | [-1].imageTags[0]' \
     --output text 2>/dev/null || echo "")
@@ -108,13 +118,13 @@ if [[ -z "${FRONTEND_IMAGE}" || "${FRONTEND_IMAGE}" == "None" ]]; then
     exit 1
 fi
 
-FULL_FRONTEND_IMAGE="${ECR_REGISTRY}/davidshaevel/frontend:${FRONTEND_IMAGE}"
+FULL_FRONTEND_IMAGE="${ECR_REGISTRY}/${FRONTEND_ECR_REPO}:${FRONTEND_IMAGE}"
 log_info "Frontend image: ${FULL_FRONTEND_IMAGE}"
 
 # Step 5: Check RDS status
 log_info "Checking RDS status..."
 RDS_STATUS=$(aws rds describe-db-instances \
-    --db-instance-identifier davidshaevel-dev-db \
+    --db-instance-identifier "${RDS_INSTANCE_ID}" \
     --region ${DEV_REGION} \
     --query 'DBInstances[0].DBInstanceStatus' \
     --output text 2>/dev/null || echo "not-found")

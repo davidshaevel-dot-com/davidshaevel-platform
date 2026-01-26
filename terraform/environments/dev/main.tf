@@ -46,6 +46,11 @@ locals {
     },
     var.tags
   )
+
+  # Default container ports (used when dev_activated=false and compute module not available)
+  # These match the port configuration in the compute module
+  default_backend_port  = 3001
+  default_frontend_port = 3000
 }
 
 # ==============================================================================
@@ -285,8 +290,8 @@ module "networking" {
 
   # Container ports (from compute module, or defaults when deactivated)
   # These are used for Prometheus metrics scraping security group rules
-  backend_metrics_port  = var.dev_activated ? module.compute[0].backend_port : 3001
-  frontend_metrics_port = var.dev_activated ? module.compute[0].frontend_port : 3000
+  backend_metrics_port  = var.dev_activated ? module.compute[0].backend_port : local.default_backend_port
+  frontend_metrics_port = var.dev_activated ? module.compute[0].frontend_port : local.default_frontend_port
 
   common_tags = {
     Environment = var.environment
@@ -489,8 +494,8 @@ module "observability" {
   frontend_security_group_id   = module.networking.app_frontend_security_group_id
 
   # Container ports (from compute module, or defaults when deactivated)
-  backend_metrics_port  = var.dev_activated ? module.compute[0].backend_port : 3001
-  frontend_metrics_port = var.dev_activated ? module.compute[0].frontend_port : 3000
+  backend_metrics_port  = var.dev_activated ? module.compute[0].backend_port : local.default_backend_port
+  frontend_metrics_port = var.dev_activated ? module.compute[0].frontend_port : local.default_frontend_port
 
   # EFS configuration
   enable_prometheus_efs           = true

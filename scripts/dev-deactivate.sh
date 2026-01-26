@@ -20,9 +20,18 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-# Configuration
-DEV_REGION="us-east-1"
+# Configuration (can be overridden via environment variables)
+DEV_REGION="${AWS_REGION:-us-east-1}"
 DEV_TERRAFORM_DIR="${REPO_ROOT}/terraform/environments/dev"
+PROJECT_NAME="${PROJECT_NAME:-davidshaevel}"
+
+# ECR configuration - derived from project name
+BACKEND_ECR_REPO="${PROJECT_NAME}/backend"
+FRONTEND_ECR_REPO="${PROJECT_NAME}/frontend"
+GRAFANA_ECR_REPO="${PROJECT_NAME}/grafana"
+
+# RDS configuration - follows naming convention: ${project_name}-${environment}-db
+RDS_INSTANCE_ID="${PROJECT_NAME}-dev-db"
 
 # Colors for output
 RED='\033[0;31m'
@@ -148,8 +157,8 @@ echo "  Dev environment is now in Pilot Light mode."
 echo ""
 echo "  Preserved resources:"
 echo "    - VPC: Still active (including NAT Gateways)"
-echo "    - RDS: davidshaevel-dev-db"
-echo "    - ECR: davidshaevel/backend, davidshaevel/frontend, davidshaevel/grafana"
+echo "    - RDS: ${RDS_INSTANCE_ID}"
+echo "    - ECR: ${BACKEND_ECR_REPO}, ${FRONTEND_ECR_REPO}, ${GRAFANA_ECR_REPO}"
 echo ""
 echo "  To reactivate, run:"
 echo "    ./scripts/dev-activate.sh"
