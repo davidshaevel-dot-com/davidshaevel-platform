@@ -74,6 +74,7 @@ provider "aws" {
 
 module "networking" {
   source = "../../modules/networking"
+  count  = var.dev_activated ? 1 : 0
 
   environment  = var.environment
   project_name = var.project_name
@@ -115,9 +116,9 @@ module "database" {
   project_name = var.project_name
 
   # Networking inputs (from networking module)
-  vpc_id                     = module.networking.vpc_id
-  private_db_subnet_ids      = module.networking.private_db_subnet_ids
-  database_security_group_id = module.networking.database_security_group_id
+  vpc_id                     = module.networking[0].vpc_id
+  private_db_subnet_ids      = module.networking[0].private_db_subnet_ids
+  database_security_group_id = module.networking[0].database_security_group_id
 
   # Database configuration (from variables)
   instance_class        = var.db_instance_class
@@ -143,12 +144,12 @@ module "compute" {
   project_name = var.project_name
 
   # Networking inputs (from networking module)
-  vpc_id                     = module.networking.vpc_id
-  public_subnet_ids          = module.networking.public_subnet_ids
-  private_app_subnet_ids     = module.networking.private_app_subnet_ids
-  alb_security_group_id      = module.networking.alb_security_group_id
-  frontend_security_group_id = module.networking.app_frontend_security_group_id
-  backend_security_group_id  = module.networking.app_backend_security_group_id
+  vpc_id                     = module.networking[0].vpc_id
+  public_subnet_ids          = module.networking[0].public_subnet_ids
+  private_app_subnet_ids     = module.networking[0].private_app_subnet_ids
+  alb_security_group_id      = module.networking[0].alb_security_group_id
+  frontend_security_group_id = module.networking[0].app_frontend_security_group_id
+  backend_security_group_id  = module.networking[0].app_backend_security_group_id
 
   # Database inputs (from database module)
   database_endpoint   = module.database.db_instance_endpoint
@@ -281,11 +282,11 @@ module "observability" {
   project_name = var.project_name
 
   # Networking inputs (from networking module)
-  vpc_id                       = module.networking.vpc_id
-  private_app_subnet_ids       = module.networking.private_app_subnet_ids
-  prometheus_security_group_id = module.networking.prometheus_security_group_id
-  backend_security_group_id    = module.networking.app_backend_security_group_id
-  frontend_security_group_id   = module.networking.app_frontend_security_group_id
+  vpc_id                       = module.networking[0].vpc_id
+  private_app_subnet_ids       = module.networking[0].private_app_subnet_ids
+  prometheus_security_group_id = module.networking[0].prometheus_security_group_id
+  backend_security_group_id    = module.networking[0].app_backend_security_group_id
+  frontend_security_group_id   = module.networking[0].app_frontend_security_group_id
 
   # Container ports (from compute module)
   backend_metrics_port  = module.compute.backend_port
@@ -326,7 +327,7 @@ module "observability" {
 
   # ALB Integration for Public Access (prefers HTTPS listener if available)
   alb_listener_arn      = module.compute.alb_https_listener_arn != null ? module.compute.alb_https_listener_arn : module.compute.alb_http_listener_arn
-  alb_security_group_id = module.networking.alb_security_group_id
+  alb_security_group_id = module.networking[0].alb_security_group_id
   grafana_domain_name   = "grafana.${var.domain_name}"
 
   tags = {
@@ -387,7 +388,7 @@ module "service_discovery" {
   project_name = var.project_name
 
   # Networking inputs (from networking module)
-  vpc_id = module.networking.vpc_id
+  vpc_id = module.networking[0].vpc_id
 
   # DNS namespace configuration
   private_dns_namespace = var.private_dns_namespace
