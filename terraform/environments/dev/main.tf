@@ -179,7 +179,7 @@ module "compute" {
 
   # ALB configuration
   enable_deletion_protection = var.alb_enable_deletion_protection
-  alb_certificate_arn        = module.cdn.acm_certificate_arn
+  alb_certificate_arn        = module.cdn[0].acm_certificate_arn
 
   # CloudWatch Logs
   log_retention_days        = var.ecs_log_retention_days
@@ -205,8 +205,8 @@ module "compute" {
   contact_form_from = var.contact_form_from
 
   # Service Discovery (AWS Cloud Map) - from service_discovery module
-  backend_service_registry_arn  = module.service_discovery.backend_service_arn
-  frontend_service_registry_arn = module.service_discovery.frontend_service_arn
+  backend_service_registry_arn  = module.service_discovery[0].backend_service_arn
+  frontend_service_registry_arn = module.service_discovery[0].frontend_service_arn
 
   # Tags
   common_tags = {
@@ -224,6 +224,7 @@ module "compute" {
 
 module "cdn" {
   source = "../../modules/cdn"
+  count  = var.dev_activated ? 1 : 0
 
   # Required provider configuration for us-east-1 ACM certificate
   providers = {
@@ -261,6 +262,7 @@ module "cdn" {
 
 module "cicd_iam" {
   source = "../../modules/cicd-iam"
+  count  = var.dev_activated ? 1 : 0
 
   environment    = var.environment
   project_name   = var.project_name
@@ -268,7 +270,7 @@ module "cicd_iam" {
   aws_region     = var.aws_region
 
   # CloudFront distribution ID for cache invalidation permissions
-  cloudfront_distribution_id = module.cdn.cloudfront_distribution_id
+  cloudfront_distribution_id = module.cdn[0].cloudfront_distribution_id
 }
 
 # ==============================================================================
@@ -277,6 +279,7 @@ module "cicd_iam" {
 
 module "observability" {
   source = "../../modules/observability"
+  count  = var.dev_activated ? 1 : 0
 
   # Environment configuration
   environment  = var.environment
@@ -307,7 +310,7 @@ module "observability" {
   # Prometheus ECS Service configuration (Phase 5 - TT-25)
   aws_region                      = var.aws_region
   ecs_cluster_id                  = module.compute[0].ecs_cluster_id
-  prometheus_service_registry_arn = module.service_discovery.prometheus_service_arn
+  prometheus_service_registry_arn = module.service_discovery[0].prometheus_service_arn
   prometheus_image                = var.prometheus_image
   prometheus_task_cpu             = var.prometheus_task_cpu
   prometheus_task_memory          = var.prometheus_task_memory
@@ -323,7 +326,7 @@ module "observability" {
   grafana_task_cpu             = var.grafana_task_cpu
   grafana_task_memory          = var.grafana_task_memory
   grafana_desired_count        = var.grafana_desired_count
-  grafana_service_registry_arn = module.service_discovery.grafana_service_arn
+  grafana_service_registry_arn = module.service_discovery[0].grafana_service_arn
   grafana_admin_password       = var.grafana_admin_password
 
   # ALB Integration for Public Access (prefers HTTPS listener if available)
@@ -349,15 +352,15 @@ locals {
     service_prefix        = "${var.environment}-${var.project_name}"
     platform_name         = var.project_name
     private_dns_zone      = var.private_dns_namespace
-    backend_service_name  = module.service_discovery.backend_service_name
-    frontend_service_name = module.service_discovery.frontend_service_name
+    backend_service_name  = module.service_discovery[0].backend_service_name
+    frontend_service_name = module.service_discovery[0].frontend_service_name
   })
 }
 
 # Upload rendered Prometheus config to S3
 # Init container will sync this to EFS on task startup
 resource "aws_s3_object" "prometheus_config" {
-  bucket  = module.observability.prometheus_config_bucket_id
+  bucket  = module.observability[0].prometheus_config_bucket_id
   key     = var.prometheus_config_s3_key
   content = local.prometheus_config_rendered
 
@@ -383,6 +386,7 @@ resource "aws_s3_object" "prometheus_config" {
 
 module "service_discovery" {
   source = "../../modules/service-discovery"
+  count  = var.dev_activated ? 1 : 0
 
   # Environment configuration
   environment  = var.environment

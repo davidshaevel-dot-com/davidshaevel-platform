@@ -156,7 +156,7 @@ output "grafana_ecr_repository_name" {
 
 output "grafana_service_name" {
   description = "Name of the Grafana ECS service"
-  value       = module.observability.grafana_service_name
+  value       = module.observability[0].grafana_service_name
 }
 
 # -----------------------------------------------------------------------------
@@ -165,47 +165,47 @@ output "grafana_service_name" {
 
 output "cloudfront_distribution_id" {
   description = "ID of the CloudFront distribution (use for cache invalidation)"
-  value       = module.cdn.cloudfront_distribution_id
+  value       = module.cdn[0].cloudfront_distribution_id
 }
 
 output "cloudfront_domain_name" {
   description = "CloudFront distribution domain name (e.g., d123abc.cloudfront.net)"
-  value       = module.cdn.cloudfront_domain_name
+  value       = module.cdn[0].cloudfront_domain_name
 }
 
 output "cloudfront_status" {
   description = "Current status of the CloudFront distribution"
-  value       = module.cdn.cloudfront_status
+  value       = module.cdn[0].cloudfront_status
 }
 
 output "acm_certificate_arn" {
   description = "ARN of the ACM certificate used by CloudFront"
-  value       = module.cdn.acm_certificate_arn
+  value       = module.cdn[0].acm_certificate_arn
 }
 
 output "acm_certificate_status" {
   description = "Status of the ACM certificate (PENDING_VALIDATION, ISSUED, etc.)"
-  value       = module.cdn.acm_certificate_status
+  value       = module.cdn[0].acm_certificate_status
 }
 
 output "acm_certificate_validation_records" {
   description = "DNS validation records for ACM certificate - ADD THESE TO CLOUDFLARE DNS"
-  value       = module.cdn.acm_certificate_validation_records
+  value       = module.cdn[0].acm_certificate_validation_records
 }
 
 output "cloudflare_cname_records" {
   description = "CNAME records to add to Cloudflare DNS - ADD THESE AFTER CERTIFICATE VALIDATION"
-  value       = module.cdn.cloudflare_cname_records
+  value       = module.cdn[0].cloudflare_cname_records
 }
 
 output "custom_domain_urls" {
   description = "URLs for custom domains (after DNS is configured in Cloudflare)"
-  value       = module.cdn.custom_domain_urls
+  value       = module.cdn[0].custom_domain_urls
 }
 
 output "cache_invalidation_command" {
   description = "AWS CLI command to invalidate CloudFront cache"
-  value       = module.cdn.cache_invalidation_command
+  value       = module.cdn[0].cache_invalidation_command
 }
 
 # -----------------------------------------------------------------------------
@@ -214,22 +214,22 @@ output "cache_invalidation_command" {
 
 output "cicd_iam_user_name" {
   description = "Name of the GitHub Actions IAM user"
-  value       = module.cicd_iam.user_name
+  value       = module.cicd_iam[0].user_name
 }
 
 output "cicd_iam_user_arn" {
   description = "ARN of the GitHub Actions IAM user"
-  value       = module.cicd_iam.user_arn
+  value       = module.cicd_iam[0].user_arn
 }
 
 output "cicd_iam_policy_arn" {
   description = "ARN of the GitHub Actions deployment policy"
-  value       = module.cicd_iam.policy_arn
+  value       = module.cicd_iam[0].policy_arn
 }
 
 output "cicd_iam_policy_name" {
   description = "Name of the GitHub Actions deployment policy"
-  value       = module.cicd_iam.policy_name
+  value       = module.cicd_iam[0].policy_name
 }
 
 # -----------------------------------------------------------------------------
