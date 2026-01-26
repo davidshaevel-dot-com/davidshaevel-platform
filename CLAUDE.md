@@ -104,7 +104,25 @@ related-issues: TT-XXX
 
 **Types:** `feat`, `fix`, `docs`, `chore`, `refactor`, `test`
 
+**Scope Guidelines:**
+- The scope should be a **descriptive word or hyphenated phrase** that identifies the feature or area being changed
+- **DO NOT** use issue numbers (e.g., `TT-95`) as the scope - issue numbers go in `related-issues:`
+- **DO NOT** use generic technology names (e.g., `terraform`) - be specific to the feature
+- Good scopes: `pilot-light`, `vercel`, `contact-form`, `dr-failover`, `observability`
+- Bad scopes: `TT-95`, `terraform`, `aws`
+
 **Examples:**
+```
+feat(pilot-light): add dev_activated variable for cost optimization
+
+Adds a boolean variable to control whether compute resources are deployed.
+When false, only always-on resources (RDS, ECR, IAM, S3) remain.
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+related-issues: TT-95
+```
+
 ```
 feat(vercel): add DNS switch script for Cloudflare automation
 

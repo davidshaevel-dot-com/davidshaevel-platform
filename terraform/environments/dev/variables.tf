@@ -10,6 +10,16 @@
 # Project Configuration
 # -----------------------------------------------------------------------------
 
+# -----------------------------------------------------------------------------
+# Dev Environment Activation Control (Pilot Light Mode)
+# -----------------------------------------------------------------------------
+
+variable "dev_activated" {
+  description = "Whether to deploy compute resources (ECS, NAT, ALB). Set to false for pilot light mode to minimize costs."
+  type        = bool
+  default     = true  # Default to active for backward compatibility
+}
+
 variable "project_name" {
   description = "Name of the project"
   type        = string

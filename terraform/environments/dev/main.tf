@@ -46,6 +46,203 @@ locals {
     },
     var.tags
   )
+
+  # Default container ports (used when dev_activated=false and compute module not available)
+  # IMPORTANT: These values MUST match the port configuration in the compute module
+  # (see terraform/modules/compute/variables.tf: backend_port and frontend_port defaults)
+  # If compute module port defaults change, update these values to prevent security group misconfigurations
+  default_backend_port  = 3001
+  default_frontend_port = 3000
+}
+
+# ==============================================================================
+# Always-On Resources (Pilot Light Mode)
+# These resources persist even when dev_activated=false
+# ==============================================================================
+
+# Backend ECR Repository - Always on for image storage
+resource "aws_ecr_repository" "backend" {
+  name                 = "${var.project_name}/backend"
+  image_tag_mutability = "IMMUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  encryption_configuration {
+    encryption_type = "AES256"
+  }
+
+  tags = merge(local.common_tags, {
+    Name        = "${var.project_name}-backend-ecr"
+    Application = "backend"
+  })
+}
+
+resource "aws_ecr_lifecycle_policy" "backend" {
+  repository = aws_ecr_repository.backend.name
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Keep last 10 images"
+        selection = {
+          tagStatus   = "any"
+          countType   = "imageCountMoreThan"
+          countNumber = 10
+        }
+        action = {
+          type = "expire"
+        }
+      }
+    ]
+  })
+}
+
+# Frontend ECR Repository - Always on for image storage
+resource "aws_ecr_repository" "frontend" {
+  name                 = "${var.project_name}/frontend"
+  image_tag_mutability = "IMMUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  encryption_configuration {
+    encryption_type = "AES256"
+  }
+
+  tags = merge(local.common_tags, {
+    Name        = "${var.project_name}-frontend-ecr"
+    Application = "frontend"
+  })
+}
+
+resource "aws_ecr_lifecycle_policy" "frontend" {
+  repository = aws_ecr_repository.frontend.name
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Keep last 10 images"
+        selection = {
+          tagStatus   = "any"
+          countType   = "imageCountMoreThan"
+          countNumber = 10
+        }
+        action = {
+          type = "expire"
+        }
+      }
+    ]
+  })
+}
+
+# Grafana ECR Repository - Always on for image storage
+resource "aws_ecr_repository" "grafana" {
+  name                 = "${var.project_name}/grafana"
+  image_tag_mutability = "IMMUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  encryption_configuration {
+    encryption_type = "AES256"
+  }
+
+  tags = merge(local.common_tags, {
+    Name        = "${var.project_name}-grafana-ecr"
+    Application = "grafana"
+  })
+}
+
+resource "aws_ecr_lifecycle_policy" "grafana" {
+  repository = aws_ecr_repository.grafana.name
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Keep last 10 images"
+        selection = {
+          tagStatus   = "any"
+          countType   = "imageCountMoreThan"
+          countNumber = 10
+        }
+        action = {
+          type = "expire"
+        }
+      }
+    ]
+  })
+}
+
+# ==============================================================================
+# State Migration - Moved Blocks
+# These blocks tell Terraform that modules have been made conditional (with count)
+# and resources have moved from module.X to module.X[0]
+#
+# Note: networking module is NOT conditional because database depends on VPC/subnets.
+# NAT Gateway cost optimization would require refactoring the networking module.
+# ==============================================================================
+
+# ECR repos moved from compute module to always-on resources
+moved {
+  from = module.compute[0].aws_ecr_repository.backend[0]
+  to   = aws_ecr_repository.backend
+}
+
+moved {
+  from = module.compute[0].aws_ecr_lifecycle_policy.backend[0]
+  to   = aws_ecr_lifecycle_policy.backend
+}
+
+moved {
+  from = module.compute[0].aws_ecr_repository.frontend[0]
+  to   = aws_ecr_repository.frontend
+}
+
+moved {
+  from = module.compute[0].aws_ecr_lifecycle_policy.frontend[0]
+  to   = aws_ecr_lifecycle_policy.frontend
+}
+
+moved {
+  from = module.compute[0].aws_ecr_repository.grafana[0]
+  to   = aws_ecr_repository.grafana
+}
+
+moved {
+  from = module.compute[0].aws_ecr_lifecycle_policy.grafana[0]
+  to   = aws_ecr_lifecycle_policy.grafana
+}
+
+moved {
+  from = module.compute
+  to   = module.compute[0]
+}
+
+moved {
+  from = module.cdn
+  to   = module.cdn[0]
+}
+
+moved {
+  from = module.cicd_iam
+  to   = module.cicd_iam[0]
+}
+
+moved {
+  from = module.observability
+  to   = module.observability[0]
+}
+
+moved {
+  from = module.service_discovery
+  to   = module.service_discovery[0]
 }
 
 # AWS Provider Configuration
@@ -72,6 +269,9 @@ provider "aws" {
 # Networking Module
 # ==============================================================================
 
+# NOTE: Networking module is always-on because database depends on VPC/subnets.
+# NAT Gateways (~$65/month) are inside this module - for full cost optimization,
+# the networking module would need refactoring to make NAT conditional.
 module "networking" {
   source = "../../modules/networking"
 
@@ -90,9 +290,10 @@ module "networking" {
   enable_flow_logs         = true
   flow_logs_retention_days = 7
 
-  # Container ports (from compute module)
-  backend_metrics_port  = module.compute.backend_port
-  frontend_metrics_port = module.compute.frontend_port
+  # Container ports (from compute module, or defaults when deactivated)
+  # These are used for Prometheus metrics scraping security group rules
+  backend_metrics_port  = var.dev_activated ? module.compute[0].backend_port : local.default_backend_port
+  frontend_metrics_port = var.dev_activated ? module.compute[0].frontend_port : local.default_frontend_port
 
   common_tags = {
     Environment = var.environment
@@ -137,6 +338,10 @@ module "database" {
 
 module "compute" {
   source = "../../modules/compute"
+  count  = var.dev_activated ? 1 : 0
+
+  # Don't create ECR repos - they're managed as always-on resources above
+  create_ecr_repos = false
 
   # Environment configuration
   environment  = var.environment
@@ -177,7 +382,7 @@ module "compute" {
 
   # ALB configuration
   enable_deletion_protection = var.alb_enable_deletion_protection
-  alb_certificate_arn        = module.cdn.acm_certificate_arn
+  alb_certificate_arn        = var.dev_activated ? module.cdn[0].acm_certificate_arn : null
 
   # CloudWatch Logs
   log_retention_days        = var.ecs_log_retention_days
@@ -203,8 +408,8 @@ module "compute" {
   contact_form_from = var.contact_form_from
 
   # Service Discovery (AWS Cloud Map) - from service_discovery module
-  backend_service_registry_arn  = module.service_discovery.backend_service_arn
-  frontend_service_registry_arn = module.service_discovery.frontend_service_arn
+  backend_service_registry_arn  = var.dev_activated ? module.service_discovery[0].backend_service_arn : ""
+  frontend_service_registry_arn = var.dev_activated ? module.service_discovery[0].frontend_service_arn : ""
 
   # Tags
   common_tags = {
@@ -222,6 +427,7 @@ module "compute" {
 
 module "cdn" {
   source = "../../modules/cdn"
+  count  = var.dev_activated ? 1 : 0
 
   # Required provider configuration for us-east-1 ACM certificate
   providers = {
@@ -237,7 +443,7 @@ module "cdn" {
   alternate_domain_names = var.cdn_alternate_domain_names
 
   # ALB origin (from compute module)
-  alb_dns_name = module.compute.alb_dns_name
+  alb_dns_name = var.dev_activated ? module.compute[0].alb_dns_name : ""
 
   # CloudFront configuration
   enable_ipv6         = var.cdn_enable_ipv6
@@ -259,6 +465,7 @@ module "cdn" {
 
 module "cicd_iam" {
   source = "../../modules/cicd-iam"
+  count  = var.dev_activated ? 1 : 0
 
   environment    = var.environment
   project_name   = var.project_name
@@ -266,7 +473,7 @@ module "cicd_iam" {
   aws_region     = var.aws_region
 
   # CloudFront distribution ID for cache invalidation permissions
-  cloudfront_distribution_id = module.cdn.cloudfront_distribution_id
+  cloudfront_distribution_id = var.dev_activated ? module.cdn[0].cloudfront_distribution_id : ""
 }
 
 # ==============================================================================
@@ -275,6 +482,7 @@ module "cicd_iam" {
 
 module "observability" {
   source = "../../modules/observability"
+  count  = var.dev_activated ? 1 : 0
 
   # Environment configuration
   environment  = var.environment
@@ -287,9 +495,9 @@ module "observability" {
   backend_security_group_id    = module.networking.app_backend_security_group_id
   frontend_security_group_id   = module.networking.app_frontend_security_group_id
 
-  # Container ports (from compute module)
-  backend_metrics_port  = module.compute.backend_port
-  frontend_metrics_port = module.compute.frontend_port
+  # Container ports (from compute module, or defaults when deactivated)
+  backend_metrics_port  = var.dev_activated ? module.compute[0].backend_port : local.default_backend_port
+  frontend_metrics_port = var.dev_activated ? module.compute[0].frontend_port : local.default_frontend_port
 
   # EFS configuration
   enable_prometheus_efs           = true
@@ -304,8 +512,8 @@ module "observability" {
 
   # Prometheus ECS Service configuration (Phase 5 - TT-25)
   aws_region                      = var.aws_region
-  ecs_cluster_id                  = module.compute.ecs_cluster_id
-  prometheus_service_registry_arn = module.service_discovery.prometheus_service_arn
+  ecs_cluster_id                  = var.dev_activated ? module.compute[0].ecs_cluster_id : ""
+  prometheus_service_registry_arn = var.dev_activated ? module.service_discovery[0].prometheus_service_arn : ""
   prometheus_image                = var.prometheus_image
   prometheus_task_cpu             = var.prometheus_task_cpu
   prometheus_task_memory          = var.prometheus_task_memory
@@ -321,11 +529,11 @@ module "observability" {
   grafana_task_cpu             = var.grafana_task_cpu
   grafana_task_memory          = var.grafana_task_memory
   grafana_desired_count        = var.grafana_desired_count
-  grafana_service_registry_arn = module.service_discovery.grafana_service_arn
+  grafana_service_registry_arn = var.dev_activated ? module.service_discovery[0].grafana_service_arn : ""
   grafana_admin_password       = var.grafana_admin_password
 
   # ALB Integration for Public Access (prefers HTTPS listener if available)
-  alb_listener_arn      = module.compute.alb_https_listener_arn != null ? module.compute.alb_https_listener_arn : module.compute.alb_http_listener_arn
+  alb_listener_arn      = var.dev_activated ? (module.compute[0].alb_https_listener_arn != null ? module.compute[0].alb_https_listener_arn : module.compute[0].alb_http_listener_arn) : ""
   alb_security_group_id = module.networking.alb_security_group_id
   grafana_domain_name   = "grafana.${var.domain_name}"
 
@@ -342,20 +550,22 @@ module "observability" {
 # Render Prometheus configuration from template
 # Template variables are substituted with actual values from service discovery
 locals {
-  prometheus_config_rendered = templatefile("../../../observability/prometheus/prometheus.yml.tpl", {
+  prometheus_config_rendered = var.dev_activated ? templatefile("../../../observability/prometheus/prometheus.yml.tpl", {
     environment           = var.environment
     service_prefix        = "${var.environment}-${var.project_name}"
     platform_name         = var.project_name
     private_dns_zone      = var.private_dns_namespace
-    backend_service_name  = module.service_discovery.backend_service_name
-    frontend_service_name = module.service_discovery.frontend_service_name
-  })
+    backend_service_name  = module.service_discovery[0].backend_service_name
+    frontend_service_name = module.service_discovery[0].frontend_service_name
+  }) : ""
 }
 
 # Upload rendered Prometheus config to S3
 # Init container will sync this to EFS on task startup
 resource "aws_s3_object" "prometheus_config" {
-  bucket  = module.observability.prometheus_config_bucket_id
+  count = var.dev_activated ? 1 : 0
+
+  bucket  = module.observability[0].prometheus_config_bucket_id
   key     = var.prometheus_config_s3_key
   content = local.prometheus_config_rendered
 
@@ -381,6 +591,7 @@ resource "aws_s3_object" "prometheus_config" {
 
 module "service_discovery" {
   source = "../../modules/service-discovery"
+  count  = var.dev_activated ? 1 : 0
 
   # Environment configuration
   environment  = var.environment
