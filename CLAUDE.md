@@ -20,6 +20,21 @@ This is a full-stack engineering portfolio platform demonstrating AWS cloud arch
 
 ---
 
+## Development Approach
+
+Use the **superpowers skills** whenever they are relevant. This includes but is not limited to:
+- `superpowers:brainstorming` - Before any creative work or feature implementation
+- `superpowers:writing-plans` - When planning multi-step tasks
+- `superpowers:test-driven-development` - When implementing features or bugfixes
+- `superpowers:systematic-debugging` - When encountering bugs or unexpected behavior
+- `superpowers:verification-before-completion` - Before claiming work is complete
+- `superpowers:requesting-code-review` - When completing major features
+- `superpowers:using-git-worktrees` - When starting feature work that needs isolation
+
+If there's even a 1% chance a skill applies, invoke it.
+
+---
+
 ## Architecture
 
 ```
@@ -80,22 +95,23 @@ Examples:
 ```
 <type>(<scope>): <short description>
 
-<detailed description>
+Longer description if needed.
 
-<body with changes, features, testing, etc.>
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-related-issues: <ISSUE-ID>
-
-Co-Authored-By: Claude <noreply@anthropic.com>
+related-issues: TT-XXX
 ```
 
-**Types:**
-- `feat`: New features
-- `fix`: Bug fixes
-- `docs`: Documentation changes
-- `chore`: Maintenance tasks
-- `refactor`: Code refactoring
-- `test`: Test additions/changes
+**Types:** `feat`, `fix`, `docs`, `chore`, `refactor`, `test`
+
+**Examples:**
+```
+feat(vercel): add DNS switch script for Cloudflare automation
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+related-issues: TT-92
+```
 
 ### Pull Request Process
 
@@ -104,29 +120,25 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 All pull requests follow this workflow:
 
 1. **Create PR** with descriptive title and comprehensive description
-2. **Add warning:** "AWAITING CODE REVIEW - DO NOT MERGE"
-3. **Wait for review** (Gemini Code Assist or human reviewer)
-4. **Address feedback:**
+2. **Wait for review** (Gemini Code Assist or human reviewer)
+3. **Address feedback:**
    - CRITICAL and HIGH issues: Must fix
    - MEDIUM issues: Evaluate and decide
-5. **Post summary comment** with all fixes addressed
-6. **Merge only after** all review feedback resolved
+4. **Post summary comment** with all fixes addressed
+5. **Merge only after** all review feedback resolved
 
-**Review Response Format:**
-```markdown
-## Security Issues Resolved
+**Merge Strategy:** Always use **Squash and Merge** for pull requests.
 
-**Commit:** `<hash>` - <commit message>
+- Keeps main branch history clean with one commit per feature/fix
+- PR title becomes the commit message
+- Individual commits are preserved in PR history for reference
 
-### CRITICAL Issue Fixed: <description>
-**Problem:** <description>
-**Solution:** <fix>
-**Result:** <outcome>
+```bash
+# Merge PR with squash
+gh pr merge <PR_NUMBER> --squash
 
-### Testing & Validation
-- terraform fmt - passed
-- terraform validate - passed
-- terraform plan - <results>
+# Delete the remote branch (--delete-branch doesn't work with worktrees)
+git push origin --delete <branch-name>
 ```
 
 ---
@@ -216,6 +228,120 @@ terraform show
 - **Never commit sensitive data** (use .envrc, not committed)
 - **Add validations** to prevent configuration errors
 - **Document decisions** (why we accepted or rejected suggestions)
+
+---
+
+## Code Review Process
+
+**Core principle:** Verify before implementing. Ask before assuming. Technical correctness over social comfort.
+
+### Response Pattern
+
+When receiving code review feedback (e.g., from gemini-code-assist):
+
+1. **READ** - Complete feedback without reacting
+2. **UNDERSTAND** - Restate requirement in own words (or ask if unclear)
+3. **VERIFY** - Check against codebase reality
+4. **EVALUATE** - Technically sound for THIS codebase?
+5. **RESPOND** - Technical acknowledgment or reasoned pushback
+6. **IMPLEMENT** - One item at a time, test each
+
+### Handling Unclear Feedback
+
+**If ANY item is unclear → STOP.** Do not implement anything yet. Ask for clarification on ALL unclear items before proceeding. Items may be related, and partial understanding leads to wrong implementation.
+
+### When to Push Back
+
+Push back when:
+- Suggestion breaks existing functionality
+- Reviewer lacks full context
+- Violates YAGNI (unused feature)
+- Technically incorrect for this stack
+- Conflicts with architectural decisions
+
+Use technical reasoning, not defensiveness. Reference working tests/code.
+
+### Forbidden Responses
+
+Never use performative agreement:
+- ❌ "You're absolutely right!"
+- ❌ "Great point!" / "Excellent feedback!"
+- ❌ "Thanks for catching that!"
+
+Instead, state the technical fix or pushback reasoning directly.
+
+### Proper Acknowledgment
+
+When feedback IS correct:
+- ✅ "Fixed. [Brief description of what changed]"
+- ✅ "Good catch - [specific issue]. Fixed in [location]."
+- ✅ Just fix it and show in the code
+
+### Workflow Steps
+
+#### 1. Fetch Comments
+
+```bash
+gh api repos/davidshaevel-dot-com/davidshaevel-platform/pulls/<PR_NUMBER>/comments
+```
+
+#### 2. Evaluate Each Comment
+
+For each piece of feedback:
+- **AGREE:** Make the fix after verifying it doesn't break anything
+- **PARTIALLY AGREE:** Make the fix but note context
+- **DISAGREE:** Provide detailed technical explanation why
+- **UNCLEAR:** Ask for clarification before implementing
+
+#### 3. Make Fixes and Commit
+
+```bash
+git add <specific-files>
+git commit -m "fix: address code review feedback from <reviewer>
+
+- Fixed X (valid concern about Y)
+- Fixed Z (improves W)
+- Declined A (breaks B / YAGNI / reason)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+related-issues: TT-XXX"
+git push
+```
+
+#### 4. Reply to Review Comments
+
+Reply **in the comment thread** (not top-level):
+
+**IMPORTANT: Always start with `@gemini-code-assist` so they are notified of your response.**
+
+```bash
+gh api repos/davidshaevel-dot-com/davidshaevel-platform/pulls/<PR>/comments/<COMMENT_ID>/replies \
+  -f body="@gemini-code-assist Fixed. Changed X to Y."
+```
+
+Every inline reply must include:
+- **`@gemini-code-assist` at the start** (required for notification)
+- What was fixed and how
+- Technical reasoning if declining
+
+#### 5. Post Summary Comment
+
+Add a summary comment to the PR:
+
+**IMPORTANT: Always start with `@gemini-code-assist` so they are notified.**
+
+```markdown
+@gemini-code-assist Review addressed:
+
+| # | Feedback | Resolution |
+|---|----------|------------|
+| 1 | Issue X | Fixed in abc123 - Added validation for edge case |
+| 2 | Issue Y | Fixed in abc123 - Refactored to use recommended pattern |
+| 3 | Issue Z | Declined - YAGNI, feature not currently used |
+```
+
+**Resolution column format:** Include both the commit reference AND a brief summary of how the feedback was addressed.
 
 ---
 
@@ -341,6 +467,53 @@ davidshaevel-platform/
 └── .github/
     └── workflows/                     # GitHub Actions CI/CD
 ```
+
+### Working with Worktrees
+
+This repo uses a bare repository with git worktrees, allowing multiple branches to be checked out simultaneously:
+
+```bash
+# List all worktrees (run from davidshaevel-platform/ or davidshaevel-platform/main/)
+git worktree list
+
+# Create a new feature branch worktree
+cd /Users/dshaevel/workspace-ds/davidshaevel-platform
+git worktree add feature-branch -b feature-branch
+
+# Remove a worktree when done
+git worktree remove feature-branch
+```
+
+### Worktree Cleanup - IMPORTANT
+
+**Before removing a worktree**, copy any gitignored files you need to the main worktree. These files are NOT tracked by git and will be lost when the worktree is deleted.
+
+```bash
+# Example: After merging a PR, before deleting the worktree
+# Copy gitignored files from the feature worktree to main
+
+# From the feature worktree directory:
+cp .envrc ../main/.envrc
+cp CLAUDE.local.md ../main/CLAUDE.local.md
+cp backend/.env ../main/backend/.env  # if it exists
+
+# Or from the davidshaevel-platform root:
+cp <worktree-name>/.envrc main/.envrc
+cp <worktree-name>/CLAUDE.local.md main/CLAUDE.local.md
+```
+
+**Common gitignored files to copy:**
+- `.envrc` - Environment variables (AWS, Cloudflare, Resend)
+- `CLAUDE.local.md` - Sensitive project context and session notes
+- `backend/.env` - Backend environment config (if exists)
+- `terraform/environments/**/terraform.tfvars` - Terraform variable values
+
+**Workflow:**
+1. Merge PR: `gh pr merge <PR_NUMBER> --squash`
+2. Pull changes into main worktree: `cd main && git pull`
+3. Delete remote branch: `git push origin --delete <branch-name>`
+4. Copy gitignored files from feature worktree to main
+5. Remove the worktree: `git worktree remove <worktree-name>`
 
 ---
 
