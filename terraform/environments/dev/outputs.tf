@@ -117,37 +117,37 @@ output "backend_url" {
 }
 
 # -----------------------------------------------------------------------------
-# ECR Repository Outputs
+# ECR Repository Outputs (Always-on resources)
 # -----------------------------------------------------------------------------
 
 output "backend_ecr_repository_url" {
   description = "URL of the backend ECR repository (use for docker push)"
-  value       = var.dev_activated ? module.compute[0].backend_ecr_repository_url : null
+  value       = aws_ecr_repository.backend.repository_url
 }
 
 output "backend_ecr_repository_name" {
   description = "Name of the backend ECR repository"
-  value       = var.dev_activated ? module.compute[0].backend_ecr_repository_name : null
+  value       = aws_ecr_repository.backend.name
 }
 
 output "frontend_ecr_repository_url" {
   description = "URL of the frontend ECR repository (use for docker push)"
-  value       = var.dev_activated ? module.compute[0].frontend_ecr_repository_url : null
+  value       = aws_ecr_repository.frontend.repository_url
 }
 
 output "frontend_ecr_repository_name" {
   description = "Name of the frontend ECR repository"
-  value       = var.dev_activated ? module.compute[0].frontend_ecr_repository_name : null
+  value       = aws_ecr_repository.frontend.name
 }
 
 output "grafana_ecr_repository_url" {
   description = "URL of the Grafana ECR repository (use for docker push)"
-  value       = var.dev_activated ? module.compute[0].grafana_ecr_repository_url : null
+  value       = aws_ecr_repository.grafana.repository_url
 }
 
 output "grafana_ecr_repository_name" {
   description = "Name of the Grafana ECR repository"
-  value       = var.dev_activated ? module.compute[0].grafana_ecr_repository_name : null
+  value       = aws_ecr_repository.grafana.name
 }
 
 # -----------------------------------------------------------------------------
