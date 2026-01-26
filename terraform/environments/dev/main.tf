@@ -347,19 +347,21 @@ module "observability" {
 # Render Prometheus configuration from template
 # Template variables are substituted with actual values from service discovery
 locals {
-  prometheus_config_rendered = templatefile("../../../observability/prometheus/prometheus.yml.tpl", {
+  prometheus_config_rendered = var.dev_activated ? templatefile("../../../observability/prometheus/prometheus.yml.tpl", {
     environment           = var.environment
     service_prefix        = "${var.environment}-${var.project_name}"
     platform_name         = var.project_name
     private_dns_zone      = var.private_dns_namespace
     backend_service_name  = module.service_discovery[0].backend_service_name
     frontend_service_name = module.service_discovery[0].frontend_service_name
-  })
+  }) : ""
 }
 
 # Upload rendered Prometheus config to S3
 # Init container will sync this to EFS on task startup
 resource "aws_s3_object" "prometheus_config" {
+  count = var.dev_activated ? 1 : 0
+
   bucket  = module.observability[0].prometheus_config_bucket_id
   key     = var.prometheus_config_s3_key
   content = local.prometheus_config_rendered
