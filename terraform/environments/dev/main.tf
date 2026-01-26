@@ -48,6 +48,40 @@ locals {
   )
 }
 
+# ==============================================================================
+# State Migration - Moved Blocks
+# These blocks tell Terraform that modules have been made conditional (with count)
+# and resources have moved from module.X to module.X[0]
+#
+# Note: networking module is NOT conditional because database depends on VPC/subnets.
+# NAT Gateway cost optimization would require refactoring the networking module.
+# ==============================================================================
+
+moved {
+  from = module.compute
+  to   = module.compute[0]
+}
+
+moved {
+  from = module.cdn
+  to   = module.cdn[0]
+}
+
+moved {
+  from = module.cicd_iam
+  to   = module.cicd_iam[0]
+}
+
+moved {
+  from = module.observability
+  to   = module.observability[0]
+}
+
+moved {
+  from = module.service_discovery
+  to   = module.service_discovery[0]
+}
+
 # AWS Provider Configuration
 provider "aws" {
   region = var.aws_region
@@ -72,9 +106,11 @@ provider "aws" {
 # Networking Module
 # ==============================================================================
 
+# NOTE: Networking module is always-on because database depends on VPC/subnets.
+# NAT Gateways (~$65/month) are inside this module - for full cost optimization,
+# the networking module would need refactoring to make NAT conditional.
 module "networking" {
   source = "../../modules/networking"
-  count  = var.dev_activated ? 1 : 0
 
   environment  = var.environment
   project_name = var.project_name
@@ -116,9 +152,9 @@ module "database" {
   project_name = var.project_name
 
   # Networking inputs (from networking module)
-  vpc_id                     = module.networking[0].vpc_id
-  private_db_subnet_ids      = module.networking[0].private_db_subnet_ids
-  database_security_group_id = module.networking[0].database_security_group_id
+  vpc_id                     = module.networking.vpc_id
+  private_db_subnet_ids      = module.networking.private_db_subnet_ids
+  database_security_group_id = module.networking.database_security_group_id
 
   # Database configuration (from variables)
   instance_class        = var.db_instance_class
@@ -145,12 +181,12 @@ module "compute" {
   project_name = var.project_name
 
   # Networking inputs (from networking module)
-  vpc_id                     = module.networking[0].vpc_id
-  public_subnet_ids          = module.networking[0].public_subnet_ids
-  private_app_subnet_ids     = module.networking[0].private_app_subnet_ids
-  alb_security_group_id      = module.networking[0].alb_security_group_id
-  frontend_security_group_id = module.networking[0].app_frontend_security_group_id
-  backend_security_group_id  = module.networking[0].app_backend_security_group_id
+  vpc_id                     = module.networking.vpc_id
+  public_subnet_ids          = module.networking.public_subnet_ids
+  private_app_subnet_ids     = module.networking.private_app_subnet_ids
+  alb_security_group_id      = module.networking.alb_security_group_id
+  frontend_security_group_id = module.networking.app_frontend_security_group_id
+  backend_security_group_id  = module.networking.app_backend_security_group_id
 
   # Database inputs (from database module)
   database_endpoint   = module.database.db_instance_endpoint
@@ -179,7 +215,7 @@ module "compute" {
 
   # ALB configuration
   enable_deletion_protection = var.alb_enable_deletion_protection
-  alb_certificate_arn        = module.cdn[0].acm_certificate_arn
+  alb_certificate_arn        = var.dev_activated ? module.cdn[0].acm_certificate_arn : null
 
   # CloudWatch Logs
   log_retention_days        = var.ecs_log_retention_days
@@ -286,11 +322,11 @@ module "observability" {
   project_name = var.project_name
 
   # Networking inputs (from networking module)
-  vpc_id                       = module.networking[0].vpc_id
-  private_app_subnet_ids       = module.networking[0].private_app_subnet_ids
-  prometheus_security_group_id = module.networking[0].prometheus_security_group_id
-  backend_security_group_id    = module.networking[0].app_backend_security_group_id
-  frontend_security_group_id   = module.networking[0].app_frontend_security_group_id
+  vpc_id                       = module.networking.vpc_id
+  private_app_subnet_ids       = module.networking.private_app_subnet_ids
+  prometheus_security_group_id = module.networking.prometheus_security_group_id
+  backend_security_group_id    = module.networking.app_backend_security_group_id
+  frontend_security_group_id   = module.networking.app_frontend_security_group_id
 
   # Container ports (from compute module)
   backend_metrics_port  = module.compute[0].backend_port
@@ -331,7 +367,7 @@ module "observability" {
 
   # ALB Integration for Public Access (prefers HTTPS listener if available)
   alb_listener_arn      = module.compute[0].alb_https_listener_arn != null ? module.compute[0].alb_https_listener_arn : module.compute[0].alb_http_listener_arn
-  alb_security_group_id = module.networking[0].alb_security_group_id
+  alb_security_group_id = module.networking.alb_security_group_id
   grafana_domain_name   = "grafana.${var.domain_name}"
 
   tags = {
@@ -395,7 +431,7 @@ module "service_discovery" {
   project_name = var.project_name
 
   # Networking inputs (from networking module)
-  vpc_id = module.networking[0].vpc_id
+  vpc_id = module.networking.vpc_id
 
   # DNS namespace configuration
   private_dns_namespace = var.private_dns_namespace

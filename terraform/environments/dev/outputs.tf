@@ -35,7 +35,7 @@ output "resource_prefix" {
 
 output "vpc_id" {
   description = "The ID of the VPC"
-  value       = var.dev_activated ? module.networking[0].vpc_id : null
+  value       = module.networking.vpc_id
 }
 
 # -----------------------------------------------------------------------------
