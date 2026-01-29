@@ -3,11 +3,12 @@
 # Dev Environment Activation Script
 # Brings up compute resources from Pilot Light mode
 #
-# Usage: ./dev-activate.sh [--dry-run] [--yes]
+# Usage: ./dev-activate.sh [--dry-run] [--yes] [--sync-data]
 #
 # Options:
-#   --dry-run  Show what would be done without making changes
-#   --yes      Skip confirmation prompts (use with caution)
+#   --dry-run    Show what would be done without making changes
+#   --yes        Skip confirmation prompts (use with caution)
+#   --sync-data  Sync Neon database to RDS before activation
 #
 # Prerequisites:
 #   - AWS CLI configured with appropriate credentials
@@ -42,6 +43,7 @@ NC='\033[0m' # No Color
 # Parse arguments
 DRY_RUN=false
 AUTO_APPROVE=false
+SYNC_DATA=false
 for arg in "$@"; do
     case $arg in
         --dry-run)
@@ -49,6 +51,9 @@ for arg in "$@"; do
             ;;
         --yes)
             AUTO_APPROVE=true
+            ;;
+        --sync-data)
+            SYNC_DATA=true
             ;;
     esac
 done
@@ -137,7 +142,25 @@ if [[ "${RDS_STATUS}" != "available" ]]; then
 fi
 log_info "RDS status: ${RDS_STATUS}"
 
-# Step 6: Show activation plan
+# Step 6: Sync data from Neon to RDS (optional)
+if [[ "${SYNC_DATA}" == "true" ]]; then
+    echo ""
+    log_info "Syncing data from Neon to RDS..."
+    SYNC_FLAGS=()
+    if [[ "${DRY_RUN}" == "true" ]]; then
+        SYNC_FLAGS+=(--dry-run)
+    fi
+    "${SCRIPT_DIR}/sync-neon-to-rds.sh" "${SYNC_FLAGS[@]}"
+
+    if [[ "${DRY_RUN}" == "true" ]]; then
+        log_info "Sync dry-run complete"
+    else
+        log_info "Data sync complete"
+    fi
+    echo ""
+fi
+
+# Step 7: Show activation plan
 echo ""
 echo "========================================"
 echo "  ACTIVATION PLAN"
@@ -157,6 +180,10 @@ echo "    - Frontend: ${FRONTEND_IMAGE}"
 echo ""
 echo "  Estimated deployment time: 15-20 minutes"
 echo ""
+if [[ "${SYNC_DATA}" == "true" ]]; then
+    echo "  Data Sync: Neon → RDS (completed before Terraform)"
+    echo ""
+fi
 echo "========================================"
 
 if [[ "${DRY_RUN}" == "true" ]]; then
@@ -180,7 +207,7 @@ if [[ "${AUTO_APPROVE}" != "true" ]]; then
     fi
 fi
 
-# Step 7: Run Terraform apply
+# Step 8: Run Terraform apply
 log_info "Activating dev environment..."
 
 TF_VARS=(
@@ -195,7 +222,7 @@ fi
 
 terraform apply "${TF_VARS[@]}"
 
-# Step 8: Get outputs
+# Step 9: Get outputs
 log_info "Retrieving endpoints..."
 ALB_DNS=$(terraform output -raw alb_dns_name 2>/dev/null || echo "N/A")
 CLOUDFRONT_DOMAIN=$(terraform output -raw cloudfront_domain_name 2>/dev/null || echo "N/A")
