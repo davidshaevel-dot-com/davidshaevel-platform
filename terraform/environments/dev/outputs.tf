@@ -249,3 +249,17 @@ output "dev_activated" {
   description = "Whether the dev environment compute resources are active"
   value       = var.dev_activated
 }
+
+# -----------------------------------------------------------------------------
+# Database Backup Outputs (Always-on)
+# -----------------------------------------------------------------------------
+
+output "db_backups_bucket_name" {
+  description = "Name of the S3 bucket for database backup dumps"
+  value       = aws_s3_bucket.db_backups.id
+}
+
+output "db_backups_bucket_arn" {
+  description = "ARN of the S3 bucket for database backup dumps"
+  value       = aws_s3_bucket.db_backups.arn
+}

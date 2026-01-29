@@ -180,6 +180,48 @@ resource "aws_ecr_lifecycle_policy" "grafana" {
   })
 }
 
+# Database Backups S3 Bucket - Always on for data sync
+resource "aws_s3_bucket" "db_backups" {
+  bucket = "${var.project_name}-dev-db-backups"
+
+  tags = merge(local.common_tags, {
+    Name    = "${var.project_name}-dev-db-backups"
+    Purpose = "Database sync dumps between Neon and RDS"
+  })
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "db_backups" {
+  bucket = aws_s3_bucket.db_backups.id
+
+  rule {
+    id     = "expire-old-dumps"
+    status = "Enabled"
+
+    expiration {
+      days = 30
+    }
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "db_backups" {
+  bucket = aws_s3_bucket.db_backups.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "db_backups" {
+  bucket = aws_s3_bucket.db_backups.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
 # ==============================================================================
 # State Migration - Moved Blocks
 # These blocks tell Terraform that modules have been made conditional (with count)
