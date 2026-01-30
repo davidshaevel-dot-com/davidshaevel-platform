@@ -3,11 +3,12 @@
 # Dev Environment Deactivation Script (Pilot Light Mode)
 # Tears down expensive compute resources while preserving data and networking
 #
-# Usage: ./dev-deactivate.sh [--dry-run] [--yes]
+# Usage: ./dev-deactivate.sh [--dry-run] [--yes] [--sync-data]
 #
 # Options:
-#   --dry-run  Show what would be done without making changes
-#   --yes      Skip confirmation prompts (use with caution)
+#   --dry-run    Show what would be done without making changes
+#   --yes        Skip confirmation prompts (use with caution)
+#   --sync-data  Sync RDS database to Neon before deactivation
 #
 # Prerequisites:
 #   - AWS CLI configured with appropriate credentials
@@ -42,6 +43,7 @@ NC='\033[0m' # No Color
 # Parse arguments
 DRY_RUN=false
 AUTO_APPROVE=false
+SYNC_DATA=false
 for arg in "$@"; do
     case $arg in
         --dry-run)
@@ -49,6 +51,9 @@ for arg in "$@"; do
             ;;
         --yes)
             AUTO_APPROVE=true
+            ;;
+        --sync-data)
+            SYNC_DATA=true
             ;;
     esac
 done
@@ -130,6 +135,10 @@ echo ""
 echo "  Estimated monthly savings: ~\$50-60"
 echo "  (NAT Gateways ~\$65 remain - networking module refactoring needed for full savings)"
 echo ""
+if [[ "${SYNC_DATA}" == "true" ]]; then
+    echo "  Data Sync: RDS → Neon (before Terraform destroy)"
+    echo ""
+fi
 echo "========================================"
 
 if [[ "${DRY_RUN}" == "true" ]]; then
@@ -150,7 +159,25 @@ if [[ "${AUTO_APPROVE}" != "true" ]]; then
     fi
 fi
 
-# Step 5: Run Terraform apply
+# Step 5: Sync data from RDS to Neon (optional)
+if [[ "${SYNC_DATA}" == "true" ]]; then
+    echo ""
+    log_info "Syncing data from RDS to Neon..."
+    SYNC_FLAGS=()
+    if [[ "${DRY_RUN}" == "true" ]]; then
+        SYNC_FLAGS+=(--dry-run)
+    fi
+    "${SCRIPT_DIR}/sync-rds-to-neon.sh" "${SYNC_FLAGS[@]}"
+
+    if [[ "${DRY_RUN}" == "true" ]]; then
+        log_info "Sync dry-run complete"
+    else
+        log_info "Data sync complete"
+    fi
+    echo ""
+fi
+
+# Step 6: Run Terraform apply
 log_info "Deactivating dev environment..."
 
 TF_VARS=(
