@@ -150,10 +150,16 @@ davidshaevel-platform/
 │   ├── observability-architecture.md
 │   └── observability-runbook.md
 ├── scripts/
+│   ├── dev-activate.sh     # Activate AWS dev from pilot light
+│   ├── dev-deactivate.sh   # Deactivate AWS dev to pilot light
+│   ├── dev-validation.sh   # Validate dev environment health
 │   ├── dr-failover.sh      # Activate DR environment
 │   ├── dr-failback.sh      # Return to primary region
 │   ├── dr-validation.sh    # Validate DR readiness
-│   └── grafana-dns-switch.sh # Switch Grafana DNS between dev/DR
+│   ├── grafana-dns-switch.sh # Switch Grafana DNS between dev/DR
+│   ├── sync-neon-to-rds.sh # Sync Neon database to AWS RDS
+│   ├── sync-rds-to-neon.sh # Sync AWS RDS database to Neon
+│   └── vercel-dns-switch.sh # Switch DNS between Vercel and AWS
 ├── frontend/               # Next.js 16 application (TT-18 - Complete)
 │   ├── app/               # Next.js App Router pages
 │   ├── components/        # React components
@@ -776,9 +782,11 @@ Austin, Texas
 - Frontend Deployment: October 30-31, 2025 (Complete)
 - PR Feedback & Security Fixes: October 31, 2025 (Complete)
 - Disaster Recovery Environment: January 9-11, 2026 (Complete)
+- Vercel Migration Phase 1: January 23-24, 2026 (Complete)
+- AWS Pilot Light Mode: January 26-30, 2026 (Complete)
 
-**Status:** ✅ PRODUCTION DEPLOYMENT COMPLETE + Observability Complete + DR Environment Complete (TT-73, TT-75, TT-87) + Contact Form Feature (TT-78, TT-84, TT-85) + Vercel Migration Complete (TT-89, TT-90, TT-91, TT-92)
-**Last Updated:** January 24, 2026
+**Status:** ✅ PRODUCTION DEPLOYMENT COMPLETE + Observability Complete + DR Environment Complete + Contact Form Feature + Vercel Migration Complete + AWS Pilot Light Mode Complete (TT-95, TT-96, TT-97, TT-98, TT-99, TT-132)
+**Last Updated:** January 30, 2026
 
 ## 🤖 AI Agent Sessions
 
@@ -813,6 +821,8 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - Jan 23: TT-87 DR Cutover Exercise - Resend config, grafana-dns-switch.sh, TT-75 fix (PR #82)
 - Jan 23: TT-89, TT-90, TT-91 Vercel Migration Phase 1 - Neon database, serverless adapter, frontend deployment
 - Jan 24: TT-91, TT-92 Vercel Migration Phase 1 Completion - Backend deployment, custom domain, DNS switch
+- Jan 26: TT-95, TT-96, TT-97 AWS Pilot Light Mode - dev_activated variable, activation/deactivation scripts (PR #84)
+- Jan 29-30: TT-98, TT-99, TT-132 Data Sync & Validation - Bidirectional Neon↔RDS sync, dev-validation.sh (PR #85)
 
 **Infrastructure Milestones:**
 - ✅ TT-16 (Steps 1-3): Foundation
@@ -840,7 +850,13 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - ✅ TT-90: NestJS Vercel Serverless (Complete - Jan 23, 2026) - @vendia/serverless-express adapter
 - ✅ TT-91: Vercel Frontend + Backend Deployment (Complete - Jan 24, 2026) - Full deployment with custom domain
 - ✅ TT-92: Custom Domain + DNS Switch (Complete - Jan 24, 2026) - vercel-dns-switch.sh, Cloudflare API
+- ✅ TT-95: AWS Pilot Light Terraform (Complete - Jan 26, 2026) - PR #84, dev_activated variable
+- ✅ TT-96: dev-activate.sh Script (Complete - Jan 26, 2026) - PR #84
+- ✅ TT-97: dev-deactivate.sh Script (Complete - Jan 26, 2026) - PR #84
+- ✅ TT-98: sync-neon-to-rds.sh Script (Complete - Jan 30, 2026) - PR #85
+- ✅ TT-99: sync-rds-to-neon.sh Script (Complete - Jan 30, 2026) - PR #85
+- ✅ TT-132: dev-validation.sh Script (Complete - Jan 30, 2026) - PR #85
 - ⏳ TT-20: Local Development (Planned - 6-8 hours)
 - ⏳ TT-26: Documentation (Planned - 4-6 hours)
 
-**Current Phase:** Production migrated to Vercel (frontend + backend serverless) with Neon PostgreSQL. AWS infrastructure available for DR/skills practice. Automated DNS switching between Vercel and AWS CloudFront via `scripts/vercel-dns-switch.sh`.
+**Current Phase:** Production on Vercel (frontend + backend serverless) with Neon PostgreSQL. AWS dev environment in pilot light mode with bidirectional data sync. Scripts: `dev-activate.sh`, `dev-deactivate.sh`, `dev-validation.sh`, `sync-neon-to-rds.sh`, `sync-rds-to-neon.sh`.

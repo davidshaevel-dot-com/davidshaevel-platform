@@ -477,10 +477,16 @@ davidshaevel-platform/
 │   └── dr-failover-runbook.md         # DR procedures and troubleshooting
 │
 ├── scripts/                           # Root-level operational scripts
+│   ├── dev-activate.sh                # Activate AWS dev from pilot light
+│   ├── dev-deactivate.sh              # Deactivate AWS dev to pilot light
+│   ├── dev-validation.sh              # Validate dev environment health
 │   ├── dr-failover.sh                 # Activate DR environment
 │   ├── dr-failback.sh                 # Return to primary region
 │   ├── dr-validation.sh               # Validate DR readiness (18 checks)
-│   └── grafana-dns-switch.sh          # Switch Grafana DNS between dev/DR
+│   ├── grafana-dns-switch.sh          # Switch Grafana DNS between dev/DR
+│   ├── sync-neon-to-rds.sh            # Sync Neon database to AWS RDS
+│   ├── sync-rds-to-neon.sh            # Sync AWS RDS database to Neon
+│   └── vercel-dns-switch.sh           # Switch DNS between Vercel and AWS
 │
 └── .github/
     └── workflows/                     # GitHub Actions CI/CD
@@ -645,6 +651,14 @@ See `docs/dr-failover-runbook.md` for procedures and troubleshooting.
 - TT-90: NestJS backend adapted for Vercel serverless (native request/response handler)
 - TT-91: Vercel deployment (frontend + backend deployed, custom domain configured)
 - TT-92: Custom domain + DNS switch (davidshaevel.com → Vercel via Cloudflare API)
+
+**AWS Pilot Light Mode (TT-95, TT-96, TT-97, TT-98, TT-99, TT-132 complete):**
+- TT-95: Add dev_activated variable to dev Terraform (PR #84)
+- TT-96: dev-activate.sh script for AWS activation from pilot light
+- TT-97: dev-deactivate.sh script for AWS deactivation to pilot light
+- TT-98: sync-neon-to-rds.sh script for Neon → RDS sync (PR #85)
+- TT-99: sync-rds-to-neon.sh script for RDS → Neon sync (PR #85)
+- TT-132: dev-validation.sh script for dev environment health checks (PR #85)
 
 ---
 
