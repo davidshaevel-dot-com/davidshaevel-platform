@@ -1,5 +1,7 @@
 # Data Sync & Dev Validation Implementation Plan
 
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
 **Goal:** Implement bidirectional database sync between Neon and RDS, plus a dev environment validation script.
 
 **Architecture:** Full replace sync using pg_dump/pg_restore with S3 as intermediate storage. Scripts integrate with existing dev-activate.sh and dev-deactivate.sh via optional `--sync-data` flag.
