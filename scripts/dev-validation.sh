@@ -58,9 +58,8 @@ fi
 
 # Check 2: Terraform state
 log_info "Checking Terraform state..."
-cd "${DEV_TERRAFORM_DIR}"
-if terraform show >/dev/null; then
-    DEV_ACTIVATED=$(terraform output -raw dev_activated 2>/dev/null || echo "false")
+if terraform -chdir="${DEV_TERRAFORM_DIR}" show >/dev/null; then
+    DEV_ACTIVATED=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw dev_activated 2>/dev/null || echo "false")
     if [[ "${DEV_ACTIVATED}" == "true" ]]; then
         log_pass "Dev infrastructure is activated (full mode)"
     else
@@ -107,7 +106,7 @@ fi
 
 # Check 6: VPC
 log_info "Checking VPC..."
-VPC_ID=$(terraform output -raw vpc_id 2>/dev/null || echo "")
+VPC_ID=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw vpc_id 2>/dev/null || echo "")
 if [[ -n "${VPC_ID}" ]]; then
     VPC_STATE=$(aws ec2 describe-vpcs --vpc-ids "${VPC_ID}" --region "${DEV_REGION}" --query 'Vpcs[0].State' --output text 2>/dev/null || echo "")
     if [[ "${VPC_STATE}" == "available" ]]; then
@@ -123,7 +122,7 @@ fi
 if [[ "${DEV_ACTIVATED:-false}" == "true" ]]; then
     # Check 7: ECS Cluster
     log_info "Checking ECS cluster..."
-    CLUSTER_NAME=$(terraform output -raw ecs_cluster_name 2>/dev/null || echo "")
+    CLUSTER_NAME=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw ecs_cluster_name 2>/dev/null || echo "")
     if [[ -n "${CLUSTER_NAME}" ]]; then
         CLUSTER_STATUS=$(aws ecs describe-clusters \
             --clusters "${CLUSTER_NAME}" \
@@ -139,9 +138,9 @@ if [[ "${DEV_ACTIVATED:-false}" == "true" ]]; then
 
     # Check 8: ECS Services
     log_info "Checking ECS services..."
-    FRONTEND_SVC=$(terraform output -raw frontend_service_name 2>/dev/null || echo "")
-    BACKEND_SVC=$(terraform output -raw backend_service_name 2>/dev/null || echo "")
-    GRAFANA_SVC=$(terraform output -raw grafana_service_name 2>/dev/null || echo "")
+    FRONTEND_SVC=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw frontend_service_name 2>/dev/null || echo "")
+    BACKEND_SVC=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw backend_service_name 2>/dev/null || echo "")
+    GRAFANA_SVC=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw grafana_service_name 2>/dev/null || echo "")
 
     for svc in "${FRONTEND_SVC}" "${BACKEND_SVC}" "${GRAFANA_SVC}"; do
         [[ -z "${svc}" ]] && continue
@@ -170,7 +169,7 @@ if [[ "${DEV_ACTIVATED:-false}" == "true" ]]; then
 
     # Check 9: ALB Health
     log_info "Checking ALB health..."
-    ALB_DNS=$(terraform output -raw alb_dns_name 2>/dev/null || echo "")
+    ALB_DNS=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw alb_dns_name 2>/dev/null || echo "")
     if [[ -n "${ALB_DNS}" ]]; then
         HTTP_CODE=$(curl -sk -o /dev/null -w "%{http_code}" "https://${ALB_DNS}/api/health" --connect-timeout 5 2>/dev/null || echo "000")
         if [[ "${HTTP_CODE}" == "200" ]]; then
@@ -182,7 +181,7 @@ if [[ "${DEV_ACTIVATED:-false}" == "true" ]]; then
 
     # Check 10: CloudFront
     log_info "Checking CloudFront distribution..."
-    CF_DIST_ID=$(terraform output -raw cloudfront_distribution_id 2>/dev/null || echo "")
+    CF_DIST_ID=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw cloudfront_distribution_id 2>/dev/null || echo "")
     if [[ -n "${CF_DIST_ID}" ]]; then
         CF_STATUS=$(aws cloudfront get-distribution \
             --id "${CF_DIST_ID}" \

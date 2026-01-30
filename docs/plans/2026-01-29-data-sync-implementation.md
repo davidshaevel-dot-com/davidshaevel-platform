@@ -217,12 +217,11 @@ log_info "Using AWS Account: ${ACCOUNT_ID}"
 
 # Step 3: Get RDS connection details from Terraform outputs
 log_info "Getting RDS connection details..."
-cd "${DEV_TERRAFORM_DIR}"
 
-RDS_ENDPOINT=$(terraform output -raw database_endpoint 2>/dev/null)
-RDS_PORT=$(terraform output -raw database_port 2>/dev/null)
-RDS_DBNAME=$(terraform output -raw database_name 2>/dev/null)
-RDS_SECRET_ARN=$(terraform output -raw database_secret_arn 2>/dev/null)
+RDS_ENDPOINT=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw database_endpoint 2>/dev/null)
+RDS_PORT=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw database_port 2>/dev/null)
+RDS_DBNAME=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw database_name 2>/dev/null)
+RDS_SECRET_ARN=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw database_secret_arn 2>/dev/null)
 
 if [[ -z "${RDS_ENDPOINT}" ]]; then
     log_error "Could not get RDS endpoint from Terraform outputs"
@@ -253,15 +252,19 @@ fi
 
 log_info "RDS Username: ${RDS_USERNAME}"
 
+# Create .pgpass file for secure password handling
+PGPASS_FILE=$(mktemp)
+chmod 600 "${PGPASS_FILE}"
+echo "${RDS_HOST}:${RDS_PORT}:${RDS_DBNAME}:${RDS_USERNAME}:${RDS_PASSWORD}" > "${PGPASS_FILE}"
+export PGPASSFILE="${PGPASS_FILE}"
+
 # Step 5: Get row counts for comparison
 log_info "Getting current row counts..."
 
-NEON_COUNT=$(psql "${NEON_DATABASE_URL}" -t -c "SELECT COUNT(*) FROM projects;" 2>/dev/null | xargs || echo "0")
+NEON_COUNT=$(psql "${NEON_DATABASE_URL}" -t -c "SELECT COUNT(*) FROM projects;" | xargs)
 log_info "Neon projects count: ${NEON_COUNT}"
 
-# Build RDS connection string for psql
-export PGPASSWORD="${RDS_PASSWORD}"
-RDS_COUNT=$(psql -h "${RDS_HOST}" -p "${RDS_PORT}" -U "${RDS_USERNAME}" -d "${RDS_DBNAME}" -t -c "SELECT COUNT(*) FROM projects;" 2>/dev/null | xargs || echo "0")
+RDS_COUNT=$(psql -h "${RDS_HOST}" -p "${RDS_PORT}" -U "${RDS_USERNAME}" -d "${RDS_DBNAME}" -t -c "SELECT COUNT(*) FROM projects;" | xargs)
 log_info "RDS projects count: ${RDS_COUNT}"
 
 # Step 6: Show sync plan
@@ -288,7 +291,7 @@ fi
 # Step 7: Dump Neon to local temp file
 log_info "Dumping Neon database..."
 TEMP_DUMP=$(mktemp)
-trap "rm -f ${TEMP_DUMP}" EXIT
+trap 'rm -f "${TEMP_DUMP}" "${PGPASS_FILE}"' EXIT
 
 pg_dump "${NEON_DATABASE_URL}" \
     --format=custom \
@@ -306,6 +309,7 @@ log_info "Uploaded to s3://${S3_BUCKET}/${S3_KEY}"
 
 # Step 9: Restore to RDS
 log_info "Restoring to RDS..."
+set +e  # Temporarily disable exit on error
 pg_restore \
     --host="${RDS_HOST}" \
     --port="${RDS_PORT}" \
@@ -315,7 +319,17 @@ pg_restore \
     --if-exists \
     --no-owner \
     --no-acl \
-    "${TEMP_DUMP}" 2>&1 || true  # pg_restore returns non-zero on warnings
+    "${TEMP_DUMP}" 2>&1
+PG_RESTORE_EXIT=$?
+set -e  # Re-enable exit on error
+
+# pg_restore exit codes: 0 = success, 1 = warnings (OK), > 1 = fatal error
+if [[ ${PG_RESTORE_EXIT} -gt 1 ]]; then
+    log_error "pg_restore failed with exit code ${PG_RESTORE_EXIT}"
+    exit 1
+elif [[ ${PG_RESTORE_EXIT} -eq 1 ]]; then
+    log_warn "pg_restore completed with warnings (exit code 1)"
+fi
 
 # Step 10: Verify sync
 log_info "Verifying sync..."
@@ -476,12 +490,11 @@ log_info "Using AWS Account: ${ACCOUNT_ID}"
 
 # Step 3: Get RDS connection details from Terraform outputs
 log_info "Getting RDS connection details..."
-cd "${DEV_TERRAFORM_DIR}"
 
-RDS_ENDPOINT=$(terraform output -raw database_endpoint 2>/dev/null)
-RDS_PORT=$(terraform output -raw database_port 2>/dev/null)
-RDS_DBNAME=$(terraform output -raw database_name 2>/dev/null)
-RDS_SECRET_ARN=$(terraform output -raw database_secret_arn 2>/dev/null)
+RDS_ENDPOINT=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw database_endpoint 2>/dev/null)
+RDS_PORT=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw database_port 2>/dev/null)
+RDS_DBNAME=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw database_name 2>/dev/null)
+RDS_SECRET_ARN=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw database_secret_arn 2>/dev/null)
 
 if [[ -z "${RDS_ENDPOINT}" ]]; then
     log_error "Could not get RDS endpoint from Terraform outputs"
@@ -512,14 +525,19 @@ fi
 
 log_info "RDS Username: ${RDS_USERNAME}"
 
+# Create .pgpass file for secure password handling
+PGPASS_FILE=$(mktemp)
+chmod 600 "${PGPASS_FILE}"
+echo "${RDS_HOST}:${RDS_PORT}:${RDS_DBNAME}:${RDS_USERNAME}:${RDS_PASSWORD}" > "${PGPASS_FILE}"
+export PGPASSFILE="${PGPASS_FILE}"
+
 # Step 5: Get row counts for comparison
 log_info "Getting current row counts..."
 
-export PGPASSWORD="${RDS_PASSWORD}"
-RDS_COUNT=$(psql -h "${RDS_HOST}" -p "${RDS_PORT}" -U "${RDS_USERNAME}" -d "${RDS_DBNAME}" -t -c "SELECT COUNT(*) FROM projects;" 2>/dev/null | xargs || echo "0")
+RDS_COUNT=$(psql -h "${RDS_HOST}" -p "${RDS_PORT}" -U "${RDS_USERNAME}" -d "${RDS_DBNAME}" -t -c "SELECT COUNT(*) FROM projects;" | xargs)
 log_info "RDS projects count: ${RDS_COUNT}"
 
-NEON_COUNT=$(psql "${NEON_DATABASE_URL}" -t -c "SELECT COUNT(*) FROM projects;" 2>/dev/null | xargs || echo "0")
+NEON_COUNT=$(psql "${NEON_DATABASE_URL}" -t -c "SELECT COUNT(*) FROM projects;" | xargs)
 log_info "Neon projects count: ${NEON_COUNT}"
 
 # Step 6: Show sync plan
@@ -546,7 +564,7 @@ fi
 # Step 7: Dump RDS to local temp file
 log_info "Dumping RDS database..."
 TEMP_DUMP=$(mktemp)
-trap "rm -f ${TEMP_DUMP}" EXIT
+trap 'rm -f "${TEMP_DUMP}" "${PGPASS_FILE}"' EXIT
 
 pg_dump \
     --host="${RDS_HOST}" \
@@ -571,13 +589,24 @@ log_info "Restoring to Neon..."
 
 # Neon requires special handling - drop and recreate tables
 # pg_restore with --clean works but may need retries
+set +e  # Temporarily disable exit on error
 pg_restore \
     "${NEON_DATABASE_URL}" \
     --clean \
     --if-exists \
     --no-owner \
     --no-acl \
-    "${TEMP_DUMP}" 2>&1 || true  # pg_restore returns non-zero on warnings
+    "${TEMP_DUMP}" 2>&1
+PG_RESTORE_EXIT=$?
+set -e  # Re-enable exit on error
+
+# pg_restore exit codes: 0 = success, 1 = warnings (OK), > 1 = fatal error
+if [[ ${PG_RESTORE_EXIT} -gt 1 ]]; then
+    log_error "pg_restore failed with exit code ${PG_RESTORE_EXIT}"
+    exit 1
+elif [[ ${PG_RESTORE_EXIT} -eq 1 ]]; then
+    log_warn "pg_restore completed with warnings (exit code 1)"
+fi
 
 # Step 10: Verify sync
 log_info "Verifying sync..."
@@ -694,9 +723,8 @@ fi
 
 # Check 2: Terraform state
 log_info "Checking Terraform state..."
-cd "${DEV_TERRAFORM_DIR}"
-if terraform show &>/dev/null; then
-    DEV_ACTIVATED=$(terraform output -raw dev_activated 2>/dev/null || echo "false")
+if terraform -chdir="${DEV_TERRAFORM_DIR}" show &>/dev/null; then
+    DEV_ACTIVATED=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw dev_activated 2>/dev/null || echo "false")
     if [[ "${DEV_ACTIVATED}" == "true" ]]; then
         log_pass "Dev infrastructure is activated (full mode)"
     else
@@ -743,7 +771,7 @@ fi
 
 # Check 6: VPC
 log_info "Checking VPC..."
-VPC_ID=$(terraform output -raw vpc_id 2>/dev/null || echo "")
+VPC_ID=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw vpc_id 2>/dev/null || echo "")
 if [[ -n "${VPC_ID}" ]]; then
     VPC_STATE=$(aws ec2 describe-vpcs --vpc-ids "${VPC_ID}" --region ${DEV_REGION} --query 'Vpcs[0].State' --output text 2>/dev/null || echo "")
     if [[ "${VPC_STATE}" == "available" ]]; then
@@ -759,7 +787,7 @@ fi
 if [[ "${DEV_ACTIVATED:-false}" == "true" ]]; then
     # Check 7: ECS Cluster
     log_info "Checking ECS cluster..."
-    CLUSTER_NAME=$(terraform output -raw ecs_cluster_name 2>/dev/null || echo "")
+    CLUSTER_NAME=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw ecs_cluster_name 2>/dev/null || echo "")
     if [[ -n "${CLUSTER_NAME}" ]]; then
         CLUSTER_STATUS=$(aws ecs describe-clusters \
             --clusters "${CLUSTER_NAME}" \
@@ -775,9 +803,9 @@ if [[ "${DEV_ACTIVATED:-false}" == "true" ]]; then
 
     # Check 8: ECS Services
     log_info "Checking ECS services..."
-    FRONTEND_SVC=$(terraform output -raw frontend_service_name 2>/dev/null || echo "")
-    BACKEND_SVC=$(terraform output -raw backend_service_name 2>/dev/null || echo "")
-    GRAFANA_SVC=$(terraform output -raw grafana_service_name 2>/dev/null || echo "")
+    FRONTEND_SVC=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw frontend_service_name 2>/dev/null || echo "")
+    BACKEND_SVC=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw backend_service_name 2>/dev/null || echo "")
+    GRAFANA_SVC=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw grafana_service_name 2>/dev/null || echo "")
 
     for svc in "${FRONTEND_SVC}" "${BACKEND_SVC}" "${GRAFANA_SVC}"; do
         [[ -z "${svc}" ]] && continue
@@ -806,7 +834,7 @@ if [[ "${DEV_ACTIVATED:-false}" == "true" ]]; then
 
     # Check 9: ALB Health
     log_info "Checking ALB health..."
-    ALB_DNS=$(terraform output -raw alb_dns_name 2>/dev/null || echo "")
+    ALB_DNS=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw alb_dns_name 2>/dev/null || echo "")
     if [[ -n "${ALB_DNS}" ]]; then
         HTTP_CODE=$(curl -sk -o /dev/null -w "%{http_code}" "https://${ALB_DNS}/api/health" --connect-timeout 5 2>/dev/null || echo "000")
         if [[ "${HTTP_CODE}" == "200" ]]; then
@@ -818,7 +846,7 @@ if [[ "${DEV_ACTIVATED:-false}" == "true" ]]; then
 
     # Check 10: CloudFront
     log_info "Checking CloudFront distribution..."
-    CF_DIST_ID=$(terraform output -raw cloudfront_distribution_id 2>/dev/null || echo "")
+    CF_DIST_ID=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw cloudfront_distribution_id 2>/dev/null || echo "")
     if [[ -n "${CF_DIST_ID}" ]]; then
         CF_STATUS=$(aws cloudfront get-distribution \
             --id "${CF_DIST_ID}" \

@@ -7,7 +7,7 @@
 # Prerequisites:
 #   - NEON_DATABASE_URL environment variable set
 #   - AWS CLI configured with appropriate credentials
-#   - psql, pg_dump installed
+#   - psql, pg_dump, jq installed
 #   - RDS instance must be running
 #
 # This script:
@@ -85,6 +85,11 @@ fi
 
 if ! command -v pg_dump &> /dev/null; then
     log_error "pg_dump is not installed"
+    exit 1
+fi
+
+if ! command -v jq &> /dev/null; then
+    log_error "jq is not installed (required to parse secrets)"
     exit 1
 fi
 
