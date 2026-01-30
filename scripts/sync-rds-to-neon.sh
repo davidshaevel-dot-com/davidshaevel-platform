@@ -102,12 +102,11 @@ log_info "Using AWS Account: ${ACCOUNT_ID}"
 
 # Step 3: Get RDS connection details from Terraform outputs
 log_info "Getting RDS connection details..."
-cd "${DEV_TERRAFORM_DIR}"
 
-RDS_ENDPOINT=$(terraform output -raw database_endpoint 2>/dev/null)
-RDS_PORT=$(terraform output -raw database_port 2>/dev/null)
-RDS_DBNAME=$(terraform output -raw database_name 2>/dev/null)
-RDS_SECRET_ARN=$(terraform output -raw database_secret_arn 2>/dev/null)
+RDS_ENDPOINT=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw database_endpoint 2>/dev/null)
+RDS_PORT=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw database_port 2>/dev/null)
+RDS_DBNAME=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw database_name 2>/dev/null)
+RDS_SECRET_ARN=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw database_secret_arn 2>/dev/null)
 
 if [[ -z "${RDS_ENDPOINT}" ]]; then
     log_error "Could not get RDS endpoint from Terraform outputs"
@@ -138,15 +137,19 @@ fi
 
 log_info "RDS Username: ${RDS_USERNAME}"
 
+# Create .pgpass file for secure password handling
+PGPASS_FILE=$(mktemp)
+chmod 600 "${PGPASS_FILE}"
+echo "${RDS_HOST}:${RDS_PORT}:${RDS_DBNAME}:${RDS_USERNAME}:${RDS_PASSWORD}" > "${PGPASS_FILE}"
+export PGPASSFILE="${PGPASS_FILE}"
+
 # Step 5: Get row counts for comparison
 log_info "Getting current row counts..."
 
-export PGPASSWORD="${RDS_PASSWORD}"
-RDS_COUNT=$(psql -h "${RDS_HOST}" -p "${RDS_PORT}" -U "${RDS_USERNAME}" -d "${RDS_DBNAME}" -t -c "SELECT COUNT(*) FROM projects;" 2>/dev/null | xargs || echo "0")
-unset PGPASSWORD
+RDS_COUNT=$(psql -h "${RDS_HOST}" -p "${RDS_PORT}" -U "${RDS_USERNAME}" -d "${RDS_DBNAME}" -t -c "SELECT COUNT(*) FROM projects;" | xargs)
 log_info "RDS projects count: ${RDS_COUNT}"
 
-NEON_COUNT=$(psql "${NEON_DATABASE_URL}" -t -c "SELECT COUNT(*) FROM projects;" 2>/dev/null | xargs || echo "0")
+NEON_COUNT=$(psql "${NEON_DATABASE_URL}" -t -c "SELECT COUNT(*) FROM projects;" | xargs)
 log_info "Neon projects count: ${NEON_COUNT}"
 
 # Step 6: Show sync plan
@@ -173,9 +176,8 @@ fi
 # Step 7: Dump RDS to local temp file
 log_info "Dumping RDS database..."
 TEMP_DUMP=$(mktemp)
-trap 'rm -f "${TEMP_DUMP}"' EXIT
+trap 'rm -f "${TEMP_DUMP}" "${PGPASS_FILE}"' EXIT
 
-export PGPASSWORD="${RDS_PASSWORD}"
 pg_dump \
     --host="${RDS_HOST}" \
     --port="${RDS_PORT}" \
@@ -185,7 +187,6 @@ pg_dump \
     --no-owner \
     --no-acl \
     --file="${TEMP_DUMP}"
-unset PGPASSWORD
 
 DUMP_SIZE=$(ls -lh "${TEMP_DUMP}" | awk '{print $5}')
 log_info "Dump created: ${DUMP_SIZE}"
@@ -200,13 +201,24 @@ log_info "Restoring to Neon..."
 
 # Neon requires special handling - drop and recreate tables
 # pg_restore with --clean works but may need retries
+set +e  # Temporarily disable exit on error
 pg_restore \
     "${NEON_DATABASE_URL}" \
     --clean \
     --if-exists \
     --no-owner \
     --no-acl \
-    "${TEMP_DUMP}" 2>&1 || true  # pg_restore returns non-zero on warnings
+    "${TEMP_DUMP}" 2>&1
+PG_RESTORE_EXIT=$?
+set -e  # Re-enable exit on error
+
+# pg_restore exit codes: 0 = success, 1 = warnings (OK), > 1 = fatal error
+if [[ ${PG_RESTORE_EXIT} -gt 1 ]]; then
+    log_error "pg_restore failed with exit code ${PG_RESTORE_EXIT}"
+    exit 1
+elif [[ ${PG_RESTORE_EXIT} -eq 1 ]]; then
+    log_warn "pg_restore completed with warnings (exit code 1)"
+fi
 
 # Step 10: Verify sync
 log_info "Verifying sync..."

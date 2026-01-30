@@ -49,7 +49,7 @@ echo ""
 
 # Check 1: AWS Credentials
 log_info "Checking AWS credentials..."
-if aws sts get-caller-identity &>/dev/null; then
+if aws sts get-caller-identity >/dev/null; then
     log_pass "AWS credentials valid"
 else
     log_fail "AWS credentials invalid"
@@ -59,7 +59,7 @@ fi
 # Check 2: Terraform state
 log_info "Checking Terraform state..."
 cd "${DEV_TERRAFORM_DIR}"
-if terraform show &>/dev/null; then
+if terraform show >/dev/null; then
     DEV_ACTIVATED=$(terraform output -raw dev_activated 2>/dev/null || echo "false")
     if [[ "${DEV_ACTIVATED}" == "true" ]]; then
         log_pass "Dev infrastructure is activated (full mode)"
@@ -73,7 +73,7 @@ fi
 # Check 3: ECR Repositories
 log_info "Checking ECR repositories..."
 for repo in "${ECR_REPOS[@]}"; do
-    if aws ecr describe-repositories --repository-names "${PROJECT_NAME}/${repo}" --region "${DEV_REGION}" &>/dev/null; then
+    if aws ecr describe-repositories --repository-names "${PROJECT_NAME}/${repo}" --region "${DEV_REGION}" >/dev/null; then
         IMAGE_COUNT=$(aws ecr describe-images --repository-name "${PROJECT_NAME}/${repo}" --region "${DEV_REGION}" --query 'length(imageDetails)' --output text 2>/dev/null || echo "0")
         log_pass "ECR repo ${PROJECT_NAME}/${repo} exists (${IMAGE_COUNT} images)"
     else
@@ -84,7 +84,7 @@ done
 # Check 4: S3 Buckets
 log_info "Checking S3 buckets..."
 DB_BACKUPS_BUCKET="${PROJECT_NAME}-dev-db-backups"
-if aws s3api head-bucket --bucket "${DB_BACKUPS_BUCKET}" --region "${DEV_REGION}" &>/dev/null; then
+if aws s3api head-bucket --bucket "${DB_BACKUPS_BUCKET}" --region "${DEV_REGION}" >/dev/null; then
     log_pass "S3 bucket ${DB_BACKUPS_BUCKET} exists"
 else
     log_warn "S3 bucket ${DB_BACKUPS_BUCKET} not found (run terraform apply)"
