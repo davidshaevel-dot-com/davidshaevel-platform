@@ -214,22 +214,22 @@ output "cache_invalidation_command" {
 
 output "cicd_iam_user_name" {
   description = "Name of the GitHub Actions IAM user"
-  value       = var.dev_activated ? module.cicd_iam[0].user_name : null
+  value       = module.cicd_iam.user_name
 }
 
 output "cicd_iam_user_arn" {
   description = "ARN of the GitHub Actions IAM user"
-  value       = var.dev_activated ? module.cicd_iam[0].user_arn : null
+  value       = module.cicd_iam.user_arn
 }
 
 output "cicd_iam_policy_arn" {
   description = "ARN of the GitHub Actions deployment policy"
-  value       = var.dev_activated ? module.cicd_iam[0].policy_arn : null
+  value       = module.cicd_iam.policy_arn
 }
 
 output "cicd_iam_policy_name" {
   description = "Name of the GitHub Actions deployment policy"
-  value       = var.dev_activated ? module.cicd_iam[0].policy_name : null
+  value       = module.cicd_iam.policy_name
 }
 
 # -----------------------------------------------------------------------------

@@ -175,18 +175,32 @@ git commit -m "feat(TT-95): Make CDN module conditional on dev_activated"
 
 ---
 
-## Task 6: Make cicd_iam module conditional on dev_activated
+## Task 6: Keep cicd_iam module always-on
+
+> **UPDATE (TT-134):** The cicd_iam module is now **always-on** instead of conditional.
+> This avoids needing to recreate IAM access keys and update GitHub secrets when
+> switching between pilot light modes. IAM resources are free ($0 cost impact).
 
 **Files:**
 - Modify: [terraform/environments/dev/main.tf](terraform/environments/dev/main.tf#L260-L270)
 
-**Step 1: Add count to cicd_iam module**
+**Step 1: Ensure cicd_iam module has NO count**
 
-Add `count = var.dev_activated ? 1 : 0` after the source line.
+The module should NOT have a `count` conditional - it remains always-on:
+```hcl
+module "cicd_iam" {
+  source = "../../modules/cicd-iam"
+  # Always-on: IAM resources are free and keeping them avoids
+  # needing to recreate access keys when switching pilot light modes
+
+  environment    = var.environment
+  ...
+}
+```
 
 **Step 2: Update CDN reference**
 
-Update `cloudfront_distribution_id = module.cdn.cloudfront_distribution_id` to use conditional:
+Update `cloudfront_distribution_id` to handle when CDN doesn't exist:
 ```hcl
   cloudfront_distribution_id = var.dev_activated ? module.cdn[0].cloudfront_distribution_id : ""
 ```
@@ -200,7 +214,7 @@ Expected: Success
 
 ```bash
 git add terraform/environments/dev/main.tf
-git commit -m "feat(TT-95): Make cicd_iam module conditional on dev_activated"
+git commit -m "feat(pilot-light): keep CI/CD IAM resources always-on"
 ```
 
 ---

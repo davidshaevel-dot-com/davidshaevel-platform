@@ -273,8 +273,8 @@ moved {
 }
 
 moved {
-  from = module.cicd_iam
-  to   = module.cicd_iam[0]
+  from = module.cicd_iam[0]
+  to   = module.cicd_iam
 }
 
 moved {
@@ -507,7 +507,8 @@ module "cdn" {
 
 module "cicd_iam" {
   source = "../../modules/cicd-iam"
-  count  = var.dev_activated ? 1 : 0
+  # Always-on: IAM resources are free and keeping them avoids
+  # needing to recreate access keys when switching pilot light modes
 
   environment    = var.environment
   project_name   = var.project_name
@@ -515,6 +516,7 @@ module "cicd_iam" {
   aws_region     = var.aws_region
 
   # CloudFront distribution ID for cache invalidation permissions
+  # Empty string when CDN not deployed (pilot light mode)
   cloudfront_distribution_id = var.dev_activated ? module.cdn[0].cloudfront_distribution_id : ""
 }
 
