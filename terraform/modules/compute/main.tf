@@ -387,9 +387,16 @@ resource "aws_lb_listener" "https" {
   tags = merge(local.common_tags, {
     Name = "${local.resource_prefix}-alb-https-listener"
   })
+
+  lifecycle {
+    precondition {
+      condition     = var.enable_https_listener ? var.alb_certificate_arn != null : true
+      error_message = "When enable_https_listener is true, a valid alb_certificate_arn must be provided."
+    }
+  }
 }
 
-# HTTP listener - redirects to HTTPS if certificate is provided, otherwise forwards
+# HTTP listener - redirects to HTTPS if enabled, otherwise forwards
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
   port              = 80
