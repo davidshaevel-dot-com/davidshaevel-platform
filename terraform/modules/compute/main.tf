@@ -367,9 +367,11 @@ resource "aws_lb_target_group" "backend" {
 # ALB Listeners (Step 8)
 # ------------------------------------------------------------------------------
 
-# HTTPS listener (optional - only created if certificate ARN is provided)
+# HTTPS listener (optional - only created if enable_https_listener is true)
+# Note: Using enable_https_listener boolean instead of checking alb_certificate_arn != null
+# to avoid Terraform error "count depends on unknown value" during initial activation
 resource "aws_lb_listener" "https" {
-  count = var.alb_certificate_arn != null ? 1 : 0
+  count = var.enable_https_listener ? 1 : 0
 
   load_balancer_arn = aws_lb.main.arn
   port              = 443
