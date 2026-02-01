@@ -118,7 +118,7 @@ else
     log_fail "VPC not found in Terraform outputs"
 fi
 
-# Checks 7-13: Only run if dev is activated
+# Checks 7-12: Only run if dev is activated
 if [[ "${DEV_ACTIVATED:-false}" == "true" ]]; then
     # Check 7: ECS Cluster
     log_info "Checking ECS cluster..."
@@ -211,10 +211,11 @@ if [[ "${DEV_ACTIVATED:-false}" == "true" ]]; then
                 --region us-east-1 \
                 --query 'Certificate.SubjectAlternativeNames' \
                 --output text 2>/dev/null || echo "")
-            if echo "${CERT_DOMAINS}" | grep -q "grafana.davidshaevel.com"; then
-                log_pass "ACM certificate covers grafana.davidshaevel.com"
+            GRAFANA_DOMAIN="grafana.${TF_VAR_domain_name:-davidshaevel.com}"
+            if echo "${CERT_DOMAINS}" | grep -q "${GRAFANA_DOMAIN}"; then
+                log_pass "ACM certificate covers ${GRAFANA_DOMAIN}"
             else
-                log_warn "ACM certificate missing grafana.davidshaevel.com SAN"
+                log_warn "ACM certificate missing ${GRAFANA_DOMAIN} SAN"
             fi
         elif [[ "${CERT_STATUS}" == "PENDING_VALIDATION" ]]; then
             log_warn "ACM certificate pending DNS validation"
@@ -225,7 +226,7 @@ if [[ "${DEV_ACTIVATED:-false}" == "true" ]]; then
         log_warn "ACM certificate ARN not found in Terraform outputs"
     fi
 
-    # Check 13: Service Discovery
+    # Check 12: Service Discovery
     log_info "Checking service discovery..."
     SD_NAMESPACE=$(aws servicediscovery list-namespaces \
         --region "${DEV_REGION}" \

@@ -101,24 +101,22 @@ fetch_terraform_outputs() {
 
     # Fetch CloudFront domain
     local cf_output
-    cf_output=$(terraform -chdir="$tf_dir" output -raw cloudfront_domain_name 2>/dev/null) || true
-    if [[ -n "$cf_output" && "$cf_output" != *"No outputs found"* && "$cf_output" != *"Error"* ]]; then
-        CLOUDFRONT_DIST="$cf_output"
-        log_info "CloudFront domain from Terraform: ${CLOUDFRONT_DIST}"
-    else
+    if ! cf_output=$(terraform -chdir="$tf_dir" output -raw cloudfront_domain_name 2>/dev/null); then
         CLOUDFRONT_DIST=$(get_fallback_cloudfront)
         log_warn "Could not fetch CloudFront domain from Terraform, using fallback: ${CLOUDFRONT_DIST}"
+    else
+        CLOUDFRONT_DIST="$cf_output"
+        log_info "CloudFront domain from Terraform: ${CLOUDFRONT_DIST}"
     fi
 
     # Fetch ALB DNS name
     local alb_output
-    alb_output=$(terraform -chdir="$tf_dir" output -raw alb_dns_name 2>/dev/null) || true
-    if [[ -n "$alb_output" && "$alb_output" != *"No outputs found"* && "$alb_output" != *"Error"* ]]; then
-        GRAFANA_ALB="$alb_output"
-        log_info "ALB DNS from Terraform: ${GRAFANA_ALB}"
-    else
+    if ! alb_output=$(terraform -chdir="$tf_dir" output -raw alb_dns_name 2>/dev/null); then
         GRAFANA_ALB=$(get_fallback_alb)
         log_warn "Could not fetch ALB DNS from Terraform, using fallback: ${GRAFANA_ALB}"
+    else
+        GRAFANA_ALB="$alb_output"
+        log_info "ALB DNS from Terraform: ${GRAFANA_ALB}"
     fi
 }
 
