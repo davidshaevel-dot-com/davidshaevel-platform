@@ -33,13 +33,21 @@ export TF_VAR_environment="dev"
 # Domain name - Replace with your actual domain name
 export TF_VAR_domain_name="example.com"
 
-# Cloudflare Configuration (for grafana-dns-switch.sh script)
+# Cloudflare Configuration (for vercel-dns-switch.sh script)
 # Get API token from: https://dash.cloudflare.com/profile/api-tokens
 # Create token with Zone:DNS:Edit permissions for your domain
 export CLOUDFLARE_API_TOKEN="your-cloudflare-api-token"
 
 # Get Zone ID from: Cloudflare Dashboard > Your domain > Overview (right sidebar)
 export CLOUDFLARE_ZONE_ID="your-zone-id"
+
+# AWS Infrastructure DNS (fallback values for vercel-dns-switch.sh when Terraform unavailable)
+# These are fetched dynamically from Terraform outputs, but fallback to these if unavailable
+# Get CloudFront domain from: AWS Console > CloudFront > Distributions > Domain name
+export AWS_CLOUDFRONT_DOMAIN="your-dist-id.cloudfront.net"
+
+# Get ALB domain from: AWS Console > EC2 > Load Balancers > DNS name
+export AWS_ALB_DOMAIN="your-alb-name.region.elb.amazonaws.com"
 
 # Neon Database Configuration (for Vercel deployment)
 # Create a free database at: https://neon.tech

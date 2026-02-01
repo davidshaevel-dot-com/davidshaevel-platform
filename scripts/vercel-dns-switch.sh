@@ -18,14 +18,19 @@
 
 set -euo pipefail
 
-# Configuration
+# Configuration - static values
 DOMAIN="davidshaevel.com"
-CLOUDFRONT_DIST="d2e9snnkdrbz31.cloudfront.net"
 VERCEL_A_RECORD="216.198.79.1"
 VERCEL_WWW_CNAME="2d7df72c42ce62a7.vercel-dns-017.com."
 GRAFANA_SUBDOMAIN="grafana"
-# Grafana uses ALB directly (not CloudFront) because CloudFront cert doesn't cover grafana subdomain
-GRAFANA_ALB="dev-davidshaevel-alb-1273223666.us-east-1.elb.amazonaws.com"
+
+# Terraform directory (relative to script location)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TERRAFORM_DIR="${SCRIPT_DIR}/../terraform/environments/dev"
+
+# Dynamic values from Terraform (fetched at runtime)
+CLOUDFRONT_DIST=""
+GRAFANA_ALB=""
 
 # Colors for output
 RED='\033[0;31m'
@@ -48,6 +53,73 @@ log_error() {
 
 log_step() {
     echo -e "${CYAN}[STEP]${NC} $1"
+}
+
+fetch_terraform_outputs() {
+    # Fetch CloudFront distribution domain and ALB DNS from Terraform outputs
+    # This ensures the script stays in sync with infrastructure changes
+    # Falls back to environment variables from .envrc if Terraform unavailable
+
+    local tf_dir="${TERRAFORM_DIR}"
+
+    # Helper to get fallback values from environment
+    get_fallback_cloudfront() {
+        if [[ -n "${AWS_CLOUDFRONT_DOMAIN:-}" ]]; then
+            echo "$AWS_CLOUDFRONT_DOMAIN"
+        else
+            log_error "AWS_CLOUDFRONT_DOMAIN not set in environment"
+            log_error "Add it to .envrc: export AWS_CLOUDFRONT_DOMAIN=\"your-dist.cloudfront.net\""
+            exit 1
+        fi
+    }
+
+    get_fallback_alb() {
+        if [[ -n "${AWS_ALB_DOMAIN:-}" ]]; then
+            echo "$AWS_ALB_DOMAIN"
+        else
+            log_error "AWS_ALB_DOMAIN not set in environment"
+            log_error "Add it to .envrc: export AWS_ALB_DOMAIN=\"your-alb.region.elb.amazonaws.com\""
+            exit 1
+        fi
+    }
+
+    if [[ ! -d "$tf_dir" ]]; then
+        log_warn "Terraform directory not found: ${tf_dir}"
+        log_warn "Using fallback values from environment"
+        CLOUDFRONT_DIST=$(get_fallback_cloudfront)
+        GRAFANA_ALB=$(get_fallback_alb)
+        return
+    fi
+
+    # Check if terraform is available
+    if ! command -v terraform &> /dev/null; then
+        log_warn "terraform not installed, using fallback values from environment"
+        CLOUDFRONT_DIST=$(get_fallback_cloudfront)
+        GRAFANA_ALB=$(get_fallback_alb)
+        return
+    fi
+
+    # Fetch CloudFront domain
+    local cf_output
+    cf_output=$(terraform -chdir="$tf_dir" output -raw cloudfront_domain_name 2>/dev/null) || true
+    if [[ -n "$cf_output" && "$cf_output" != *"No outputs found"* && "$cf_output" != *"Error"* ]]; then
+        CLOUDFRONT_DIST="$cf_output"
+        log_info "CloudFront domain from Terraform: ${CLOUDFRONT_DIST}"
+    else
+        CLOUDFRONT_DIST=$(get_fallback_cloudfront)
+        log_warn "Could not fetch CloudFront domain from Terraform, using fallback: ${CLOUDFRONT_DIST}"
+    fi
+
+    # Fetch ALB DNS name
+    local alb_output
+    alb_output=$(terraform -chdir="$tf_dir" output -raw alb_dns_name 2>/dev/null) || true
+    if [[ -n "$alb_output" && "$alb_output" != *"No outputs found"* && "$alb_output" != *"Error"* ]]; then
+        GRAFANA_ALB="$alb_output"
+        log_info "ALB DNS from Terraform: ${GRAFANA_ALB}"
+    else
+        GRAFANA_ALB=$(get_fallback_alb)
+        log_warn "Could not fetch ALB DNS from Terraform, using fallback: ${GRAFANA_ALB}"
+    fi
 }
 
 usage() {
@@ -562,6 +634,7 @@ if [[ -z "$ACTION" ]]; then
 fi
 
 check_requirements
+fetch_terraform_outputs
 
 case $ACTION in
     status)
