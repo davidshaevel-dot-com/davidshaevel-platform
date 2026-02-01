@@ -145,7 +145,7 @@ DNS Targets:
                 grafana.${DOMAIN} -> (removed)
     AWS:        ${DOMAIN} -> CNAME ${CLOUDFRONT_DIST}
                 www.${DOMAIN} -> CNAME ${CLOUDFRONT_DIST}
-                grafana.${DOMAIN} -> CNAME ${CLOUDFRONT_DIST}
+                grafana.${DOMAIN} -> CNAME ${GRAFANA_ALB} (direct to ALB)
 
 Examples:
     $(basename "$0") --status
@@ -377,7 +377,7 @@ switch_to_vercel() {
         log_step "2/5 Deleting root CNAME record..."
         local delete_response
         delete_response=$(delete_record "$root_id")
-        if echo "$delete_response" | jq -e '.success' > /dev/null 2>&1; then
+        if echo "$delete_response" | jq -e '.success' >/dev/null; then
             log_info "Root CNAME deleted"
         else
             log_error "Failed to delete root CNAME"
@@ -389,7 +389,7 @@ switch_to_vercel() {
         log_step "3/5 Creating root A record for Vercel..."
         local create_response
         create_response=$(create_record "A" "${DOMAIN}" "${VERCEL_A_RECORD}" "false")
-        if echo "$create_response" | jq -e '.success' > /dev/null 2>&1; then
+        if echo "$create_response" | jq -e '.success' >/dev/null; then
             log_info "Root A record created: ${VERCEL_A_RECORD}"
         else
             log_error "Failed to create root A record"
@@ -410,7 +410,7 @@ switch_to_vercel() {
         log_warn "No www CNAME found, creating new record..."
         local www_create
         www_create=$(create_record "CNAME" "www" "${VERCEL_WWW_CNAME}" "false")
-        if echo "$www_create" | jq -e '.success' > /dev/null 2>&1; then
+        if echo "$www_create" | jq -e '.success' >/dev/null; then
             log_info "WWW CNAME created"
         else
             log_error "Failed to create www CNAME"
@@ -420,7 +420,7 @@ switch_to_vercel() {
     else
         local www_update
         www_update=$(update_record "$www_id" "CNAME" "www" "${VERCEL_WWW_CNAME}" "false")
-        if echo "$www_update" | jq -e '.success' > /dev/null 2>&1; then
+        if echo "$www_update" | jq -e '.success' >/dev/null; then
             log_info "WWW CNAME updated: ${VERCEL_WWW_CNAME}"
         else
             log_error "Failed to update www CNAME"
@@ -441,7 +441,7 @@ switch_to_vercel() {
     else
         local grafana_delete
         grafana_delete=$(delete_record "$grafana_id")
-        if echo "$grafana_delete" | jq -e '.success' > /dev/null 2>&1; then
+        if echo "$grafana_delete" | jq -e '.success' >/dev/null; then
             log_info "Grafana CNAME deleted"
         else
             log_warn "Failed to delete Grafana CNAME (non-critical)"
@@ -508,7 +508,7 @@ switch_to_aws() {
         log_step "2/5 Deleting root A record..."
         local delete_response
         delete_response=$(delete_record "$root_a_id")
-        if echo "$delete_response" | jq -e '.success' > /dev/null 2>&1; then
+        if echo "$delete_response" | jq -e '.success' >/dev/null; then
             log_info "Root A record deleted"
         else
             log_error "Failed to delete root A record"
@@ -520,7 +520,7 @@ switch_to_aws() {
         log_step "3/5 Creating root CNAME record for CloudFront..."
         local create_response
         create_response=$(create_record "CNAME" "${DOMAIN}" "${CLOUDFRONT_DIST}" "false")
-        if echo "$create_response" | jq -e '.success' > /dev/null 2>&1; then
+        if echo "$create_response" | jq -e '.success' >/dev/null; then
             log_info "Root CNAME created: ${CLOUDFRONT_DIST}"
         else
             log_error "Failed to create root CNAME"
@@ -541,7 +541,7 @@ switch_to_aws() {
         log_warn "No www CNAME found, creating new record..."
         local www_create
         www_create=$(create_record "CNAME" "www" "${CLOUDFRONT_DIST}" "false")
-        if echo "$www_create" | jq -e '.success' > /dev/null 2>&1; then
+        if echo "$www_create" | jq -e '.success' >/dev/null; then
             log_info "WWW CNAME created"
         else
             log_error "Failed to create www CNAME"
@@ -551,7 +551,7 @@ switch_to_aws() {
     else
         local www_update
         www_update=$(update_record "$www_id" "CNAME" "www" "${CLOUDFRONT_DIST}" "false")
-        if echo "$www_update" | jq -e '.success' > /dev/null 2>&1; then
+        if echo "$www_update" | jq -e '.success' >/dev/null; then
             log_info "WWW CNAME updated: ${CLOUDFRONT_DIST}"
         else
             log_error "Failed to update www CNAME"
@@ -571,7 +571,7 @@ switch_to_aws() {
         log_info "No Grafana CNAME found, creating new record..."
         local grafana_create
         grafana_create=$(create_record "CNAME" "${GRAFANA_SUBDOMAIN}" "${GRAFANA_ALB}" "false")
-        if echo "$grafana_create" | jq -e '.success' > /dev/null 2>&1; then
+        if echo "$grafana_create" | jq -e '.success' >/dev/null; then
             log_info "Grafana CNAME created: ${GRAFANA_ALB}"
         else
             log_error "Failed to create Grafana CNAME"
@@ -581,7 +581,7 @@ switch_to_aws() {
     else
         local grafana_update
         grafana_update=$(update_record "$grafana_id" "CNAME" "${GRAFANA_SUBDOMAIN}" "${GRAFANA_ALB}" "false")
-        if echo "$grafana_update" | jq -e '.success' > /dev/null 2>&1; then
+        if echo "$grafana_update" | jq -e '.success' >/dev/null; then
             log_info "Grafana CNAME updated: ${GRAFANA_ALB}"
         else
             log_error "Failed to update Grafana CNAME"
