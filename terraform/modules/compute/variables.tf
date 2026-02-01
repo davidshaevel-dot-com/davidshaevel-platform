@@ -248,7 +248,7 @@ variable "enable_https_listener" {
 }
 
 variable "alb_ssl_policy" {
-  description = "SSL policy for HTTPS listener (only used if alb_certificate_arn is provided)"
+  description = "SSL policy for HTTPS listener (only used if enable_https_listener is true)"
   type        = string
   default     = "ELBSecurityPolicy-TLS13-1-2-2021-06"
 
