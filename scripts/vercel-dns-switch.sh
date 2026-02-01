@@ -20,9 +20,12 @@ set -euo pipefail
 
 # Configuration
 DOMAIN="davidshaevel.com"
-CLOUDFRONT_DIST="dbaz91yl33r82.cloudfront.net"
+CLOUDFRONT_DIST="d2e9snnkdrbz31.cloudfront.net"
 VERCEL_A_RECORD="216.198.79.1"
 VERCEL_WWW_CNAME="2d7df72c42ce62a7.vercel-dns-017.com."
+GRAFANA_SUBDOMAIN="grafana"
+# Grafana uses ALB directly (not CloudFront) because CloudFront cert doesn't cover grafana subdomain
+GRAFANA_ALB="dev-davidshaevel-alb-1273223666.us-east-1.elb.amazonaws.com"
 
 # Colors for output
 RED='\033[0;31m'
@@ -67,8 +70,10 @@ Environment Variables Required:
 DNS Targets:
     Vercel:     ${DOMAIN} -> A ${VERCEL_A_RECORD}
                 www.${DOMAIN} -> CNAME ${VERCEL_WWW_CNAME}
+                grafana.${DOMAIN} -> (removed)
     AWS:        ${DOMAIN} -> CNAME ${CLOUDFRONT_DIST}
                 www.${DOMAIN} -> CNAME ${CLOUDFRONT_DIST}
+                grafana.${DOMAIN} -> CNAME ${CLOUDFRONT_DIST}
 
 Examples:
     $(basename "$0") --status
@@ -203,6 +208,29 @@ show_status() {
         done
     fi
 
+    # Grafana subdomain
+    local grafana_response
+    grafana_response=$(get_record "${GRAFANA_SUBDOMAIN}.${DOMAIN}")
+
+    local grafana_records
+    grafana_records=$(echo "$grafana_response" | jq '[.result[] | select(.type == "A" or .type == "CNAME")]')
+    local grafana_count
+    grafana_count=$(echo "$grafana_records" | jq 'length')
+
+    echo ""
+    echo "  Grafana domain (${GRAFANA_SUBDOMAIN}.${DOMAIN}):"
+    if [[ "$grafana_count" -eq 0 ]]; then
+        echo "    No A/CNAME records found (Grafana not accessible)"
+    else
+        for i in $(seq 0 $((grafana_count - 1))); do
+            local gtype gcontent gproxied
+            gtype=$(echo "$grafana_records" | jq -r ".[$i].type")
+            gcontent=$(echo "$grafana_records" | jq -r ".[$i].content")
+            gproxied=$(echo "$grafana_records" | jq -r ".[$i].proxied")
+            echo "    Type: ${gtype}  Content: ${gcontent}  Proxied: ${gproxied}"
+        done
+    fi
+
     # Determine current target
     echo ""
     local root_content
@@ -244,6 +272,11 @@ switch_to_vercel() {
     echo "    Target:   CNAME ${VERCEL_WWW_CNAME}"
     echo "    Action:   Update CNAME content"
     echo ""
+    echo "  Grafana (${GRAFANA_SUBDOMAIN}.${DOMAIN}):"
+    echo "    Current:  CNAME ${GRAFANA_ALB}"
+    echo "    Target:   (removed)"
+    echo "    Action:   Delete CNAME"
+    echo ""
 
     if [[ "$dry_run" == "true" ]]; then
         log_warn "DRY RUN - No changes will be made"
@@ -251,7 +284,7 @@ switch_to_vercel() {
     fi
 
     # Step 1: Get current root record
-    log_step "1/4 Getting current root domain record..."
+    log_step "1/5 Getting current root domain record..."
     local root_response
     root_response=$(get_record "${DOMAIN}")
     local root_id
@@ -269,7 +302,7 @@ switch_to_vercel() {
         fi
     else
         # Step 2: Delete root CNAME
-        log_step "2/4 Deleting root CNAME record..."
+        log_step "2/5 Deleting root CNAME record..."
         local delete_response
         delete_response=$(delete_record "$root_id")
         if echo "$delete_response" | jq -e '.success' > /dev/null 2>&1; then
@@ -281,7 +314,7 @@ switch_to_vercel() {
         fi
 
         # Step 3: Create root A record
-        log_step "3/4 Creating root A record for Vercel..."
+        log_step "3/5 Creating root A record for Vercel..."
         local create_response
         create_response=$(create_record "A" "${DOMAIN}" "${VERCEL_A_RECORD}" "false")
         if echo "$create_response" | jq -e '.success' > /dev/null 2>&1; then
@@ -295,7 +328,7 @@ switch_to_vercel() {
     fi
 
     # Step 4: Update www CNAME
-    log_step "4/4 Updating www CNAME record..."
+    log_step "4/5 Updating www CNAME record..."
     local www_response
     www_response=$(get_record "www.${DOMAIN}")
     local www_id
@@ -321,6 +354,26 @@ switch_to_vercel() {
             log_error "Failed to update www CNAME"
             echo "$www_update" | jq -r '.errors[0].message // "Unknown error"'
             exit 1
+        fi
+    fi
+
+    # Step 5: Delete Grafana CNAME (not needed when on Vercel)
+    log_step "5/5 Removing Grafana CNAME record..."
+    local grafana_response
+    grafana_response=$(get_record "${GRAFANA_SUBDOMAIN}.${DOMAIN}")
+    local grafana_id
+    grafana_id=$(echo "$grafana_response" | jq -r '[.result[] | select(.type == "CNAME")][0].id // empty')
+
+    if [[ -z "$grafana_id" ]]; then
+        log_info "No Grafana CNAME found (already removed or never created)"
+    else
+        local grafana_delete
+        grafana_delete=$(delete_record "$grafana_id")
+        if echo "$grafana_delete" | jq -e '.success' > /dev/null 2>&1; then
+            log_info "Grafana CNAME deleted"
+        else
+            log_warn "Failed to delete Grafana CNAME (non-critical)"
+            echo "$grafana_delete" | jq -r '.errors[0].message // "Unknown error"'
         fi
     fi
 
@@ -350,6 +403,11 @@ switch_to_aws() {
     echo "    Target:   CNAME ${CLOUDFRONT_DIST}"
     echo "    Action:   Update CNAME content"
     echo ""
+    echo "  Grafana (${GRAFANA_SUBDOMAIN}.${DOMAIN}):"
+    echo "    Current:  (none or existing)"
+    echo "    Target:   CNAME ${GRAFANA_ALB}"
+    echo "    Action:   Create/Update CNAME (uses ALB directly)"
+    echo ""
 
     if [[ "$dry_run" == "true" ]]; then
         log_warn "DRY RUN - No changes will be made"
@@ -357,7 +415,7 @@ switch_to_aws() {
     fi
 
     # Step 1: Get current root record
-    log_step "1/4 Getting current root domain record..."
+    log_step "1/5 Getting current root domain record..."
     local root_response
     root_response=$(get_record "${DOMAIN}")
     local root_a_id
@@ -375,7 +433,7 @@ switch_to_aws() {
         fi
     else
         # Step 2: Delete root A record
-        log_step "2/4 Deleting root A record..."
+        log_step "2/5 Deleting root A record..."
         local delete_response
         delete_response=$(delete_record "$root_a_id")
         if echo "$delete_response" | jq -e '.success' > /dev/null 2>&1; then
@@ -387,7 +445,7 @@ switch_to_aws() {
         fi
 
         # Step 3: Create root CNAME
-        log_step "3/4 Creating root CNAME record for CloudFront..."
+        log_step "3/5 Creating root CNAME record for CloudFront..."
         local create_response
         create_response=$(create_record "CNAME" "${DOMAIN}" "${CLOUDFRONT_DIST}" "false")
         if echo "$create_response" | jq -e '.success' > /dev/null 2>&1; then
@@ -401,7 +459,7 @@ switch_to_aws() {
     fi
 
     # Step 4: Update www CNAME
-    log_step "4/4 Updating www CNAME record..."
+    log_step "4/5 Updating www CNAME record..."
     local www_response
     www_response=$(get_record "www.${DOMAIN}")
     local www_id
@@ -426,6 +484,36 @@ switch_to_aws() {
         else
             log_error "Failed to update www CNAME"
             echo "$www_update" | jq -r '.errors[0].message // "Unknown error"'
+            exit 1
+        fi
+    fi
+
+    # Step 5: Create/Update Grafana CNAME
+    log_step "5/5 Creating/Updating Grafana CNAME record..."
+    local grafana_response
+    grafana_response=$(get_record "${GRAFANA_SUBDOMAIN}.${DOMAIN}")
+    local grafana_id
+    grafana_id=$(echo "$grafana_response" | jq -r '[.result[] | select(.type == "CNAME")][0].id // empty')
+
+    if [[ -z "$grafana_id" ]]; then
+        log_info "No Grafana CNAME found, creating new record..."
+        local grafana_create
+        grafana_create=$(create_record "CNAME" "${GRAFANA_SUBDOMAIN}" "${GRAFANA_ALB}" "false")
+        if echo "$grafana_create" | jq -e '.success' > /dev/null 2>&1; then
+            log_info "Grafana CNAME created: ${GRAFANA_ALB}"
+        else
+            log_error "Failed to create Grafana CNAME"
+            echo "$grafana_create" | jq -r '.errors[0].message // "Unknown error"'
+            exit 1
+        fi
+    else
+        local grafana_update
+        grafana_update=$(update_record "$grafana_id" "CNAME" "${GRAFANA_SUBDOMAIN}" "${GRAFANA_ALB}" "false")
+        if echo "$grafana_update" | jq -e '.success' > /dev/null 2>&1; then
+            log_info "Grafana CNAME updated: ${GRAFANA_ALB}"
+        else
+            log_error "Failed to update Grafana CNAME"
+            echo "$grafana_update" | jq -r '.errors[0].message // "Unknown error"'
             exit 1
         fi
     fi
