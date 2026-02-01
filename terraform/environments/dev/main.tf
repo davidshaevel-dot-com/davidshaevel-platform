@@ -425,6 +425,7 @@ module "compute" {
   # ALB configuration
   enable_deletion_protection = var.alb_enable_deletion_protection
   alb_certificate_arn        = var.dev_activated ? module.cdn[0].acm_certificate_arn : null
+  enable_https_listener      = var.dev_activated
 
   # CloudWatch Logs
   log_retention_days        = var.ecs_log_retention_days

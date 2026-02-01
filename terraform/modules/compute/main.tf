@@ -367,9 +367,11 @@ resource "aws_lb_target_group" "backend" {
 # ALB Listeners (Step 8)
 # ------------------------------------------------------------------------------
 
-# HTTPS listener (optional - only created if certificate ARN is provided)
+# HTTPS listener (optional - only created if enable_https_listener is true)
+# Note: Using enable_https_listener boolean instead of checking alb_certificate_arn != null
+# to avoid Terraform error "count depends on unknown value" during initial activation
 resource "aws_lb_listener" "https" {
-  count = var.alb_certificate_arn != null ? 1 : 0
+  count = var.enable_https_listener ? 1 : 0
 
   load_balancer_arn = aws_lb.main.arn
   port              = 443
@@ -394,14 +396,14 @@ resource "aws_lb_listener" "http" {
   protocol          = "HTTP"
 
   default_action {
-    type = var.alb_certificate_arn != null ? "redirect" : "forward"
+    type = var.enable_https_listener ? "redirect" : "forward"
 
-    # Forward to frontend if no certificate
-    target_group_arn = var.alb_certificate_arn != null ? null : aws_lb_target_group.frontend.arn
+    # Forward to frontend if HTTPS not enabled
+    target_group_arn = var.enable_https_listener ? null : aws_lb_target_group.frontend.arn
 
-    # Redirect to HTTPS if certificate is provided
+    # Redirect to HTTPS if enabled
     dynamic "redirect" {
-      for_each = var.alb_certificate_arn != null ? [1] : []
+      for_each = var.enable_https_listener ? [1] : []
       content {
         port        = "443"
         protocol    = "HTTPS"
@@ -416,9 +418,9 @@ resource "aws_lb_listener" "http" {
 }
 
 # Listener rule for backend API (/api/* -> backend)
-# Attaches to HTTPS listener if available, otherwise HTTP
+# Attaches to HTTPS listener if enabled, otherwise HTTP
 resource "aws_lb_listener_rule" "backend_api" {
-  listener_arn = var.alb_certificate_arn != null ? aws_lb_listener.https[0].arn : aws_lb_listener.http.arn
+  listener_arn = var.enable_https_listener ? aws_lb_listener.https[0].arn : aws_lb_listener.http.arn
   priority     = 100
 
   action {

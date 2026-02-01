@@ -241,8 +241,14 @@ variable "alb_certificate_arn" {
   default     = null
 }
 
+variable "enable_https_listener" {
+  description = "Whether to create the HTTPS listener. Use this instead of checking alb_certificate_arn != null to avoid count depending on unknown values at plan time."
+  type        = bool
+  default     = false
+}
+
 variable "alb_ssl_policy" {
-  description = "SSL policy for HTTPS listener (only used if alb_certificate_arn is provided)"
+  description = "SSL policy for HTTPS listener (only used if enable_https_listener is true)"
   type        = string
   default     = "ELBSecurityPolicy-TLS13-1-2-2021-06"
 
