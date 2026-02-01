@@ -314,7 +314,7 @@ variable "lab_token" {
 variable "cdn_alternate_domain_names" {
   description = "List of alternate domain names (CNAMEs) for CloudFront distribution"
   type        = list(string)
-  default     = ["www.davidshaevel.com"]
+  default     = []  # www subdomain handled by Vercel; AWS dev uses only davidshaevel.com
 }
 
 variable "cdn_enable_ipv6" {
