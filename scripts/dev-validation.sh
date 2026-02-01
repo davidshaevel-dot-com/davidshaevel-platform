@@ -118,7 +118,7 @@ else
     log_fail "VPC not found in Terraform outputs"
 fi
 
-# Checks 7-12: Only run if dev is activated
+# Checks 7-13: Only run if dev is activated
 if [[ "${DEV_ACTIVATED:-false}" == "true" ]]; then
     # Check 7: ECS Cluster
     log_info "Checking ECS cluster..."
@@ -194,7 +194,38 @@ if [[ "${DEV_ACTIVATED:-false}" == "true" ]]; then
         fi
     fi
 
-    # Check 11: Service Discovery
+    # Check 11: ACM Certificate
+    log_info "Checking ACM certificate..."
+    CERT_ARN=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw acm_certificate_arn 2>/dev/null || echo "")
+    if [[ -n "${CERT_ARN}" ]]; then
+        CERT_STATUS=$(aws acm describe-certificate \
+            --certificate-arn "${CERT_ARN}" \
+            --region us-east-1 \
+            --query 'Certificate.Status' \
+            --output text 2>/dev/null || echo "unknown")
+        if [[ "${CERT_STATUS}" == "ISSUED" ]]; then
+            log_pass "ACM certificate: ${CERT_STATUS}"
+            # Check that certificate covers expected domains
+            CERT_DOMAINS=$(aws acm describe-certificate \
+                --certificate-arn "${CERT_ARN}" \
+                --region us-east-1 \
+                --query 'Certificate.SubjectAlternativeNames' \
+                --output text 2>/dev/null || echo "")
+            if echo "${CERT_DOMAINS}" | grep -q "grafana.davidshaevel.com"; then
+                log_pass "ACM certificate covers grafana.davidshaevel.com"
+            else
+                log_warn "ACM certificate missing grafana.davidshaevel.com SAN"
+            fi
+        elif [[ "${CERT_STATUS}" == "PENDING_VALIDATION" ]]; then
+            log_warn "ACM certificate pending DNS validation"
+        else
+            log_fail "ACM certificate status: ${CERT_STATUS}"
+        fi
+    else
+        log_warn "ACM certificate ARN not found in Terraform outputs"
+    fi
+
+    # Check 13: Service Discovery
     log_info "Checking service discovery..."
     SD_NAMESPACE=$(aws servicediscovery list-namespaces \
         --region "${DEV_REGION}" \
