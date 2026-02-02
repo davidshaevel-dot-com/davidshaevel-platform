@@ -47,7 +47,7 @@ import { ContactFormModule } from './contact-form/contact-form.module';
           logging: configService.get('NODE_ENV') === 'development',
           ssl:
             configService.get('NODE_ENV') === 'production'
-              ? true
+              ? { rejectUnauthorized: false }
               : false,
         };
       },
