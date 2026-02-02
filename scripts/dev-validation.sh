@@ -194,7 +194,39 @@ if [[ "${DEV_ACTIVATED:-false}" == "true" ]]; then
         fi
     fi
 
-    # Check 11: Service Discovery
+    # Check 11: ACM Certificate
+    log_info "Checking ACM certificate..."
+    CERT_ARN=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw acm_certificate_arn 2>/dev/null || echo "")
+    if [[ -n "${CERT_ARN}" ]]; then
+        CERT_STATUS=$(aws acm describe-certificate \
+            --certificate-arn "${CERT_ARN}" \
+            --region us-east-1 \
+            --query 'Certificate.Status' \
+            --output text 2>/dev/null || echo "unknown")
+        if [[ "${CERT_STATUS}" == "ISSUED" ]]; then
+            log_pass "ACM certificate: ${CERT_STATUS}"
+            # Check that certificate covers expected domains
+            CERT_DOMAINS=$(aws acm describe-certificate \
+                --certificate-arn "${CERT_ARN}" \
+                --region us-east-1 \
+                --query 'Certificate.SubjectAlternativeNames' \
+                --output text 2>/dev/null || echo "")
+            GRAFANA_DOMAIN="grafana.${TF_VAR_domain_name:-davidshaevel.com}"
+            if echo "${CERT_DOMAINS}" | grep -q "${GRAFANA_DOMAIN}"; then
+                log_pass "ACM certificate covers ${GRAFANA_DOMAIN}"
+            else
+                log_warn "ACM certificate missing ${GRAFANA_DOMAIN} SAN"
+            fi
+        elif [[ "${CERT_STATUS}" == "PENDING_VALIDATION" ]]; then
+            log_warn "ACM certificate pending DNS validation"
+        else
+            log_fail "ACM certificate status: ${CERT_STATUS}"
+        fi
+    else
+        log_warn "ACM certificate ARN not found in Terraform outputs"
+    fi
+
+    # Check 12: Service Discovery
     log_info "Checking service discovery..."
     SD_NAMESPACE=$(aws servicediscovery list-namespaces \
         --region "${DEV_REGION}" \
