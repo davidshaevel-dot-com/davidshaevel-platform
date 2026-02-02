@@ -65,21 +65,21 @@ This project serves as both a personal website and a demonstration of production
 - ✅ IPv6 and HTTP/2 enabled
 - ✅ Cloudflare DNS configured (gray cloud mode)
 
-**Current State (December 17, 2025):**
-- **Total Resources:** 81 AWS resources deployed (78 + 3 ECR repos)
-- **Monthly Cost:** ~$118-125
+**Current State (February 2, 2026):**
+- **Production:** Vercel (frontend + backend serverless) + Neon PostgreSQL
+- **AWS Status:** Pilot Light mode (`dev_activated = false`)
+- **Monthly Cost:** ~$50-60 (down from ~$118-125)
 - **Infrastructure:** 100% complete ✅
 - **Applications:** 100% complete ✅
-- **Observability:** 100% Complete ✅ (Prometheus + Grafana)
+- **Observability:** Deactivated (part of pilot light mode)
 - **Production Deployment:** ✅ COMPLETE (October 31, 2025)
 - **Testing:** Automated integration tests (14/14 passing) ✅
-- **Platform Live:** https://davidshaevel.com (all endpoints operational)
+- **Platform Live:** https://davidshaevel.com (all endpoints operational via Vercel)
   - Frontend: Homepage, About, Projects, Contact pages (200 OK)
   - Backend API: https://davidshaevel.com/api/health (200 OK, DB connected)
-  - Database: RDS PostgreSQL with migration system operational
-  - Prometheus: 5/5 targets healthy, enhanced metrics operational
-  - Grafana: https://grafana.davidshaevel.com (Operational, Publicly Accessible)
-  - Metrics: Backend (9 metrics), Frontend (5 metrics) with prom-client integration
+  - Database: Neon PostgreSQL (free tier)
+  - AWS RDS: Preserved in pilot light mode for DR/failback
+  - Grafana: Not accessible (removed from DNS during deactivation)
 
 ### Disaster Recovery Environment (us-west-2)
 
@@ -306,6 +306,25 @@ terraform output  # View all outputs
 
 ## 💰 Cost Breakdown (Monthly)
 
+### Current (Vercel Primary + AWS Pilot Light)
+
+**Production (Vercel):**
+- **Vercel (free tier):** ~$0
+- **Neon PostgreSQL (free tier):** ~$0
+- **Vercel Total:** ~$0-15/month
+
+**AWS Pilot Light Mode:**
+- **NAT Gateways (2x):** ~$65
+- **RDS PostgreSQL (db.t3.micro):** ~$16
+- **VPC (networking preserved):** Minimal
+- **S3 buckets:** ~$1
+- **ECR repositories:** Free (storage only)
+- **AWS Total:** ~$50-60/month
+
+**Combined Total:** ~$50-75/month
+
+### Previous (Full AWS)
+
 - **NAT Gateways:** ~$68.50 (2 for high availability)
 - **ALB:** ~$16-20
 - **RDS PostgreSQL (db.t3.micro):** ~$16
@@ -313,10 +332,12 @@ terraform output  # View all outputs
 - **CloudFront:** ~$2-4 (low traffic, free tier)
 - **CloudWatch Logs:** ~$1
 - **VPC Flow Logs:** Minimal
-- **Observability (EFS + S3):** ~$1.10 (new - TT-25 Phase 3)
+- **Observability (EFS + S3):** ~$1.10
 - **ACM Certificate:** $0 (free)
 
-**Total:** ~$118-125/month
+**Previous Total:** ~$118-125/month
+
+### Savings: ~$60-70/month
 
 ## 📝 Documentation
 
@@ -785,8 +806,8 @@ Austin, Texas
 - Vercel Migration Phase 1: January 23-24, 2026 (Complete)
 - AWS Pilot Light Mode: January 26-30, 2026 (Complete)
 
-**Status:** ✅ PRODUCTION DEPLOYMENT COMPLETE + Observability Complete + DR Environment Complete + Contact Form Feature + Vercel Migration Complete + AWS Pilot Light Mode Complete (TT-95, TT-96, TT-97, TT-98, TT-99, TT-132)
-**Last Updated:** January 30, 2026
+**Status:** ✅ PRODUCTION ON VERCEL + AWS Pilot Light Mode Active (TT-106 Complete)
+**Last Updated:** February 2, 2026
 
 ## 🤖 AI Agent Sessions
 
@@ -823,6 +844,7 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - Jan 24: TT-91, TT-92 Vercel Migration Phase 1 Completion - Backend deployment, custom domain, DNS switch
 - Jan 26: TT-95, TT-96, TT-97 AWS Pilot Light Mode - dev_activated variable, activation/deactivation scripts (PR #84)
 - Jan 29-30: TT-98, TT-99, TT-132 Data Sync & Validation - Bidirectional Neon↔RDS sync, dev-validation.sh (PR #85)
+- Feb 2: TT-106 Final AWS Deactivation - Switched DNS to Vercel, deactivated AWS to pilot light (81 resources destroyed)
 
 **Infrastructure Milestones:**
 - ✅ TT-16 (Steps 1-3): Foundation
@@ -856,7 +878,8 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - ✅ TT-98: sync-neon-to-rds.sh Script (Complete - Jan 30, 2026) - PR #85
 - ✅ TT-99: sync-rds-to-neon.sh Script (Complete - Jan 30, 2026) - PR #85
 - ✅ TT-132: dev-validation.sh Script (Complete - Jan 30, 2026) - PR #85
+- ✅ TT-106: AWS Deactivation to Pilot Light (Complete - Feb 2, 2026) - 81 resources destroyed
 - ⏳ TT-20: Local Development (Planned - 6-8 hours)
 - ⏳ TT-26: Documentation (Planned - 4-6 hours)
 
-**Current Phase:** Production on Vercel (frontend + backend serverless) with Neon PostgreSQL. AWS dev environment in pilot light mode with bidirectional data sync. Scripts: `dev-activate.sh`, `dev-deactivate.sh`, `dev-validation.sh`, `sync-neon-to-rds.sh`, `sync-rds-to-neon.sh`.
+**Current Phase:** Production on Vercel (frontend + backend serverless) with Neon PostgreSQL. AWS dev environment **deactivated** to pilot light mode (81 resources destroyed, ~$60/month savings). Preserved: VPC, RDS, ECR, S3, CI/CD IAM. Reactivation: `./scripts/dev-activate.sh`.

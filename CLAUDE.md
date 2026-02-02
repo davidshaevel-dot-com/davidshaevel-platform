@@ -652,13 +652,14 @@ See `docs/dr-failover-runbook.md` for procedures and troubleshooting.
 - TT-91: Vercel deployment (frontend + backend deployed, custom domain configured)
 - TT-92: Custom domain + DNS switch (davidshaevel.com → Vercel via Cloudflare API)
 
-**AWS Pilot Light Mode (TT-95, TT-96, TT-97, TT-98, TT-99, TT-132 complete):**
+**AWS Pilot Light Mode (TT-95, TT-96, TT-97, TT-98, TT-99, TT-106, TT-132 complete):**
 - TT-95: Add dev_activated variable to dev Terraform (PR #84)
 - TT-96: dev-activate.sh script for AWS activation from pilot light
 - TT-97: dev-deactivate.sh script for AWS deactivation to pilot light
 - TT-98: sync-neon-to-rds.sh script for Neon → RDS sync (PR #85)
 - TT-99: sync-rds-to-neon.sh script for RDS → Neon sync (PR #85)
 - TT-132: dev-validation.sh script for dev environment health checks (PR #85)
+- TT-106: Deactivate AWS dev to pilot light mode (Feb 2, 2026) - 81 resources destroyed, ~$60/month savings
 
 ---
 
