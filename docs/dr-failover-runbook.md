@@ -1,8 +1,10 @@
 # Disaster Recovery Failover Runbook
 
-Step-by-step procedures for activating the DR environment when the primary region (us-east-1) is unavailable.
+Step-by-step procedures for activating the DR environment when both Vercel (primary) and the dev AWS environment (us-east-1) are unavailable or insufficient.
 
-**Last Updated:** January 23, 2026
+> **Architecture Context (February 2026):** Production traffic is served by **Vercel** (frontend + backend + Neon PostgreSQL). The AWS dev environment in us-east-1 operates in **pilot light mode** (`dev_activated=false`) and is only activated for development/testing. This DR runbook covers failover to **us-west-2** when both Vercel and the primary AWS region are unavailable. For activating/deactivating the dev AWS environment, see [dev-activation-runbook.md](dev-activation-runbook.md).
+
+**Last Updated:** February 6, 2026
 
 ---
 
@@ -10,11 +12,14 @@ Step-by-step procedures for activating the DR environment when the primary regio
 
 | Item | Value |
 |------|-------|
-| **Primary Region** | us-east-1 |
+| **Normal Production** | Vercel (frontend + backend + Neon DB) |
+| **Dev AWS Region** | us-east-1 (pilot light, activatable) |
 | **DR Region** | us-west-2 |
 | **Domain** | davidshaevel.com |
-| **CloudFront Distribution** | EJVDEMX0X00IG |
-| **Estimated Activation Time** | 30-45 minutes |
+| **DNS Provider** | Cloudflare |
+| **DNS Switch Script** | `scripts/vercel-dns-switch.sh` |
+| **CloudFront Distribution** | EJVDEMX0X00IG (only exists when dev activated) |
+| **Estimated DR Activation Time** | 30-45 minutes |
 | **DR Terraform Directory** | `terraform/environments/dr/` |
 | **Failover Script** | `scripts/dr-failover.sh` |
 | **Failback Script** | `scripts/dr-failback.sh` |
@@ -50,7 +55,17 @@ Verify Cloudflare credentials:
 
 ## DR Architecture Overview
 
-### Pilot Light Components (Always Running)
+### Normal Production (Vercel)
+
+In normal operation, all traffic is served by Vercel:
+- **Frontend**: Next.js on Vercel (davidshaevel.com)
+- **Backend**: NestJS serverless on Vercel (/api/* rewrite)
+- **Database**: Neon PostgreSQL (serverless)
+- **DNS**: Cloudflare → Vercel
+
+The AWS dev environment (us-east-1) is in pilot light mode with infrastructure preserved but compute resources destroyed. DR failover is needed only when Vercel is down AND the situation requires AWS-hosted recovery.
+
+### Pilot Light Components (Always Running in us-west-2)
 
 These components are always deployed in us-west-2:
 
@@ -75,18 +90,26 @@ These are deployed only when DR is activated:
 
 ### Step 1: Assess the Situation
 
-Before activating DR, confirm:
+Before activating DR, confirm that Vercel (primary) is unavailable and the situation warrants AWS DR:
 
 ```bash
-# Check if primary region is truly unavailable
-aws ec2 describe-availability-zones --region us-east-1 --profile davidshaevel-dev
-
-# Check primary application health
+# Check if Vercel-hosted application is down
 curl -I https://davidshaevel.com/api/health
-curl -I https://grafana.davidshaevel.com/api/health
+curl -I https://davidshaevel.com/
+
+# Check Vercel status page
+# https://www.vercelstatus.com/
+
+# Check if primary AWS region is also unavailable
+aws ec2 describe-availability-zones --region us-east-1 --profile davidshaevel-dev
 ```
 
-If both checks fail, proceed with DR activation.
+**Decision tree:**
+- If Vercel is down temporarily → wait for Vercel recovery (usually minutes)
+- If Vercel has extended outage AND you need the site up → activate DR
+- If us-east-1 is also down → DR (us-west-2) is the only option
+
+> **Note:** DR activation (us-west-2) is completely independent of the dev environment (us-east-1). You do NOT need to activate the dev environment first. The DR environment has its own ECR replicas, snapshot copies, and infrastructure.
 
 ### Step 2: Validate DR Readiness
 
@@ -637,15 +660,65 @@ rm /tmp/cf-config.json /tmp/cf-config-updated.json
 
 ## Failback Procedure
 
-When the primary region is restored and healthy, use `scripts/dr-failback.sh` to return traffic to us-east-1.
+Failback returns traffic to **Vercel** (the normal production environment). There are two scenarios:
 
-### Step 1: Verify Primary Region is Healthy
+### Scenario A: Return to Vercel (Normal Failback)
 
-Before initiating failback, confirm the primary region is fully operational:
+When Vercel is healthy again and you want to return to normal production:
+
+#### Step 1: Verify Vercel is Healthy
+
+```bash
+# Check Vercel status page
+# https://www.vercelstatus.com/
+
+# If DNS is still pointing to AWS/DR, test Vercel directly
+# Check your Vercel dashboard for deployment status
+```
+
+#### Step 2: Switch DNS Back to Vercel
+
+```bash
+# Switch main domain DNS from AWS/DR back to Vercel
+./scripts/vercel-dns-switch.sh --to-vercel
+
+# Verify DNS is pointing to Vercel
+./scripts/vercel-dns-switch.sh --status
+```
+
+#### Step 3: Verify Vercel Application
+
+```bash
+# Test endpoints (may take a few minutes for DNS propagation)
+curl -I https://davidshaevel.com/api/health
+curl -I https://davidshaevel.com/
+```
+
+#### Step 4: Deactivate DR Infrastructure
+
+```bash
+cd terraform/environments/dr
+AWS_PROFILE=davidshaevel-dev terraform apply -var="dr_activated=false" -auto-approve
+```
+
+This returns DR to Pilot Light mode:
+- Destroys VPC, ECS, RDS, ALB
+- Keeps ECR replication, snapshot Lambda, KMS key
+
+**Note:** Keep DR infrastructure running for a few hours after failback to ensure stability before deactivating.
+
+### Scenario B: Return to Primary AWS (us-east-1) Instead of Vercel
+
+If for some reason you need to failback from DR (us-west-2) to the dev AWS environment (us-east-1) instead of Vercel, use `scripts/dr-failback.sh`:
+
+#### Step 1: Verify Primary Region is Healthy
 
 ```bash
 # Check primary region availability
 aws ec2 describe-availability-zones --region us-east-1 --profile davidshaevel-dev
+
+# Ensure dev environment is activated (dev_activated=true)
+# See dev-activation-runbook.md if it needs to be activated first
 
 # Check ECS services are running
 aws ecs describe-services \
@@ -656,13 +729,11 @@ aws ecs describe-services \
   --query 'services[*].{name:serviceName,running:runningCount}' \
   --output table
 
-# Test primary ALB health (HTTPS with -k to skip cert validation for raw ALB DNS)
+# Test primary ALB health
 curl -Ik https://dev-davidshaevel-alb-85034469.us-east-1.elb.amazonaws.com/api/health
 ```
 
-### Step 2: Run Failback Script
-
-#### Option A: Using Failback Script (Recommended)
+#### Step 2: Run Failback Script
 
 ```bash
 # Dry run first
@@ -681,65 +752,14 @@ The script will:
 3. Invalidate CloudFront cache
 4. Optionally deactivate DR infrastructure
 
-#### Option B: Manual Failback
+#### Step 3: Update Cloudflare DNS for Grafana
 
 ```bash
-# Get current CloudFront config
-aws cloudfront get-distribution-config \
-  --profile davidshaevel-dev \
-  --id EJVDEMX0X00IG > /tmp/cf-config.json
-
-# Extract ETag
-ETAG=$(jq -r '.ETag' /tmp/cf-config.json)
-
-# Update origin to primary ALB
-PRIMARY_ALB="dev-davidshaevel-alb-85034469.us-east-1.elb.amazonaws.com"
-jq --arg alb "$PRIMARY_ALB" '.DistributionConfig.Origins.Items[0].DomainName = $alb' /tmp/cf-config.json | \
-  jq '.DistributionConfig' > /tmp/cf-config-updated.json
-
-# Apply update
-aws cloudfront update-distribution \
-  --profile davidshaevel-dev \
-  --id EJVDEMX0X00IG \
-  --if-match "$ETAG" \
-  --distribution-config file:///tmp/cf-config-updated.json
-
-# Invalidate cache
-aws cloudfront create-invalidation \
-  --profile davidshaevel-dev \
-  --distribution-id EJVDEMX0X00IG \
-  --paths "/*"
-```
-
-### Step 3: Update Cloudflare DNS for Grafana
-
-#### Option A: Using Script (Recommended)
-
-```bash
-# Check current DNS configuration
-./scripts/grafana-dns-switch.sh --status
-
-# Preview the change
-./scripts/grafana-dns-switch.sh --to-primary --dry-run
-
 # Switch Grafana DNS to primary ALB
 ./scripts/grafana-dns-switch.sh --to-primary
 ```
 
-The script updates the `grafana.davidshaevel.com` CNAME record to point to the primary ALB (`dev-davidshaevel-alb-85034469.us-east-1.elb.amazonaws.com`).
-
-#### Option B: Manual Update via Cloudflare Dashboard
-
-1. **Log into Cloudflare Dashboard**: https://dash.cloudflare.com
-2. **Select Domain**: davidshaevel.com
-3. **Go to DNS Settings**
-4. **Update CNAME record for `grafana`**:
-   - **Name**: `grafana`
-   - **Target**: `dev-davidshaevel-alb-85034469.us-east-1.elb.amazonaws.com`
-   - **Proxy Status**: Proxied (orange cloud)
-5. **Save Changes**
-
-### Step 4: Verify Primary Application
+#### Step 4: Verify Primary Application
 
 ```bash
 # Wait for CloudFront deployment (~5-10 min)
@@ -754,7 +774,7 @@ curl -I https://davidshaevel.com/
 curl -I https://grafana.davidshaevel.com/api/health
 ```
 
-### Step 5: Deactivate DR Infrastructure (Optional)
+#### Step 5: Deactivate DR Infrastructure (Optional)
 
 If you didn't use `--deactivate-dr`, you can manually deactivate:
 
@@ -763,19 +783,25 @@ cd terraform/environments/dr
 AWS_PROFILE=davidshaevel-dev terraform apply -var="dr_activated=false" -auto-approve
 ```
 
-This returns DR to Pilot Light mode:
-- Destroys VPC, ECS, RDS, ALB
-- Keeps ECR replication, snapshot Lambda, KMS key
-
 **Note:** Keep DR infrastructure running for a few hours after failback to ensure stability before deactivating.
 
 ---
 
 ## Post-Failback Checklist
 
+### If returning to Vercel (normal):
+- [ ] DNS switched back to Vercel (`vercel-dns-switch.sh --to-vercel`)
+- [ ] Frontend loads at https://davidshaevel.com/
+- [ ] Backend API responds at https://davidshaevel.com/api/health
+- [ ] DR infrastructure deactivated
+- [ ] Incident postmortem scheduled
+- [ ] Stakeholders notified of return to normal operations
+
+### If returning to primary AWS (us-east-1):
+- [ ] Dev environment activated (`dev_activated=true`)
 - [ ] CloudFront deployment complete (status: Deployed)
-- [ ] Primary frontend loads at https://davidshaevel.com/
-- [ ] Primary backend API responds at https://davidshaevel.com/api/health
+- [ ] Frontend loads at https://davidshaevel.com/
+- [ ] Backend API responds at https://davidshaevel.com/api/health
 - [ ] Grafana accessible at https://grafana.davidshaevel.com
 - [ ] Cloudflare DNS updated for grafana subdomain
 - [ ] DR infrastructure deactivated (optional)
@@ -796,6 +822,7 @@ This returns DR to Pilot Light mode:
 
 | Date | Author | Changes |
 |------|--------|---------|
+| 2026-02-06 | David Shaevel | Updated for Vercel-primary architecture; failback now returns to Vercel by default |
 | 2026-01-23 | David Shaevel | Added grafana-dns-switch.sh script for automated Grafana DNS switching |
 | 2026-01-10 | David Shaevel | Initial version |
 
