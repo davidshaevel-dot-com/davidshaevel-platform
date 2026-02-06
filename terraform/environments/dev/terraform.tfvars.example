@@ -5,6 +5,15 @@
 # This file contains only example/placeholder values
 
 # -----------------------------------------------------------------------------
+# Dev Environment Activation Control (Pilot Light Mode)
+# -----------------------------------------------------------------------------
+
+# Set to false for pilot light mode (minimal costs, ~$17/month)
+# Set to true to activate full dev environment (~$118/month)
+# See docs/dev-activation-runbook.md for details
+dev_activated = false
+
+# -----------------------------------------------------------------------------
 # Project Configuration
 # -----------------------------------------------------------------------------
 
