@@ -14,14 +14,44 @@ This project serves as both a personal website and a demonstration of production
 
 ## 🏗️ Architecture
 
-**Frontend:** Next.js 16 with TypeScript, React 19, Tailwind CSS 4 (TT-18 - Complete)  
-**Backend:** Nest.js API with TypeScript, TypeORM, and PostgreSQL (TT-19 - Complete)  
-**Infrastructure:** AWS (ECS Fargate, RDS PostgreSQL, VPC, CloudFront, ALB)  
-**IaC:** Terraform >= 1.13.4 with modular design  
-**Database:** PostgreSQL 15.12 on RDS  
-**CDN:** CloudFront with custom domain  
-**DNS:** Managed in Cloudflare  
+### Current: Vercel Primary + AWS Pilot Light
+
+**Frontend:** Next.js 16 with TypeScript, React 19, Tailwind CSS 4
+**Backend:** Nest.js API (Vercel serverless + AWS ECS Fargate)
+**Database:** Neon PostgreSQL (primary) + AWS RDS PostgreSQL (pilot light)
+**Hosting:** Vercel (production) + AWS (activatable for skills practice/DR)
+**IaC:** Terraform >= 1.13.4 with modular design
+**DNS:** Managed in Cloudflare (switchable between Vercel and AWS)
 **Domain:** davidshaevel.com, www.davidshaevel.com
+
+```
+Production (Vercel)                     AWS Pilot Light (Activatable)
+─────────────────                       ─────────────────────────────
+DNS (Cloudflare)                        VPC (10.0.0.0/16)
+    │                                       ├── Networking (preserved)
+    ▼                                       ├── RDS PostgreSQL (preserved)
+Vercel Frontend                             ├── ECR Repositories (preserved)
+    │                                       ├── S3 Buckets (preserved)
+    ├── Next.js Pages                       └── CI/CD IAM (preserved)
+    │   (davidshaevel.com)
+    │                                   When activated (dev_activated=true):
+    └── /api/* rewrite                      CloudFront → ALB
+            │                                   ├── Frontend ECS (2 tasks)
+            ▼                                   ├── Backend ECS (2 tasks)
+    Vercel Backend                              ├── Prometheus ECS
+        (NestJS Serverless)                     └── Grafana ECS
+            │                                       │
+            ▼                                       ▼
+    Neon PostgreSQL ◄──── sync ────► RDS PostgreSQL
+```
+
+### Operating Modes
+
+| Mode | DNS Points To | Database | Monthly Cost |
+|------|--------------|----------|-------------|
+| **Vercel (current)** | Vercel | Neon | ~$0-15 |
+| **AWS Activated** | CloudFront | RDS | ~$118-125 |
+| **DR Failover** | DR ALB (us-west-2) | DR RDS | ~$80-100 |
 
 ## 📊 Infrastructure Status
 

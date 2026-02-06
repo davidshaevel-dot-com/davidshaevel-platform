@@ -53,3 +53,8 @@ export AWS_ALB_DOMAIN="your-alb-name.region.elb.amazonaws.com"
 # Create a free database at: https://neon.tech
 # Get connection string from: Neon Console > Your Project > Connection Details
 export NEON_DATABASE_URL="postgresql://user:password@ep-xxx.region.aws.neon.tech/dbname?sslmode=require"
+
+# Resend Configuration (for contact form email)
+# Create an account at: https://resend.com
+# Get API key from: Resend Dashboard > API Keys
+export RESEND_API_KEY="re_your-api-key"
