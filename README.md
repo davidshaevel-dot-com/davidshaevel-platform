@@ -28,9 +28,10 @@ This project serves as both a personal website and a demonstration of production
 Production (Vercel)                     AWS Pilot Light (Activatable)
 ─────────────────                       ─────────────────────────────
 DNS (Cloudflare)                        VPC (10.0.0.0/16)
-    │                                       ├── RDS PostgreSQL (preserved)
-    ▼                                       ├── ECR Repositories (preserved)
-Vercel Frontend                             ├── S3 Buckets (preserved)
+    │                                       ├── Networking (Subnets, SGs)
+    ▼                                       ├── RDS PostgreSQL (preserved)
+Vercel Frontend                             ├── ECR Repositories (preserved)
+    │                                       ├── S3 Buckets (preserved)
     │                                       └── CI/CD IAM (preserved)
     ├── Next.js Pages
     │   (davidshaevel.com)
