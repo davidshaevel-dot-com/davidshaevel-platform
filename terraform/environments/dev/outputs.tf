@@ -44,27 +44,27 @@ output "vpc_id" {
 
 output "database_endpoint" {
   description = "RDS instance endpoint"
-  value       = module.database.db_instance_endpoint
+  value       = var.dev_activated ? module.database[0].db_instance_endpoint : null
 }
 
 output "database_port" {
   description = "Database port"
-  value       = module.database.db_instance_port
+  value       = var.dev_activated ? module.database[0].db_instance_port : null
 }
 
 output "database_name" {
   description = "Database name"
-  value       = module.database.db_name
+  value       = var.dev_activated ? module.database[0].db_name : null
 }
 
 output "database_connection_string" {
   description = "Database connection string (without credentials)"
-  value       = module.database.connection_string
+  value       = var.dev_activated ? module.database[0].connection_string : null
 }
 
 output "database_secret_arn" {
   description = "ARN of the database credentials secret in Secrets Manager"
-  value       = module.database.secret_arn
+  value       = var.dev_activated ? module.database[0].secret_arn : null
 }
 
 # -----------------------------------------------------------------------------
