@@ -136,14 +136,20 @@ RDS_STATUS=$(aws rds describe-db-instances \
     --query 'DBInstances[0].DBInstanceStatus' \
     --output text 2>/dev/null || echo "not-found")
 
-if [[ "${RDS_STATUS}" != "available" ]]; then
-    log_error "RDS instance is not available (status: ${RDS_STATUS})"
+RDS_EXISTED_BEFORE=true
+if [[ "${RDS_STATUS}" == "not-found" ]]; then
+    log_info "RDS instance not found (expected in pilot light mode)"
+    log_info "Terraform will create a fresh RDS instance"
+    RDS_EXISTED_BEFORE=false
+elif [[ "${RDS_STATUS}" == "available" ]]; then
+    log_info "RDS status: ${RDS_STATUS}"
+else
+    log_error "RDS instance is in unexpected state: ${RDS_STATUS}"
     exit 1
 fi
-log_info "RDS status: ${RDS_STATUS}"
 
-# Step 6: Sync data from Neon to RDS (optional)
-if [[ "${SYNC_DATA}" == "true" ]]; then
+# Step 6: Sync data from Neon to RDS (optional, only when RDS exists)
+if [[ "${SYNC_DATA}" == "true" && "${RDS_EXISTED_BEFORE}" == "true" ]]; then
     echo ""
     log_info "Syncing data from Neon to RDS..."
     SYNC_FLAGS=()
@@ -157,6 +163,10 @@ if [[ "${SYNC_DATA}" == "true" ]]; then
     else
         log_info "Data sync complete"
     fi
+    echo ""
+elif [[ "${SYNC_DATA}" == "true" && "${RDS_EXISTED_BEFORE}" == "false" ]]; then
+    log_info "Skipping pre-terraform Neon→RDS sync (RDS does not exist yet)"
+    log_info "Data will be synced after Terraform creates the RDS instance"
     echo ""
 fi
 
@@ -172,6 +182,10 @@ echo "    - Application Load Balancer"
 echo "    - CloudFront Distribution"
 echo "    - Observability (Prometheus, Grafana, EFS)"
 echo "    - Service Discovery (Cloud Map)"
+echo "    - NAT Gateways"
+if [[ "${RDS_EXISTED_BEFORE}" == "false" ]]; then
+echo "    - RDS PostgreSQL instance (fresh, will sync from Neon)"
+fi
 echo ""
 echo "  Using images:"
 echo "    - Backend:  ${BACKEND_IMAGE}"
@@ -179,8 +193,11 @@ echo "    - Frontend: ${FRONTEND_IMAGE}"
 echo ""
 echo "  Estimated deployment time: 15-20 minutes"
 echo ""
-if [[ "${SYNC_DATA}" == "true" ]]; then
+if [[ "${SYNC_DATA}" == "true" && "${RDS_EXISTED_BEFORE}" == "true" ]]; then
     echo "  Data Sync: Neon → RDS (completed before Terraform)"
+    echo ""
+elif [[ "${RDS_EXISTED_BEFORE}" == "false" ]]; then
+    echo "  Data Sync: Neon → RDS (after Terraform creates fresh RDS)"
     echo ""
 fi
 echo "========================================"
@@ -221,7 +238,17 @@ fi
 
 terraform apply "${TF_VARS[@]}"
 
-# Step 9: Get outputs
+# Step 9: Sync Neon data to fresh RDS (if RDS was just created)
+if [[ "${RDS_EXISTED_BEFORE}" == "false" ]]; then
+    echo ""
+    log_info "Fresh RDS instance created by Terraform"
+    log_info "Syncing data from Neon to RDS..."
+    "${SCRIPT_DIR}/sync-neon-to-rds.sh"
+    log_info "Neon → RDS sync complete"
+    echo ""
+fi
+
+# Step 10: Get outputs
 log_info "Retrieving endpoints..."
 ALB_DNS=$(terraform output -raw alb_dns_name 2>/dev/null || echo "N/A")
 CLOUDFRONT_DOMAIN=$(terraform output -raw cloudfront_domain_name 2>/dev/null || echo "N/A")

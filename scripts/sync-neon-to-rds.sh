@@ -108,13 +108,15 @@ log_info "Using AWS Account: ${ACCOUNT_ID}"
 # Step 3: Get RDS connection details from Terraform outputs
 log_info "Getting RDS connection details..."
 
-RDS_ENDPOINT=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw database_endpoint 2>/dev/null)
-RDS_PORT=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw database_port 2>/dev/null)
-RDS_DBNAME=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw database_name 2>/dev/null)
-RDS_SECRET_ARN=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw database_secret_arn 2>/dev/null)
+RDS_ENDPOINT=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw database_endpoint 2>/dev/null || echo "")
+RDS_PORT=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw database_port 2>/dev/null || echo "")
+RDS_DBNAME=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw database_name 2>/dev/null || echo "")
+RDS_SECRET_ARN=$(terraform -chdir="${DEV_TERRAFORM_DIR}" output -raw database_secret_arn 2>/dev/null || echo "")
 
-if [[ -z "${RDS_ENDPOINT}" ]]; then
+if [[ -z "${RDS_ENDPOINT}" || "${RDS_ENDPOINT}" == "null" ]]; then
     log_error "Could not get RDS endpoint from Terraform outputs"
+    log_error "Is the dev environment activated? (dev_activated must be true)"
+    log_error "Run: ./scripts/dev-activate.sh"
     exit 1
 fi
 

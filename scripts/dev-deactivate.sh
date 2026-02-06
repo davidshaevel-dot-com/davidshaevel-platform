@@ -124,16 +124,16 @@ echo "    - Application Load Balancer"
 echo "    - CloudFront Distribution"
 echo "    - Observability (Prometheus, Grafana, EFS)"
 echo "    - Service Discovery (Cloud Map)"
+echo "    - NAT Gateways"
+echo "    - RDS PostgreSQL instance (snapshot created first)"
 echo ""
 echo "  Resources to be PRESERVED:"
-echo "    - VPC and Networking (including NAT Gateways)"
-echo "    - RDS PostgreSQL instance"
-echo "    - ECR repositories (in compute module)"
+echo "    - VPC and Networking (subnets, security groups)"
+echo "    - ECR repositories"
 echo "    - S3 buckets"
 echo "    - CI/CD IAM resources (GitHub Actions user and policy)"
 echo ""
-echo "  Estimated monthly savings: ~\$50-60"
-echo "  (NAT Gateways ~\$65 remain - networking module refactoring needed for full savings)"
+echo "  Estimated monthly savings: ~\$115"
 echo ""
 if [[ "${SYNC_DATA}" == "true" ]]; then
     echo "  Data Sync: RDS → Neon (before Terraform destroy)"
@@ -177,7 +177,38 @@ if [[ "${SYNC_DATA}" == "true" ]]; then
     echo ""
 fi
 
-# Step 6: Run Terraform apply
+# Step 6: Create manual RDS snapshot before destroying
+log_info "Creating RDS snapshot before deactivation..."
+SNAPSHOT_ID="${RDS_INSTANCE_ID}-pre-deactivation-$(date -u +%Y%m%d-%H%M%S)"
+
+RDS_STATUS=$(aws rds describe-db-instances \
+    --db-instance-identifier "${RDS_INSTANCE_ID}" \
+    --region "${DEV_REGION}" \
+    --query 'DBInstances[0].DBInstanceStatus' \
+    --output text 2>/dev/null || echo "not-found")
+
+if [[ "${RDS_STATUS}" == "available" ]]; then
+    log_info "Creating snapshot: ${SNAPSHOT_ID}"
+    aws rds create-db-snapshot \
+        --db-instance-identifier "${RDS_INSTANCE_ID}" \
+        --db-snapshot-identifier "${SNAPSHOT_ID}" \
+        --region "${DEV_REGION}" \
+        --output text > /dev/null
+
+    log_info "Waiting for snapshot to complete (this may take a few minutes)..."
+    aws rds wait db-snapshot-available \
+        --db-snapshot-identifier "${SNAPSHOT_ID}" \
+        --region "${DEV_REGION}"
+
+    log_info "Snapshot complete: ${SNAPSHOT_ID}"
+else
+    log_warn "RDS instance not found or not available (status: ${RDS_STATUS})"
+    log_warn "Skipping snapshot creation"
+    SNAPSHOT_ID="N/A"
+fi
+echo ""
+
+# Step 7: Run Terraform apply
 log_info "Deactivating dev environment..."
 
 TF_VARS=(
@@ -197,12 +228,14 @@ echo "========================================"
 echo ""
 echo "  Dev environment is now in Pilot Light mode."
 echo ""
-echo "  Preserved resources:"
-echo "    - VPC: Still active (including NAT Gateways)"
-echo "    - RDS: ${RDS_INSTANCE_ID}"
-echo "    - ECR: ${BACKEND_ECR_REPO}, ${FRONTEND_ECR_REPO}, ${GRAFANA_ECR_REPO}"
+echo "  RDS snapshot: ${SNAPSHOT_ID}"
 echo ""
-echo "  To reactivate, run:"
+echo "  Preserved resources:"
+echo "    - VPC (subnets, security groups)"
+echo "    - ECR: ${BACKEND_ECR_REPO}, ${FRONTEND_ECR_REPO}, ${GRAFANA_ECR_REPO}"
+echo "    - S3: Database backups bucket"
+echo ""
+echo "  To reactivate (creates fresh RDS + syncs from Neon):"
 echo "    ./scripts/dev-activate.sh"
 echo ""
 echo "========================================"
