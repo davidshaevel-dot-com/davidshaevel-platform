@@ -142,7 +142,8 @@ The script will:
 cd terraform/environments/dev
 
 # Get latest container image tags
-ECR_REGISTRY="108581769167.dkr.ecr.us-east-1.amazonaws.com"
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text --profile davidshaevel-dev)
+ECR_REGISTRY="${ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com"
 BACKEND_TAG=$(aws ecr describe-images \
   --repository-name davidshaevel/backend \
   --region us-east-1 \
@@ -236,16 +237,14 @@ curl -I https://grafana.davidshaevel.com/api/health
 ### Grafana Admin Password
 
 ```bash
-# The password may change between activations
-aws secretsmanager list-secrets \
+# The password may change between activations — one-liner to retrieve it
+SECRET_NAME=$(aws secretsmanager list-secrets \
   --region us-east-1 \
   --profile davidshaevel-dev \
   --query "SecretList[?contains(Name, 'grafana')].Name" \
-  --output text
-
-# Get the password (replace SECRET_NAME with actual name)
+  --output text) && \
 aws secretsmanager get-secret-value \
-  --secret-id SECRET_NAME \
+  --secret-id "${SECRET_NAME}" \
   --region us-east-1 \
   --profile davidshaevel-dev \
   --query 'SecretString' \
@@ -377,7 +376,17 @@ pg_dump "$NEON_DATABASE_URL" --no-owner --no-acl > /tmp/neon-export.sql
 
 # Import to RDS (requires RDS to be running)
 RDS_HOST=$(cd terraform/environments/dev && AWS_PROFILE=davidshaevel-dev terraform output -raw db_host)
-psql "postgresql://dbadmin:<password>@${RDS_HOST}:5432/davidshaevel" < /tmp/neon-export.sql
+
+# Retrieve the RDS password from Secrets Manager
+SECRET_ARN=$(aws rds describe-db-instances \
+  --db-instance-identifier davidshaevel-dev-db \
+  --region us-east-1 --profile davidshaevel-dev \
+  --query 'DBInstances[0].MasterUserSecret.SecretArn' --output text)
+RDS_PASSWORD=$(aws secretsmanager get-secret-value \
+  --secret-id "${SECRET_ARN}" --region us-east-1 --profile davidshaevel-dev \
+  --query 'SecretString' --output text | jq -r .password)
+
+PGPASSWORD="${RDS_PASSWORD}" psql -h "${RDS_HOST}" -p 5432 -U dbadmin -d davidshaevel < /tmp/neon-export.sql
 ```
 
 ### RDS → Neon (Before Deactivation)
@@ -451,21 +460,15 @@ Or override with `--yes` if you've manually verified safety.
 If backend can't connect to RDS after activation, the password may have rotated:
 
 ```bash
-# Find the RDS-managed secret
-aws rds describe-db-instances \
+# One-liner to find the RDS secret ARN and retrieve credentials
+SECRET_ARN=$(aws rds describe-db-instances \
   --db-instance-identifier davidshaevel-dev-db \
-  --region us-east-1 \
-  --profile davidshaevel-dev \
-  --query 'DBInstances[0].MasterUserSecret.SecretArn' \
-  --output text
-
-# Get current credentials
+  --region us-east-1 --profile davidshaevel-dev \
+  --query 'DBInstances[0].MasterUserSecret.SecretArn' --output text) && \
 aws secretsmanager get-secret-value \
-  --secret-id "<secret-arn-from-above>" \
-  --region us-east-1 \
-  --profile davidshaevel-dev \
-  --query 'SecretString' \
-  --output text | jq .
+  --secret-id "${SECRET_ARN}" \
+  --region us-east-1 --profile davidshaevel-dev \
+  --query 'SecretString' --output text | jq .
 ```
 
 ---

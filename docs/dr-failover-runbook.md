@@ -109,7 +109,7 @@ aws ec2 describe-availability-zones --region us-east-1 --profile davidshaevel-de
 - If Vercel has extended outage AND you need the site up → activate DR
 - If us-east-1 is also down → DR (us-west-2) is the only option
 
-> **Note:** Before DR activation, you may need to first activate the dev AWS environment if it's in pilot light mode. See [dev-activation-runbook.md](dev-activation-runbook.md) for DNS switch procedures. DR activation is independent of dev environment state.
+> **Note:** DR activation (us-west-2) is completely independent of the dev environment (us-east-1). You do NOT need to activate the dev environment first. The DR environment has its own ECR replicas, snapshot copies, and infrastructure.
 
 ### Step 2: Validate DR Readiness
 
