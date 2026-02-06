@@ -324,8 +324,8 @@ module "networking" {
   aws_region         = var.aws_region
   availability_zones = var.availability_zones
 
-  # Enable NAT Gateway with full HA (2 NAT Gateways)
-  enable_nat_gateway = true
+  # NAT Gateways only needed when compute resources are running
+  enable_nat_gateway = var.dev_activated
   single_nat_gateway = false
 
   # Enable VPC Flow Logs for network monitoring
