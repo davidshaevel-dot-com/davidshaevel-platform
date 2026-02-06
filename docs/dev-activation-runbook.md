@@ -36,7 +36,6 @@ These resources exist regardless of `dev_activated` state:
 |----------|---------|
 | VPC + Subnets | Network structure (10.0.0.0/16) |
 | Security Groups | Firewall rules |
-| RDS PostgreSQL (db.t3.micro) | Database with data |
 | ECR Repositories (3) | Container image storage |
 | S3 Backup Bucket | Database backup storage |
 | CI/CD IAM | GitHub Actions permissions |
@@ -48,6 +47,7 @@ These resources are created on activation and destroyed on deactivation (~93 res
 | Resource | Purpose |
 |----------|---------|
 | NAT Gateways (2) | Egress for private subnets |
+| RDS PostgreSQL (db.t3.micro) | Database (created fresh, synced from Neon) |
 | ECS Fargate Cluster | Container orchestration |
 | Frontend ECS Service (2 tasks) | Next.js application |
 | Backend ECS Service (2 tasks) | NestJS API |
@@ -63,7 +63,7 @@ These resources are created on activation and destroyed on deactivation (~93 res
 
 | Mode | Monthly Cost |
 |------|-------------|
-| Pilot Light (`dev_activated=false`) | ~$17 |
+| Pilot Light (`dev_activated=false`) | ~$2-3 |
 | Full Activation (`dev_activated=true`) | ~$118 |
 | Vercel (production, always running) | ~$0 (free tier) |
 
@@ -106,7 +106,7 @@ aws sts get-caller-identity --profile davidshaevel-dev
 ./scripts/dev-validation.sh --verbose
 ```
 
-Confirm the output shows "Pilot Light" mode and that always-on resources (VPC, RDS, ECR) are healthy.
+Confirm the output shows "Pilot Light" mode and that always-on resources (VPC, ECR) are healthy. RDS absence is expected in pilot light.
 
 ### Step 2: Activate AWS Infrastructure
 
@@ -130,11 +130,12 @@ The script will:
 1. Verify AWS credentials
 2. Check that environment is currently in pilot light mode
 3. Query ECR for latest tagged container images (frontend + backend)
-4. Verify RDS instance is available
-5. Optionally sync Neon → RDS data (if `--sync-data` flag)
-6. Display activation plan (~81 resources to create)
+4. Check RDS status (absent is expected in pilot light mode)
+5. Optionally sync Neon → RDS data (if `--sync-data` flag and RDS exists)
+6. Display activation plan (~93 resources to create, including fresh RDS)
 7. Run `terraform apply -var="dev_activated=true"` with container image variables
-8. Display ALB DNS and CloudFront domain on completion
+8. If RDS was freshly created, automatically sync data from Neon
+9. Display ALB DNS and CloudFront domain on completion
 
 #### Option B: Manual Terraform Activation
 
@@ -298,9 +299,10 @@ The script will:
 2. Check that environment is currently activated
 3. Verify production DNS is NOT on AWS (safety check)
 4. Optionally sync RDS → Neon data (if `--sync-data` flag)
-5. Display deactivation plan (~81 resources to destroy)
-6. Run `terraform apply -var="dev_activated=false"`
-7. Display preserved resources and cost savings
+5. Create manual RDS snapshot (insurance before destroy)
+6. Display deactivation plan (~93 resources to destroy, including RDS)
+7. Run `terraform apply -var="dev_activated=false"`
+8. Display preserved resources, snapshot ID, and cost savings
 
 **Safety mechanism:** The script checks HTTP headers on `davidshaevel.com` to confirm Vercel is serving traffic. If AWS is detected as serving production, deactivation is blocked (overridable with `--yes`).
 
@@ -341,7 +343,6 @@ curl -I https://davidshaevel.com/
 | Resource | Status |
 |----------|--------|
 | VPC (10.0.0.0/16) | Available |
-| RDS PostgreSQL | Available |
 | ECR Repositories (3) | Images preserved |
 | S3 Backup Bucket | Backups preserved |
 | CI/CD IAM | Active |
@@ -350,6 +351,7 @@ curl -I https://davidshaevel.com/
 
 | Resource | Notes |
 |----------|-------|
+| RDS PostgreSQL | Snapshot created before destroy; fresh instance + Neon sync on activation |
 | NAT Gateways (2) + Route Tables | Recreated on activation (~5 min) |
 | ECS Cluster + 4 Services | Recreated on activation |
 | ALB + Target Groups | Recreated on activation |
@@ -477,5 +479,6 @@ aws secretsmanager get-secret-value \
 
 | Date | Author | Changes |
 |------|--------|---------|
+| 2026-02-06 | David Shaevel | RDS moved to conditional resources, snapshot on deactivate, Neon sync on activate (TT-137) |
 | 2026-02-06 | David Shaevel | NAT Gateways moved to conditional resources (TT-136) |
 | 2026-02-06 | David Shaevel | Initial version (TT-104) |
