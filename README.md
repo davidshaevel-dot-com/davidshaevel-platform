@@ -28,18 +28,19 @@ This project serves as both a personal website and a demonstration of production
 Production (Vercel)                     AWS Pilot Light (Activatable)
 ─────────────────                       ─────────────────────────────
 DNS (Cloudflare)                        VPC (10.0.0.0/16)
-    │                                       ├── Networking (preserved)
-    ▼                                       ├── RDS PostgreSQL (preserved)
-Vercel Frontend                             ├── ECR Repositories (preserved)
-    │                                       ├── S3 Buckets (preserved)
-    ├── Next.js Pages                       └── CI/CD IAM (preserved)
+    │                                       ├── RDS PostgreSQL (preserved)
+    ▼                                       ├── ECR Repositories (preserved)
+Vercel Frontend                             ├── S3 Buckets (preserved)
+    │                                       └── CI/CD IAM (preserved)
+    ├── Next.js Pages
     │   (davidshaevel.com)
     │                                   When activated (dev_activated=true):
     └── /api/* rewrite                      CloudFront → ALB
-            │                                   ├── Frontend ECS (2 tasks)
-            ▼                                   ├── Backend ECS (2 tasks)
-    Vercel Backend                              ├── Prometheus ECS
-        (NestJS Serverless)                     └── Grafana ECS
+            │                                   ├── NAT Gateways (2x)
+            ▼                                   ├── Frontend ECS (2 tasks)
+    Vercel Backend                              ├── Backend ECS (2 tasks)
+        (NestJS Serverless)                     ├── Prometheus ECS
+            │                                   └── Grafana ECS
             │                                       │
             ▼                                       ▼
     Neon PostgreSQL ◄──── sync ────► RDS PostgreSQL
@@ -60,7 +61,7 @@ Vercel Frontend                             ├── ECR Repositories (preserve
 **Phase 1: Networking**
 - ✅ VPC (10.0.0.0/16) with DNS support
 - ✅ 6 Subnets across 2 AZs (public, private-app, private-db)
-- ✅ 2 NAT Gateways for high availability
+- ✅ 2 NAT Gateways for high availability (conditional on `dev_activated`)
 - ✅ Internet Gateway
 - ✅ Route Tables and VPC Flow Logs
 - ✅ 4 Security Groups (ALB, Frontend, Backend, Database)
@@ -95,10 +96,10 @@ Vercel Frontend                             ├── ECR Repositories (preserve
 - ✅ IPv6 and HTTP/2 enabled
 - ✅ Cloudflare DNS configured (gray cloud mode)
 
-**Current State (February 2, 2026):**
+**Current State (February 6, 2026):**
 - **Production:** Vercel (frontend + backend serverless) + Neon PostgreSQL
 - **AWS Status:** Pilot Light mode (`dev_activated = false`)
-- **Monthly Cost:** ~$50-60 (down from ~$118-125)
+- **Monthly Cost:** ~$17 (down from ~$118-125)
 - **Infrastructure:** 100% complete ✅
 - **Applications:** 100% complete ✅
 - **Observability:** Deactivated (part of pilot light mode)
@@ -344,14 +345,14 @@ terraform output  # View all outputs
 - **Vercel Total:** ~$0-15/month
 
 **AWS Pilot Light Mode:**
-- **NAT Gateways (2x):** ~$65
 - **RDS PostgreSQL (db.t3.micro):** ~$16
 - **VPC (networking preserved):** Minimal
 - **S3 buckets:** ~$1
 - **ECR repositories:** Free (storage only)
-- **AWS Total:** ~$50-60/month
+- **NAT Gateways:** $0 (destroyed in pilot light, created on activation)
+- **AWS Total:** ~$17/month
 
-**Combined Total:** ~$50-75/month
+**Combined Total:** ~$17-30/month
 
 ### Previous (Full AWS)
 
@@ -367,7 +368,7 @@ terraform output  # View all outputs
 
 **Previous Total:** ~$118-125/month
 
-### Savings: ~$60-70/month
+### Savings: ~$100/month
 
 ## 📝 Documentation
 
@@ -835,9 +836,10 @@ Austin, Texas
 - Disaster Recovery Environment: January 9-11, 2026 (Complete)
 - Vercel Migration Phase 1: January 23-24, 2026 (Complete)
 - AWS Pilot Light Mode: January 26-30, 2026 (Complete)
+- Documentation & Cost Optimization: February 6, 2026 (Complete)
 
-**Status:** ✅ PRODUCTION ON VERCEL + AWS Pilot Light Mode Active (TT-106 Complete)
-**Last Updated:** February 2, 2026
+**Status:** ✅ PRODUCTION ON VERCEL + AWS Pilot Light Mode (~$17/month)
+**Last Updated:** February 6, 2026
 
 ## 🤖 AI Agent Sessions
 
@@ -875,6 +877,8 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - Jan 26: TT-95, TT-96, TT-97 AWS Pilot Light Mode - dev_activated variable, activation/deactivation scripts (PR #84)
 - Jan 29-30: TT-98, TT-99, TT-132 Data Sync & Validation - Bidirectional Neon↔RDS sync, dev-validation.sh (PR #85)
 - Feb 2: TT-106 Final AWS Deactivation - Switched DNS to Vercel, deactivated AWS to pilot light (81 resources destroyed)
+- Feb 6: TT-104 Documentation Updates - DR failover runbook, dev activation runbook (PR #89)
+- Feb 6: TT-136 NAT Gateway Cost Optimization - Conditional NAT Gateways, ~$65/month savings (PR #90)
 
 **Infrastructure Milestones:**
 - ✅ TT-16 (Steps 1-3): Foundation
@@ -909,7 +913,9 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - ✅ TT-99: sync-rds-to-neon.sh Script (Complete - Jan 30, 2026) - PR #85
 - ✅ TT-132: dev-validation.sh Script (Complete - Jan 30, 2026) - PR #85
 - ✅ TT-106: AWS Deactivation to Pilot Light (Complete - Feb 2, 2026) - 81 resources destroyed
+- ✅ TT-104: Documentation Updates (Complete - Feb 6, 2026) - DR runbook, dev activation runbook (PR #89)
+- ✅ TT-136: NAT Gateway Cost Optimization (Complete - Feb 6, 2026) - Conditional NAT Gateways (PR #90)
+- ⏳ TT-137: RDS Cost Optimization (Planned) - Destroy RDS in pilot light mode
 - ⏳ TT-20: Local Development (Planned - 6-8 hours)
-- ⏳ TT-26: Documentation (Planned - 4-6 hours)
 
-**Current Phase:** Production on Vercel (frontend + backend serverless) with Neon PostgreSQL. AWS dev environment **deactivated** to pilot light mode (81 resources destroyed, ~$60/month savings). Preserved: VPC, RDS, ECR, S3, CI/CD IAM. Reactivation: `./scripts/dev-activate.sh`.
+**Current Phase:** Production on Vercel (frontend + backend serverless) with Neon PostgreSQL. AWS dev environment **deactivated** to pilot light mode (~$17/month). NAT Gateways destroyed in pilot light (TT-136). Preserved: VPC, RDS, ECR, S3, CI/CD IAM. Reactivation: `./scripts/dev-activate.sh`.

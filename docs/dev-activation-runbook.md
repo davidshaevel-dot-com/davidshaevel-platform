@@ -36,7 +36,6 @@ These resources exist regardless of `dev_activated` state:
 |----------|---------|
 | VPC + Subnets | Network structure (10.0.0.0/16) |
 | Security Groups | Firewall rules |
-| NAT Gateways | Egress for private subnets |
 | RDS PostgreSQL (db.t3.micro) | Database with data |
 | ECR Repositories (3) | Container image storage |
 | S3 Backup Bucket | Database backup storage |
@@ -44,10 +43,11 @@ These resources exist regardless of `dev_activated` state:
 
 ### Conditional (Only When Activated)
 
-These resources are created on activation and destroyed on deactivation (~81 resources):
+These resources are created on activation and destroyed on deactivation (~93 resources):
 
 | Resource | Purpose |
 |----------|---------|
+| NAT Gateways (2) | Egress for private subnets |
 | ECS Fargate Cluster | Container orchestration |
 | Frontend ECS Service (2 tasks) | Next.js application |
 | Backend ECS Service (2 tasks) | NestJS API |
@@ -63,7 +63,7 @@ These resources are created on activation and destroyed on deactivation (~81 res
 
 | Mode | Monthly Cost |
 |------|-------------|
-| Pilot Light (`dev_activated=false`) | ~$50-60 |
+| Pilot Light (`dev_activated=false`) | ~$17 |
 | Full Activation (`dev_activated=true`) | ~$118 |
 | Vercel (production, always running) | ~$0 (free tier) |
 
@@ -344,13 +344,13 @@ curl -I https://davidshaevel.com/
 | RDS PostgreSQL | Available |
 | ECR Repositories (3) | Images preserved |
 | S3 Backup Bucket | Backups preserved |
-| NAT Gateways (2) | Running |
 | CI/CD IAM | Active |
 
 ### Resources Destroyed
 
 | Resource | Notes |
 |----------|-------|
+| NAT Gateways (2) + Route Tables | Recreated on activation (~5 min) |
 | ECS Cluster + 4 Services | Recreated on activation |
 | ALB + Target Groups | Recreated on activation |
 | CloudFront Distribution | Recreated on activation (~15 min) |
@@ -477,4 +477,5 @@ aws secretsmanager get-secret-value \
 
 | Date | Author | Changes |
 |------|--------|---------|
+| 2026-02-06 | David Shaevel | NAT Gateways moved to conditional resources (TT-136) |
 | 2026-02-06 | David Shaevel | Initial version (TT-104) |
