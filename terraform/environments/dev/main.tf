@@ -287,6 +287,11 @@ moved {
   to   = module.service_discovery[0]
 }
 
+moved {
+  from = module.database
+  to   = module.database[0]
+}
+
 # AWS Provider Configuration
 provider "aws" {
   region = var.aws_region
@@ -352,6 +357,7 @@ module "networking" {
 
 module "database" {
   source = "../../modules/database"
+  count  = var.dev_activated ? 1 : 0
 
   # Environment configuration
   environment  = var.environment
@@ -398,10 +404,10 @@ module "compute" {
   backend_security_group_id  = module.networking.app_backend_security_group_id
 
   # Database inputs (from database module)
-  database_endpoint   = module.database.db_instance_endpoint
-  database_port       = module.database.db_instance_port
-  database_name       = module.database.db_name
-  database_secret_arn = module.database.secret_arn
+  database_endpoint   = module.database[0].db_instance_endpoint
+  database_port       = module.database[0].db_instance_port
+  database_name       = module.database[0].db_name
+  database_secret_arn = module.database[0].secret_arn
 
   # Container images (placeholder for now, will be replaced with ECR images)
   frontend_image = var.frontend_container_image

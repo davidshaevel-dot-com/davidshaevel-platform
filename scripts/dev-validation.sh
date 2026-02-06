@@ -100,6 +100,8 @@ RDS_STATUS=$(aws rds describe-db-instances \
 
 if [[ "${RDS_STATUS}" == "available" ]]; then
     log_pass "RDS instance ${RDS_INSTANCE_ID} is available"
+elif [[ "${RDS_STATUS}" == "not-found" && "${DEV_ACTIVATED}" == "false" ]]; then
+    log_pass "RDS instance absent (expected in pilot light mode)"
 else
     log_fail "RDS instance status: ${RDS_STATUS}"
 fi
