@@ -659,7 +659,12 @@ See `docs/dr-failover-runbook.md` for procedures and troubleshooting.
 - TT-98: sync-neon-to-rds.sh script for Neon → RDS sync (PR #85)
 - TT-99: sync-rds-to-neon.sh script for RDS → Neon sync (PR #85)
 - TT-132: dev-validation.sh script for dev environment health checks (PR #85)
-- TT-106: Deactivate AWS dev to pilot light mode (Feb 2, 2026) - 81 resources destroyed, ~$60/month savings
+- TT-106: Deactivate AWS dev to pilot light mode (Feb 2, 2026) - 81 resources destroyed
+
+**Cost Optimization (TT-104, TT-136, TT-137 complete):**
+- TT-104: Documentation updates - DR failover runbook, dev activation runbook (PR #89)
+- TT-136: NAT Gateway cost optimization - Conditional NAT Gateways in pilot light, ~$65/month savings (PR #90)
+- TT-137: RDS cost optimization - Conditional RDS in pilot light, ~$15/month savings (PR #91)
 
 ---
 

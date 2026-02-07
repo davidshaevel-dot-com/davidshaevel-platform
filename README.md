@@ -879,6 +879,7 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - Feb 2: TT-106 Final AWS Deactivation - Switched DNS to Vercel, deactivated AWS to pilot light (81 resources destroyed)
 - Feb 6: TT-104 Documentation Updates - DR failover runbook, dev activation runbook (PR #89)
 - Feb 6: TT-136 NAT Gateway Cost Optimization - Conditional NAT Gateways, ~$65/month savings (PR #90)
+- Feb 6: TT-137 RDS Cost Optimization - Conditional RDS in pilot light, ~$15/month savings (PR #91)
 
 **Infrastructure Milestones:**
 - ✅ TT-16 (Steps 1-3): Foundation
@@ -915,7 +916,7 @@ This project is developed with AI assistance (Claude Code). Session context is p
 - ✅ TT-106: AWS Deactivation to Pilot Light (Complete - Feb 2, 2026) - 81 resources destroyed
 - ✅ TT-104: Documentation Updates (Complete - Feb 6, 2026) - DR runbook, dev activation runbook (PR #89)
 - ✅ TT-136: NAT Gateway Cost Optimization (Complete - Feb 6, 2026) - Conditional NAT Gateways (PR #90)
-- ⏳ TT-137: RDS Cost Optimization (In Progress) - Destroy RDS in pilot light mode, ~$15/month savings
+- ✅ TT-137: RDS Cost Optimization (Complete - Feb 6, 2026) - Conditional RDS in pilot light mode, ~$15/month savings (PR #91)
 - ⏳ TT-20: Local Development (Planned - 6-8 hours)
 
 **Current Phase:** Production on Vercel (frontend + backend serverless) with Neon PostgreSQL. AWS dev environment **deactivated** to pilot light mode (~$2-3/month). NAT Gateways and RDS destroyed in pilot light (TT-136, TT-137). Preserved: VPC, ECR, S3, CI/CD IAM. Reactivation: `./scripts/dev-activate.sh`.
