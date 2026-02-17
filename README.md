@@ -1,10 +1,10 @@
-# DavidShaevel.com Platform Engineering Portfolio
+# DavidShaevel.com ECS Platform (Archived Infrastructure)
 
-A full-stack web platform showcasing DevOps best practices, infrastructure automation, and platform engineering expertise.
+> **Note:** This repository has been renamed from `davidshaevel-platform` to `davidshaevel-ecs-platform`.
+> Application code (frontend + backend) has moved to [davidshaevel-website](https://github.com/davidshaevel-dot-com/davidshaevel-website).
+> The active Kubernetes platform is at [davidshaevel-k8s-platform](https://github.com/davidshaevel-dot-com/davidshaevel-k8s-platform).
 
-## 🎯 Project Purpose
-
-This project serves as both a personal website and a demonstration of production-ready DevOps practices, including:
+This repository contains the AWS ECS/Fargate infrastructure (Terraform, scripts, observability configs) for the davidshaevel.com platform. It serves as a reference for production-ready DevOps practices, including:
 
 - **Infrastructure as Code** with Terraform
 - **Cloud-Native Architecture** on AWS

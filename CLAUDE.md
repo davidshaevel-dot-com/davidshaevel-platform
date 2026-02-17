@@ -1,10 +1,14 @@
-# DavidShaevel.com Platform - Claude Context
+# DavidShaevel.com ECS Platform - Claude Context
+
+> **Renamed:** This repo was `davidshaevel-platform`, now `davidshaevel-ecs-platform`.
+> **Application code** (frontend + backend) has moved to [davidshaevel-website](https://github.com/davidshaevel-dot-com/davidshaevel-website).
+> **Active platform** is [davidshaevel-k8s-platform](https://github.com/davidshaevel-dot-com/davidshaevel-k8s-platform).
 
 <!-- If CLAUDE.local.md exists, read it for additional context (AWS resource IDs, environment details, etc.) -->
 
 ## Project Overview
 
-This is a full-stack engineering portfolio platform demonstrating AWS cloud architecture, infrastructure as code, and modern web development practices. The project uses Terraform for infrastructure management and follows a disciplined, incremental approach.
+This repository contains the AWS ECS/Fargate infrastructure for the davidshaevel.com platform. It demonstrates AWS cloud architecture, infrastructure as code, and production-ready DevOps practices. The project uses Terraform for infrastructure management and follows a disciplined, incremental approach.
 
 **Key Technologies:**
 - **Infrastructure:** Terraform, AWS (VPC, ECS Fargate, RDS, CloudFront, Route53)
